@@ -80,6 +80,29 @@ describe("vehicle physics", () => {
     expect(reverseSnapshot.velocity.x).toBeLessThan(-4.5);
   });
 
+  it("uses turbo in both directions without a lower reverse speed cap", () => {
+    const flatTrack = {
+      segments: [line("flat", { x: -500, y: 0 }, { x: 500, y: 0 })],
+      checkpoints: [{ id: "start", position: { x: 0, y: 1.1 }, angle: 0, radius: 2 }],
+      killY: -8,
+    };
+    const forward = createPhysicsWorld({ track: flatTrack });
+    const reverse = createPhysicsWorld({ track: flatTrack });
+    forward.setInput({ throttle: 1, turbo: true });
+    reverse.setInput({ throttle: -1, turbo: true });
+
+    let forwardSnapshot = forward.getSnapshot();
+    let reverseSnapshot = reverse.getSnapshot();
+    for (let frame = 0; frame < 300; frame += 1) {
+      forwardSnapshot = forward.step();
+      reverseSnapshot = reverse.step();
+    }
+
+    expect(forwardSnapshot.velocity.x).toBeGreaterThan(14);
+    expect(reverseSnapshot.velocity.x).toBeLessThan(-14);
+    expect(Math.abs(reverseSnapshot.velocity.x)).toBeCloseTo(forwardSnapshot.velocity.x, 1);
+  });
+
   it("can complete the parametrized course at full throttle", () => {
     const simulation = createPhysicsWorld();
     simulation.setInput({ throttle: 1 });

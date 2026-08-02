@@ -1,7 +1,7 @@
 import { createPhysicsWorld } from "../src/game/physics";
 
 const simulation = createPhysicsWorld();
-simulation.setInput({ throttle: 1 });
+simulation.setInput({ throttle: 1, turbo: true });
 
 const initial = simulation.getSnapshot();
 let maximumHeight = initial.chassis.position.y;
@@ -51,6 +51,6 @@ console.log(
   ),
 );
 
-if (!advanced || !leftGround || !reachedFinish || finishSeconds > 85 || maximumForwardSpeed < 7.5 || !finite) {
+if (!advanced || !leftGround || !reachedFinish || finishSeconds > 55 || maximumForwardSpeed < 14 || !finite) {
   process.exitCode = 1;
 }

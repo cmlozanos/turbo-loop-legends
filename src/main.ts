@@ -38,6 +38,7 @@ app.innerHTML = `
       <button class="icon-button reset-button" data-control="reset" aria-label="Volver al último punto de control">↻</button>
       <button id="pause-button" class="icon-button pause-button" aria-label="Pausa">Ⅱ</button>
       <button class="drive-control brake-control" data-control="brake" aria-label="Frenar y marcha atrás">◀</button>
+      <button class="turbo-control" data-control="turbo" aria-label="Activar turbo" aria-pressed="false"><span>⚡</span>TURBO</button>
       <button class="drive-control throttle-control" data-control="throttle" aria-label="Acelerar">▶</button>
       <div id="toast" class="toast" role="status" aria-live="polite"></div>
     </section>

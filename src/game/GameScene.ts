@@ -82,7 +82,8 @@ export class GameScene extends Phaser.Scene {
     this.simulation.setInput({
       throttle: throttle ? this.sceneData.car.motor : brake && Math.abs(this.lastSnapshot.velocity.x) < 0.7 ? -1 : 0,
       brake: brake && Math.abs(this.lastSnapshot.velocity.x) >= 0.7,
-      lean
+      lean,
+      turbo: this.sceneData.input.state.turbo
     });
 
     while (this.accumulator >= this.simulation.fixedTimeStep) {

@@ -11,6 +11,7 @@ test("opens the garage and starts a race", async ({ page }) => {
 
   await expect(page.locator("canvas")).toBeVisible();
   await expect(page.getByLabel("Acelerar")).toBeVisible();
+  await expect(page.getByLabel("Activar turbo")).toBeVisible();
   await expect(page.getByText("KM/H")).toBeVisible();
   expect(errors).toEqual([]);
 });
@@ -32,7 +33,7 @@ test("shows three distinct spectacular car designs", async ({ page }) => {
 test("keeps touch controls inside the landscape viewport", async ({ page }) => {
   await page.goto("");
   await page.getByRole("button", { name: "JUGAR" }).click();
-  const controls = [page.getByLabel("Acelerar"), page.getByLabel("Frenar y marcha atrás")];
+  const controls = [page.getByLabel("Acelerar"), page.getByLabel("Frenar y marcha atrás"), page.getByLabel("Activar turbo")];
   const viewport = page.viewportSize();
   expect(viewport).not.toBeNull();
   for (const control of controls) {
@@ -54,6 +55,19 @@ test("accelerates quickly with the keyboard and can reset", async ({ page }) => 
   await expect.poll(async () => Number(await page.locator("#speed").textContent())).toBeGreaterThan(50);
   await page.keyboard.press("r");
   await expect(page.getByRole("status")).toContainText("Otra oportunidad");
+});
+
+test("activates turbo with the keyboard", async ({ page }) => {
+  await page.goto("");
+  await page.getByRole("button", { name: "JUGAR" }).click();
+  await page.keyboard.down("ArrowRight");
+  await page.keyboard.down("ShiftLeft");
+  await expect(page.getByLabel("Activar turbo")).toHaveAttribute("aria-pressed", "true");
+  await page.waitForTimeout(2600);
+  await expect.poll(async () => Number(await page.locator("#speed").textContent())).toBeGreaterThan(110);
+  await page.keyboard.up("ShiftLeft");
+  await page.keyboard.up("ArrowRight");
+  await expect(page.getByLabel("Activar turbo")).toHaveAttribute("aria-pressed", "false");
 });
 
 test("reopens after the network is disconnected", async ({ page, context, browserName }) => {

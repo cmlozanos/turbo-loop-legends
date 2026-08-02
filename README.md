@@ -4,8 +4,8 @@ Videojuego 2D de coches para navegador, pensado primero para tablet y niños de 
 
 ## Jugar
 
-- Tablet o móvil: usa los dos botones grandes. El izquierdo frena o da marcha atrás; el derecho acelera. En el aire también inclinan el coche.
-- Ordenador: `→`/`D` acelera, `←`/`A` frena y da marcha atrás, `R` vuelve al checkpoint y `Esc` pausa.
+- Tablet o móvil: usa los botones grandes. El izquierdo frena o da marcha atrás, el derecho acelera y el botón central activa el turbo. En el aire también inclinan el coche.
+- Ordenador: `→`/`D` acelera, `←`/`A` frena y da marcha atrás, `Shift`/`Espacio` activa el turbo, `R` vuelve al checkpoint y `Esc` pausa.
 - Las ayudas opcionales corrigen suavemente el coche y lo recuperan si queda volcado o cae.
 
 El juego guarda ajustes, coche elegido y desbloqueos únicamente en el dispositivo. Después de la primera carga puede funcionar sin conexión.

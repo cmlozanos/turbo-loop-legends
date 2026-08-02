@@ -14,6 +14,7 @@ export interface VehicleInput {
   throttle?: number;
   brake?: boolean;
   lean?: number;
+  turbo?: boolean;
 }
 
 export interface BodyPose {
@@ -50,8 +51,10 @@ const WHEEL_OFFSETS = [
   { x: 1, y: -0.55 },
 ] as const;
 
-const MAX_WHEEL_SPEED = 20;
-const DRIVE_TORQUE = 90;
+const MAX_WHEEL_SPEED = 26;
+const TURBO_WHEEL_SPEED = 38;
+const DRIVE_TORQUE = 110;
+const TURBO_TORQUE = 155;
 
 export class PhysicsWorld {
   readonly world: World;
@@ -63,7 +66,7 @@ export class PhysicsWorld {
   private readonly frontWheel: Body;
   private readonly rearJoint: WheelJoint;
   private readonly frontJoint: WheelJoint;
-  private input: Required<VehicleInput> = { throttle: 0, brake: false, lean: 0 };
+  private input: Required<VehicleInput> = { throttle: 0, brake: false, lean: 0, turbo: false };
   private checkpointIndex = 0;
   private respawnCount = 0;
   private guidedLoop?: GuidedLoop;
@@ -119,6 +122,7 @@ export class PhysicsWorld {
       throttle: Math.max(-1, Math.min(1, input.throttle ?? 0)),
       brake: input.brake ?? false,
       lean: Math.max(-1, Math.min(1, input.lean ?? 0)),
+      turbo: input.turbo ?? false,
     };
   }
 
@@ -130,8 +134,9 @@ export class PhysicsWorld {
       this.updateCheckpoint();
       return this.getSnapshot();
     }
-    const motorSpeed = this.input.brake ? 0 : -this.input.throttle * MAX_WHEEL_SPEED;
-    const motorTorque = DRIVE_TORQUE;
+    const wheelSpeed = this.input.turbo ? TURBO_WHEEL_SPEED : MAX_WHEEL_SPEED;
+    const motorSpeed = this.input.brake ? 0 : -this.input.throttle * wheelSpeed;
+    const motorTorque = this.input.turbo ? TURBO_TORQUE : DRIVE_TORQUE;
 
     this.rearJoint.enableMotor(this.input.brake || Math.abs(this.input.throttle) > 0.001);
     this.rearJoint.setMotorSpeed(motorSpeed);
@@ -249,7 +254,7 @@ export class PhysicsWorld {
         pathRadius: 3.2,
         angle: -Math.PI / 2,
         endAngle: (3 * Math.PI) / 2,
-        angularSpeed: Math.max(2.1, Math.min(3.6, speed / 3.2)),
+        angularSpeed: Math.max(2.1, Math.min(5.5, speed / 3.2)),
       };
     } else if (this.fullLoopComplete && !this.incompleteLoopComplete && position.x >= 378.2 && speed >= 2.5) {
       this.guidedLoop = {
@@ -258,7 +263,7 @@ export class PhysicsWorld {
         pathRadius: 3.2,
         angle: -Math.PI / 2,
         endAngle: (5 * Math.PI) / 4,
-        angularSpeed: Math.max(2.1, Math.min(3.6, speed / 3.2)),
+        angularSpeed: Math.max(2.1, Math.min(5.5, speed / 3.2)),
       };
     }
   }
