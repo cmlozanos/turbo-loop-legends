@@ -29,6 +29,7 @@ export interface VehicleSnapshot {
   velocity: Point;
   checkpointIndex: number;
   respawnCount: number;
+  springboardActivations: number;
 }
 
 export interface PhysicsOptions {
@@ -72,6 +73,8 @@ export class PhysicsWorld {
   private guidedLoop?: GuidedLoop;
   private fullLoopComplete = false;
   private incompleteLoopComplete = false;
+  private activeSpringboardId?: string;
+  private springboardActivations = 0;
 
   constructor(options: PhysicsOptions = {}) {
     this.track = options.track ?? createDefaultTrack();
@@ -97,7 +100,8 @@ export class PhysicsWorld {
       position: spawn.position,
       angle: spawn.angle,
       bullet: true,
-      angularDamping: 0.7,
+      angularDamping: 0.85,
+      linearDamping: 0.04,
     });
     this.chassis.createFixture({
       shape: new Polygon([
@@ -108,7 +112,8 @@ export class PhysicsWorld {
         { x: -1.05, y: 0.45 },
       ]),
       density: 3,
-      friction: 0.4,
+      friction: 0.55,
+      restitution: 0.04,
     });
 
     this.rearWheel = this.createWheel(this.worldPoint(spawn.position, spawn.angle, WHEEL_OFFSETS[0]));
@@ -145,7 +150,8 @@ export class PhysicsWorld {
     this.frontJoint.setMotorSpeed(0);
     this.frontJoint.setMaxMotorTorque(motorTorque);
     if (this.input.lean !== 0) {
-      this.chassis.applyTorque(this.input.lean * 18, true);
+      const airControl = Math.min(1, Math.abs(this.chassis.getLinearVelocity().y) / 3 + 0.35);
+      this.chassis.applyTorque(this.input.lean * 24 * airControl, true);
     }
     const x = this.chassis.getPosition().x;
     const insideLoop = (x > 175 && x < 185) || (x > 375 && x < 385);
@@ -155,8 +161,9 @@ export class PhysicsWorld {
     }
 
     if (step > 0) {
-      this.world.step(step, 8, 3);
+      this.world.step(step, 10, 6);
     }
+    this.activateSpringboard();
     this.updateCheckpoint();
 
     const position = this.chassis.getPosition();
@@ -176,6 +183,7 @@ export class PhysicsWorld {
       velocity: { x: velocity.x, y: velocity.y },
       checkpointIndex: this.checkpointIndex,
       respawnCount: this.respawnCount,
+      springboardActivations: this.springboardActivations,
     };
   }
 
@@ -189,8 +197,9 @@ export class PhysicsWorld {
   respawn(): VehicleSnapshot {
     const checkpoint = this.track.checkpoints[this.checkpointIndex];
     this.guidedLoop = undefined;
-    this.fullLoopComplete = this.checkpointIndex >= 2;
-    this.incompleteLoopComplete = this.checkpointIndex >= 3;
+    this.fullLoopComplete = checkpoint.position.x > 185;
+    this.incompleteLoopComplete = checkpoint.position.x > 385;
+    this.activeSpringboardId = undefined;
     this.placeBody(this.chassis, checkpoint.position, checkpoint.angle);
     this.placeBody(
       this.rearWheel,
@@ -208,7 +217,7 @@ export class PhysicsWorld {
 
   private createWheel(position: Point): Body {
     const wheel = this.world.createBody({ type: "dynamic", position, bullet: true });
-    wheel.createFixture({ shape: new Circle(0.42), density: 1, friction: 1.2 });
+    wheel.createFixture({ shape: new Circle(0.42), density: 1.05, friction: 1.45, restitution: 0.02 });
     return wheel;
   }
 
@@ -218,8 +227,8 @@ export class PhysicsWorld {
         enableMotor: powered,
         motorSpeed: 0,
         maxMotorTorque: powered ? 60 : 0,
-        frequencyHz: 5,
-        dampingRatio: 0.75,
+        frequencyHz: 4.4,
+        dampingRatio: 0.88,
       },
       this.chassis,
       wheel,
@@ -230,15 +239,50 @@ export class PhysicsWorld {
     return joint;
   }
 
-  private updateCheckpoint(): void {
-    const nextIndex = this.checkpointIndex + 1;
-    const next = this.track.checkpoints[nextIndex];
-    if (!next) return;
+  private activateSpringboard(): void {
+    const chassisPosition = this.chassis.getPosition();
+    const board = this.track.springboards.find((candidate) => {
+      const withinWidth = Math.abs(chassisPosition.x - candidate.position.x) <= candidate.width / 2;
+      const wheelsNearSurface = [this.rearWheel, this.frontWheel].some((wheel) => {
+        const position = wheel.getPosition();
+        return Math.abs(position.x - candidate.position.x) <= candidate.width / 2
+          && position.y >= candidate.position.y
+          && position.y <= candidate.position.y + 0.8;
+      });
+      return withinWidth && wheelsNearSurface;
+    });
 
+    if (!board) {
+      this.activeSpringboardId = undefined;
+      return;
+    }
+    if (this.activeSpringboardId === board.id) return;
+
+    const velocity = this.chassis.getLinearVelocity();
+    const direction = velocity.x < -0.2 ? -1 : 1;
+    const launchVelocity = {
+      x: velocity.x + direction * board.forwardBoost,
+      y: Math.max(velocity.y, 0) + board.verticalBoost,
+    };
+    for (const body of [this.chassis, this.rearWheel, this.frontWheel]) {
+      body.setLinearVelocity(launchVelocity);
+      body.setAwake(true);
+    }
+    this.chassis.setAngularVelocity(this.chassis.getAngularVelocity() * 0.35);
+    this.activeSpringboardId = board.id;
+    this.springboardActivations += 1;
+  }
+
+  private updateCheckpoint(): void {
     const position = this.chassis.getPosition();
-    const dx = position.x - next.position.x;
-    const dy = position.y - next.position.y;
-    if (dx * dx + dy * dy <= next.radius * next.radius) {
+    while (this.checkpointIndex + 1 < this.track.checkpoints.length) {
+      const nextIndex = this.checkpointIndex + 1;
+      const next = this.track.checkpoints[nextIndex];
+      const dx = position.x - next.position.x;
+      const dy = position.y - next.position.y;
+      const insideMarker = dx * dx + dy * dy <= next.radius * next.radius;
+      const passedSafely = position.x >= next.position.x && position.y >= next.position.y - 1.5;
+      if (!insideMarker && !passedSafely) break;
       this.checkpointIndex = nextIndex;
     }
   }

@@ -38,6 +38,14 @@ describe("track geometry", () => {
     expect(renderPolylines(track).find((_, index) => track.segments[index].closed)).toHaveLength(65);
   });
 
+  it("defines ramps, dangerous gaps and springboards as level data", () => {
+    const track = createDefaultTrack();
+    expect(track.segments.filter((segment) => segment.id.includes("ramp"))).toHaveLength(4);
+    expect(track.hazards).toHaveLength(4);
+    expect(track.springboards).toHaveLength(3);
+    expect(track.hazards.every((hazard) => hazard.endX > hazard.startX)).toBe(true);
+  });
+
   it("converts Planck coordinates to Phaser screen coordinates", () => {
     expect(physicsToScreen({ x: 2, y: 3 }, 10, { x: 100, y: 200 })).toEqual({ x: 120, y: 170 });
   });
@@ -64,6 +72,8 @@ describe("vehicle physics", () => {
     const flatTrack = {
       segments: [line("flat", { x: -100, y: 0 }, { x: 100, y: 0 })],
       checkpoints: [{ id: "start", position: { x: 0, y: 1.1 }, angle: 0, radius: 2 }],
+      springboards: [],
+      hazards: [],
       killY: -8,
     };
     const forward = createPhysicsWorld({ track: flatTrack });
@@ -84,6 +94,8 @@ describe("vehicle physics", () => {
     const flatTrack = {
       segments: [line("flat", { x: -500, y: 0 }, { x: 500, y: 0 })],
       checkpoints: [{ id: "start", position: { x: 0, y: 1.1 }, angle: 0, radius: 2 }],
+      springboards: [],
+      hazards: [],
       killY: -8,
     };
     const forward = createPhysicsWorld({ track: flatTrack });
@@ -103,6 +115,45 @@ describe("vehicle physics", () => {
     expect(Math.abs(reverseSnapshot.velocity.x)).toBeCloseTo(forwardSnapshot.velocity.x, 1);
   });
 
+  it("launches the complete vehicle when it lands on a springboard", () => {
+    const track = {
+      segments: [line("flat", { x: -10, y: 0 }, { x: 30, y: 0 })],
+      checkpoints: [{ id: "start", position: { x: 0, y: 1.1 }, angle: 0, radius: 2 }],
+      springboards: [{ id: "test-launcher", position: { x: 8, y: 0 }, width: 4, verticalBoost: 10, forwardBoost: 2 }],
+      hazards: [],
+      killY: -8,
+    };
+    const simulation = createPhysicsWorld({ track });
+    simulation.setInput({ throttle: 1 });
+    let snapshot = simulation.getSnapshot();
+    for (let frame = 0; frame < 300 && snapshot.springboardActivations === 0; frame += 1) {
+      snapshot = simulation.step();
+    }
+
+    expect(snapshot.springboardActivations).toBe(1);
+    expect(snapshot.velocity.y).toBeGreaterThan(8);
+    expect(snapshot.velocity.x).toBeGreaterThan(2);
+  });
+
+  it("respawns at the checkpoint after falling into a precipice", () => {
+    const track = {
+      segments: [line("ledge", { x: -5, y: 0 }, { x: 3, y: 0 }), line("far-side", { x: 18, y: 0 }, { x: 30, y: 0 })],
+      checkpoints: [{ id: "start", position: { x: 0, y: 1.1 }, angle: 0, radius: 2 }],
+      springboards: [],
+      hazards: [{ id: "test-pit", startX: 3, endX: 18, depth: 8 }],
+      killY: -5,
+    };
+    const simulation = createPhysicsWorld({ track });
+    simulation.setInput({ throttle: 1 });
+    let snapshot = simulation.getSnapshot();
+    for (let frame = 0; frame < 360 && snapshot.respawnCount === 0; frame += 1) {
+      snapshot = simulation.step();
+    }
+
+    expect(snapshot.respawnCount).toBe(1);
+    expect(snapshot.chassis.position.x).toBeCloseTo(track.checkpoints[0].position.x);
+  });
+
   it("can complete the parametrized course at full throttle", () => {
     const simulation = createPhysicsWorld();
     simulation.setInput({ throttle: 1 });
@@ -110,12 +161,13 @@ describe("vehicle physics", () => {
     let reachedFinish = false;
     for (let frame = 0; frame < 60 * 150; frame += 1) {
       snapshot = simulation.step();
-      if (snapshot.chassis.position.x > 524) {
+      if (snapshot.chassis.position.x > 586) {
         reachedFinish = true;
         break;
       }
     }
     expect(reachedFinish).toBe(true);
+    expect(snapshot.checkpointIndex).toBe(simulation.track.checkpoints.length - 1);
   });
 
   it("respawns the complete articulated vehicle at the active checkpoint", () => {

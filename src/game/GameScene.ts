@@ -33,6 +33,7 @@ export class GameScene extends Phaser.Scene {
   private stuckSeconds = 0;
   private finished = false;
   private finishX = 0;
+  private springboardActivations = 0;
 
   constructor() {
     super({ key: "GameScene", active: false });
@@ -44,6 +45,7 @@ export class GameScene extends Phaser.Scene {
     this.checkpointIndex = 0;
     this.stuckSeconds = 0;
     this.finished = false;
+    this.springboardActivations = 0;
   }
 
   preload(): void {
@@ -90,6 +92,10 @@ export class GameScene extends Phaser.Scene {
       this.lastSnapshot = this.simulation.step();
       this.accumulator -= this.simulation.fixedTimeStep;
     }
+    if (this.lastSnapshot.springboardActivations > this.springboardActivations) {
+      this.springboardActivations = this.lastSnapshot.springboardActivations;
+      if (!this.sceneData.reducedMotion) this.cameras.main.shake(130, 0.007);
+    }
 
     if (this.sceneData.input.consumeReset()) this.respawn();
     this.checkProgress();
@@ -133,6 +139,18 @@ export class GameScene extends Phaser.Scene {
       scenery.fillTriangle(x, ORIGIN.y + 28, x + 65, ORIGIN.y - 70 - (x % 3) * 15, x + 130, ORIGIN.y + 28);
     }
 
+    const hazards = this.add.graphics().setDepth(-6);
+    for (const hazard of this.simulation.track.hazards) {
+      const left = physicsToScreen({ x: hazard.startX, y: 0 }, PIXELS_PER_METRE, ORIGIN).x;
+      const right = physicsToScreen({ x: hazard.endX, y: 0 }, PIXELS_PER_METRE, ORIGIN).x;
+      const bottom = ORIGIN.y + hazard.depth * PIXELS_PER_METRE;
+      hazards.fillStyle(0x111522, 0.96).beginPath().moveTo(left, ORIGIN.y - 5);
+      hazards.lineTo(left + 28, ORIGIN.y + 70).lineTo((left + right) / 2, bottom);
+      hazards.lineTo(right - 28, ORIGIN.y + 70).lineTo(right, ORIGIN.y - 5).closePath().fillPath();
+      hazards.lineStyle(7, 0x6b301f, 0.9).lineBetween(left, ORIGIN.y, left + 24, ORIGIN.y + 65);
+      hazards.lineBetween(right, ORIGIN.y, right - 24, ORIGIN.y + 65);
+    }
+
     const track = this.add.graphics().setDepth(-2);
     for (const points of renderPolylines(this.simulation.track)) {
       const screen = points.map((point) => physicsToScreen(point, PIXELS_PER_METRE, ORIGIN));
@@ -154,6 +172,18 @@ export class GameScene extends Phaser.Scene {
         const dy = Math.sin(angle) * 15;
         track.lineStyle(4, 0x5e321d, 0.9).lineBetween(current.x - dx, current.y - dy, current.x + dx, current.y + dy);
       }
+    }
+
+    for (const board of this.simulation.track.springboards) {
+      const point = physicsToScreen(board.position, PIXELS_PER_METRE, ORIGIN);
+      const width = board.width * PIXELS_PER_METRE;
+      track.fillStyle(0x17233c, 0.7).fillRoundedRect(point.x - width / 2, point.y - 4, width, 17, 7);
+      track.lineStyle(7, 0xffcf3f, 1).lineBetween(point.x - width / 2 + 8, point.y - 7, point.x + width / 2 - 8, point.y - 7);
+      track.lineStyle(4, 0xf05252, 1);
+      for (let x = point.x - width / 2 + 18; x < point.x + width / 2 - 12; x += 25) {
+        track.beginPath().moveTo(x, point.y + 12).lineTo(x + 7, point.y + 23).lineTo(x + 14, point.y + 12).strokePath();
+      }
+      track.fillStyle(0xffffff, 0.95).fillTriangle(point.x - 8, point.y - 28, point.x + 9, point.y - 28, point.x, point.y - 45);
     }
   }
 

@@ -4,6 +4,7 @@ const simulation = createPhysicsWorld();
 simulation.setInput({ throttle: 1, turbo: true });
 
 const initial = simulation.getSnapshot();
+const finishX = Math.max(...simulation.track.segments.flatMap((segment) => segment.points.map((point) => point.x))) - 2;
 let maximumHeight = initial.chassis.position.y;
 let finite = true;
 let reachedFinish = false;
@@ -21,7 +22,7 @@ for (let frame = 0; frame < 60 * 150; frame += 1) {
     snapshot.rearWheel.position.x,
     snapshot.frontWheel.position.x,
   ].every(Number.isFinite);
-  if (snapshot.chassis.position.x > 524) {
+  if (snapshot.chassis.position.x > finishX) {
     reachedFinish = true;
     finishSeconds = (frame + 1) / 60;
     break;
@@ -51,6 +52,6 @@ console.log(
   ),
 );
 
-if (!advanced || !leftGround || !reachedFinish || finishSeconds > 55 || maximumForwardSpeed < 14 || !finite) {
+if (!advanced || !leftGround || !reachedFinish || finishSeconds > 55 || maximumForwardSpeed < 14 || final.checkpointIndex !== simulation.track.checkpoints.length - 1 || !finite) {
   process.exitCode = 1;
 }

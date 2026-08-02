@@ -1,6 +1,6 @@
 # Turbo Loop Legends
 
-Videojuego 2D de coches para navegador, pensado primero para tablet y niños de 4 a 6 años. El circuito combina suspensión física, saltos, un looping completo, un looping de madera incompleto, checkpoints y tres coches desbloqueables.
+Videojuego 2D de coches para navegador, pensado primero para tablet y niños de 4 a 6 años. El circuito combina suspensión física, rampas, precipicios, saltadores, un looping completo, un looping de madera incompleto, checkpoints y tres coches desbloqueables.
 
 ## Jugar
 
@@ -42,6 +42,7 @@ make preview
 - Arte original: carrocerías vectoriales en `public/cars/*.svg` y versiones PNG transparentes optimizadas para Phaser.
 
 El nivel vive en `src/game/track.ts` como una definición declarativa de rectas, arcos y checkpoints. Los loopings usan una guía circular arcade para evitar colisiones fantasma en la intersección de la pista y conservar una experiencia predecible en pantallas táctiles.
+Las rampas, zonas sin suelo y plataformas impulsoras también se parametrizan en esa definición. Los saltadores aplican impulso vertical y horizontal al vehículo articulado completo, mientras los checkpoints admiten cruces a gran velocidad sin guardar caídas dentro de un precipicio.
 
 La comparativa y decisión técnica están en [`docs/TECHNICAL_DECISION.md`](docs/TECHNICAL_DECISION.md).
 
