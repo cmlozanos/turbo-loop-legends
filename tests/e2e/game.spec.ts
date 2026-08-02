@@ -45,13 +45,13 @@ test("keeps touch controls inside the landscape viewport", async ({ page }) => {
   }
 });
 
-test("accelerates with the keyboard and can reset", async ({ page }) => {
+test("accelerates quickly with the keyboard and can reset", async ({ page }) => {
   await page.goto("");
   await page.getByRole("button", { name: "JUGAR" }).click();
   await page.keyboard.down("ArrowRight");
   await page.waitForTimeout(1400);
   await page.keyboard.up("ArrowRight");
-  await expect(page.locator("#speed")).not.toHaveText("0");
+  await expect.poll(async () => Number(await page.locator("#speed").textContent())).toBeGreaterThan(50);
   await page.keyboard.press("r");
   await expect(page.getByRole("status")).toContainText("Otra oportunidad");
 });

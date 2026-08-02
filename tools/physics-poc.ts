@@ -8,9 +8,11 @@ let maximumHeight = initial.chassis.position.y;
 let finite = true;
 let reachedFinish = false;
 let finishSeconds = 0;
+let maximumForwardSpeed = 0;
 
 for (let frame = 0; frame < 60 * 150; frame += 1) {
   const snapshot = simulation.step();
+  maximumForwardSpeed = Math.max(maximumForwardSpeed, snapshot.velocity.x);
   maximumHeight = Math.max(maximumHeight, snapshot.chassis.position.y);
   finite &&= [
     snapshot.chassis.position.x,
@@ -37,6 +39,7 @@ console.log(
       leftGround,
       reachedFinish,
       finishSeconds,
+      maximumForwardSpeed,
       finite,
       maximumHeight,
       checkpointIndex: final.checkpointIndex,
@@ -48,6 +51,6 @@ console.log(
   ),
 );
 
-if (!advanced || !leftGround || !reachedFinish || !finite) {
+if (!advanced || !leftGround || !reachedFinish || finishSeconds > 85 || maximumForwardSpeed < 7.5 || !finite) {
   process.exitCode = 1;
 }

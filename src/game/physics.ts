@@ -50,6 +50,9 @@ const WHEEL_OFFSETS = [
   { x: 1, y: -0.55 },
 ] as const;
 
+const MAX_WHEEL_SPEED = 20;
+const DRIVE_TORQUE = 90;
+
 export class PhysicsWorld {
   readonly world: World;
   readonly track: TrackDefinition;
@@ -127,8 +130,8 @@ export class PhysicsWorld {
       this.updateCheckpoint();
       return this.getSnapshot();
     }
-    const motorSpeed = this.input.brake ? 0 : -this.input.throttle * 12;
-    const motorTorque = this.input.brake ? 55 : 60;
+    const motorSpeed = this.input.brake ? 0 : -this.input.throttle * MAX_WHEEL_SPEED;
+    const motorTorque = DRIVE_TORQUE;
 
     this.rearJoint.enableMotor(this.input.brake || Math.abs(this.input.throttle) > 0.001);
     this.rearJoint.setMotorSpeed(motorSpeed);

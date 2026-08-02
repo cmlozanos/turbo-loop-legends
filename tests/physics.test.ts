@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { createPhysicsWorld } from "../src/game/physics";
-import { arc, createDefaultTrack, physicsToScreen, renderPolylines } from "../src/game/track";
+import { arc, createDefaultTrack, line, physicsToScreen, renderPolylines } from "../src/game/track";
 
 describe("track geometry", () => {
   it("samples closed and incomplete loops without degenerate closing edges", () => {
@@ -58,6 +58,26 @@ describe("vehicle physics", () => {
     expect(Object.values(snapshot.chassis.position).every(Number.isFinite)).toBe(true);
     expect(Number.isFinite(snapshot.rearWheel.angle)).toBe(true);
     expect(Number.isFinite(snapshot.frontWheel.angle)).toBe(true);
+  });
+
+  it("reaches a lively forward speed and a useful reverse speed", () => {
+    const flatTrack = {
+      segments: [line("flat", { x: -100, y: 0 }, { x: 100, y: 0 })],
+      checkpoints: [{ id: "start", position: { x: 0, y: 1.1 }, angle: 0, radius: 2 }],
+      killY: -8,
+    };
+    const forward = createPhysicsWorld({ track: flatTrack });
+    forward.setInput({ throttle: 1 });
+    let forwardSnapshot = forward.getSnapshot();
+    for (let frame = 0; frame < 180; frame += 1) forwardSnapshot = forward.step();
+
+    const reverse = createPhysicsWorld({ track: flatTrack });
+    reverse.setInput({ throttle: -1 });
+    let reverseSnapshot = reverse.getSnapshot();
+    for (let frame = 0; frame < 180; frame += 1) reverseSnapshot = reverse.step();
+
+    expect(forwardSnapshot.velocity.x).toBeGreaterThan(7.5);
+    expect(reverseSnapshot.velocity.x).toBeLessThan(-4.5);
   });
 
   it("can complete the parametrized course at full throttle", () => {

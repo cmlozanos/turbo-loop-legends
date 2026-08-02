@@ -80,7 +80,7 @@ export class GameScene extends Phaser.Scene {
       lean = -normalizeAngle(this.lastSnapshot.chassis.angle) * 0.7;
     }
     this.simulation.setInput({
-      throttle: throttle ? this.sceneData.car.motor : brake && Math.abs(this.lastSnapshot.velocity.x) < 0.7 ? -0.48 : 0,
+      throttle: throttle ? this.sceneData.car.motor : brake && Math.abs(this.lastSnapshot.velocity.x) < 0.7 ? -1 : 0,
       brake: brake && Math.abs(this.lastSnapshot.velocity.x) >= 0.7,
       lean
     });
