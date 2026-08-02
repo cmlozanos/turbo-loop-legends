@@ -50,9 +50,8 @@ test("accelerates quickly with the keyboard and can reset", async ({ page }) => 
   await page.goto("");
   await page.getByRole("button", { name: "JUGAR" }).click();
   await page.keyboard.down("ArrowRight");
-  await page.waitForTimeout(1400);
+  await expect.poll(async () => Number(await page.locator("#speed").textContent()), { timeout: 10_000 }).toBeGreaterThan(50);
   await page.keyboard.up("ArrowRight");
-  await expect.poll(async () => Number(await page.locator("#speed").textContent())).toBeGreaterThan(50);
   await page.keyboard.press("r");
   await expect(page.getByRole("status")).toContainText("Otra oportunidad");
 });
