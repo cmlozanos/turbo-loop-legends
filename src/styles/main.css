@@ -119,27 +119,51 @@ h1 span { color: var(--orange); }
 .car-preview {
   display: block;
   position: relative;
-  height: clamp(55px, 12vw, 112px);
+  height: clamp(70px, 13vw, 128px);
   margin-bottom: 6px;
 }
 
-.car-preview::before {
-  content: "";
-  position: absolute;
-  left: 14%; right: 14%; top: 30%; bottom: 16%;
-  border-radius: 55% 28% 22% 25%;
-  background: var(--car-color);
-  box-shadow: inset 0 8px rgba(255,255,255,.23), 0 10px 18px rgba(0,0,0,.26);
-  clip-path: polygon(4% 49%, 23% 38%, 35% 2%, 69% 2%, 88% 39%, 98% 51%, 96% 85%, 4% 85%);
-}
-
+.car-preview::before,
 .car-preview::after {
   content: "";
   position: absolute;
-  left: 19%; right: 19%; bottom: 8%; height: 32%;
+  z-index: 2;
+  bottom: 7%;
+  width: clamp(34px, 4.8vw, 52px);
+  aspect-ratio: 1;
+  border: clamp(7px, .8vw, 10px) solid #111621;
+  border-radius: 50%;
   background:
-    radial-gradient(circle at 8% 50%, #172033 0 16%, #e8f4ff 17% 23%, transparent 24%),
-    radial-gradient(circle at 92% 50%, #172033 0 16%, #e8f4ff 17% 23%, transparent 24%);
+    radial-gradient(circle, #e2e8ef 0 9%, #273140 10% 20%, transparent 21%),
+    conic-gradient(from 0deg, #637080, #1c2430 8%, #637080 16%, #1c2430 24%, #637080 32%, #1c2430 40%, #637080 48%, #1c2430 56%, #637080 64%, #1c2430 72%, #637080 80%, #1c2430 88%, #637080);
+  box-shadow: 0 7px 7px rgba(0,0,0,.38), inset 0 0 0 3px #080b11;
+}
+
+.car-preview::before { left: 16%; }
+.car-preview::after { right: 15%; }
+
+.car-lynx .car-preview::before,
+.car-lynx .car-preview::after {
+  bottom: -2%;
+  width: clamp(48px, 6.8vw, 72px);
+  border-width: clamp(10px, 1.2vw, 14px);
+  background:
+    radial-gradient(circle, #d9e0e8 0 8%, #3d4859 9% 21%, transparent 22%),
+    conic-gradient(from 8deg, #394252, #111621 7%, #394252 14%, #111621 21%, #394252 28%, #111621 35%, #394252 42%, #111621 49%, #394252 56%, #111621 63%, #394252 70%, #111621 77%, #394252 84%, #111621 91%, #394252);
+}
+
+.car-lynx .car-preview::before { left: 11%; }
+.car-lynx .car-preview::after { right: 10%; }
+
+.car-preview img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  object-fit: contain;
+  filter: drop-shadow(0 12px 8px rgba(0,0,0,.36));
+  user-select: none;
 }
 
 .car-card strong { display: block; font: 800 clamp(1rem, 2.5vw, 1.45rem) ui-rounded, "Arial Rounded MT Bold", sans-serif; }

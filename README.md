@@ -39,6 +39,7 @@ make preview
 - Vite + TypeScript: aplicación web estática.
 - PWA: caché offline e instalación en pantalla de inicio.
 - Vitest + Playwright: geometría, física, persistencia y pruebas responsive.
+- Arte original: carrocerías vectoriales en `public/cars/*.svg` y versiones PNG transparentes optimizadas para Phaser.
 
 El nivel vive en `src/game/track.ts` como una definición declarativa de rectas, arcos y checkpoints. Los loopings usan una guía circular arcade para evitar colisiones fantasma en la intersección de la pista y conservar una experiencia predecible en pantallas táctiles.
 

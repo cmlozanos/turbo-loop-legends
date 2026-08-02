@@ -6,6 +6,9 @@ export interface CarSpec {
   tagline: string;
   color: number;
   accent: number;
+  asset: string;
+  gameAsset: string;
+  bodyScale: number;
   motor: number;
   grip: number;
   airControl: number;
@@ -19,6 +22,9 @@ export const CARS: CarSpec[] = [
     tagline: "Rápido y equilibrado",
     color: 0xe54737,
     accent: 0xffd166,
+    asset: "cars/comet-body.svg",
+    gameAsset: "cars/comet-body.png",
+    bodyScale: 0.27,
     motor: 1,
     grip: 1,
     airControl: 1,
@@ -30,6 +36,9 @@ export const CARS: CarSpec[] = [
     tagline: "Domina los saltos",
     color: 0x25a8e0,
     accent: 0xa8ecff,
+    asset: "cars/lynx-body.svg",
+    gameAsset: "cars/lynx-body.png",
+    bodyScale: 0.29,
     motor: 1.02,
     grip: 0.96,
     airControl: 1.12,
@@ -41,6 +50,9 @@ export const CARS: CarSpec[] = [
     tagline: "Agarre imparable",
     color: 0x7f5af0,
     accent: 0xf3c4ff,
+    asset: "cars/titan-body.svg",
+    gameAsset: "cars/titan-body.png",
+    bodyScale: 0.27,
     motor: 0.94,
     grip: 1.12,
     airControl: 0.92,

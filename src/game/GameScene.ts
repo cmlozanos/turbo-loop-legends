@@ -23,7 +23,7 @@ export interface GameSceneData {
 export class GameScene extends Phaser.Scene {
   private sceneData!: GameSceneData;
   private simulation!: PhysicsWorld;
-  private chassis!: Phaser.GameObjects.Graphics;
+  private chassis!: Phaser.GameObjects.Image;
   private rearWheel!: Phaser.GameObjects.Graphics;
   private frontWheel!: Phaser.GameObjects.Graphics;
   private dust!: Phaser.GameObjects.Particles.ParticleEmitter;
@@ -44,6 +44,10 @@ export class GameScene extends Phaser.Scene {
     this.checkpointIndex = 0;
     this.stuckSeconds = 0;
     this.finished = false;
+  }
+
+  preload(): void {
+    this.load.image(`car-${this.sceneData.car.id}`, `${import.meta.env.BASE_URL}${this.sceneData.car.gameAsset}`);
   }
 
   create(): void {
@@ -176,20 +180,9 @@ export class GameScene extends Phaser.Scene {
   }
 
   private createVehicle(): void {
-    this.chassis = this.add.graphics().setDepth(5);
-    this.drawChassis(this.chassis);
+    this.chassis = this.add.image(0, 0, `car-${this.sceneData.car.id}`).setDepth(5).setScale(this.sceneData.car.bodyScale);
     this.rearWheel = this.makeWheel();
     this.frontWheel = this.makeWheel();
-  }
-
-  private drawChassis(graphics: Phaser.GameObjects.Graphics): void {
-    const color = this.sceneData.car.color;
-    graphics.fillStyle(0x0b1524, 0.35).fillRoundedRect(-68, -10, 136, 45, 15);
-    graphics.fillStyle(color, 1);
-    graphics.beginPath().moveTo(-68, 12).lineTo(-58, -13).lineTo(-25, -22).lineTo(-8, -48).lineTo(34, -48).lineTo(58, -18).lineTo(70, -8).lineTo(66, 18).lineTo(-66, 18).closePath().fillPath();
-    graphics.fillStyle(0x9eeaff, 0.92).beginPath().moveTo(-3, -43).lineTo(29, -43).lineTo(48, -18).lineTo(-15, -18).closePath().fillPath();
-    graphics.fillStyle(this.sceneData.car.accent, 1).fillRoundedRect(-58, -8, 22, 8, 4).fillRoundedRect(42, -9, 20, 8, 4);
-    graphics.lineStyle(4, 0xffffff, 0.45).lineBetween(-54, -13, 48, -13);
   }
 
   private makeWheel(): Phaser.GameObjects.Graphics {

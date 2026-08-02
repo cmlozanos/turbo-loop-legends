@@ -15,6 +15,20 @@ test("opens the garage and starts a race", async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
+test("shows three distinct spectacular car designs", async ({ page }) => {
+  await page.goto("");
+  const images = page.locator(".car-preview img");
+  await expect(images).toHaveCount(3);
+  const sources = await images.evaluateAll((elements) => elements.map((element) => (element as HTMLImageElement).src));
+  expect(new Set(sources).size).toBe(3);
+  expect(sources).toEqual(expect.arrayContaining([
+    expect.stringMatching(/cars\/comet-body\.svg/),
+    expect.stringMatching(/cars\/lynx-body\.svg/),
+    expect.stringMatching(/cars\/titan-body\.svg/)
+  ]));
+  expect(await images.evaluateAll((elements) => elements.every((element) => (element as HTMLImageElement).naturalWidth > 0))).toBe(true);
+});
+
 test("keeps touch controls inside the landscape viewport", async ({ page }) => {
   await page.goto("");
   await page.getByRole("button", { name: "JUGAR" }).click();

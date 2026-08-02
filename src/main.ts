@@ -182,12 +182,12 @@ function renderCars(): void {
   carGrid.replaceChildren(...CARS.map((car) => {
     const unlocked = save.unlockedCars.includes(car.id);
     const button = document.createElement("button");
-    button.className = `car-card${unlocked ? "" : " is-locked"}`;
+    button.className = `car-card car-${car.id}${unlocked ? "" : " is-locked"}`;
     button.style.setProperty("--car-color", `#${car.color.toString(16).padStart(6, "0")}`);
     button.setAttribute("aria-pressed", String(selectedCar === car.id));
     button.setAttribute("aria-label", unlocked ? `${car.name}: ${car.tagline}` : `${car.name} bloqueado: ${car.unlock}`);
     button.disabled = !unlocked;
-    button.innerHTML = `<span class="car-preview"></span><strong>${car.name}</strong><small>${unlocked ? car.tagline : car.unlock}</small>${unlocked ? "" : '<span class="lock-badge">🔒</span>'}`;
+    button.innerHTML = `<span class="car-preview"><img src="${import.meta.env.BASE_URL}${car.asset}" alt="" draggable="false"></span><strong>${car.name}</strong><small>${unlocked ? car.tagline : car.unlock}</small>${unlocked ? "" : '<span class="lock-badge">🔒</span>'}`;
     button.addEventListener("click", () => {
       selectedCar = car.id;
       save.selectedCar = car.id;
