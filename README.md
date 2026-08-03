@@ -40,10 +40,10 @@ make preview
 - Vite + TypeScript: aplicación web estática.
 - PWA: caché offline e instalación en pantalla de inicio.
 - Vitest + Playwright: geometría, física, persistencia y pruebas responsive.
-- Arte original: carrocerías vectoriales en `public/cars/*.svg` y versiones PNG transparentes optimizadas para Phaser.
+- Arte original: ilustraciones SVG autónomas para el garaje, carrocerías vectoriales y versiones PNG transparentes optimizadas para Phaser. Las ruedas, suspensiones y el fuego del turbo se sincronizan con la física durante la carrera.
 
 Las cinco pistas viven en `src/game/track.ts` como definiciones declarativas de rectas, arcos, checkpoints, aspecto y comportamiento físico. Los loopings usan una guía circular arcade para evitar colisiones fantasma en la intersección de la pista y conservar una experiencia predecible en pantallas táctiles.
-Las rampas, zonas sin suelo y plataformas impulsoras también se parametrizan en esa definición. Los saltadores aplican impulso vertical y horizontal al vehículo articulado completo, mientras los checkpoints admiten cruces a gran velocidad sin guardar caídas dentro de un precipicio.
+Las rampas, zonas sin suelo y plataformas impulsoras también se parametrizan en esa definición. La altura de cada saltador se deriva de la superficie real de su pista y aplica impulso vertical y horizontal al vehículo articulado completo, mientras los checkpoints admiten cruces a gran velocidad sin guardar caídas dentro de un precipicio.
 
 La comparativa y decisión técnica están en [`docs/TECHNICAL_DECISION.md`](docs/TECHNICAL_DECISION.md).
 

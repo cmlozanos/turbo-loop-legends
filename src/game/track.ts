@@ -171,9 +171,7 @@ function buildTrack(profile: TrackProfile): TrackDefinition {
   const fullLoop = arc({ id: "full-loop", center: { x: 180, y: 7 }, radius: 4, startAngle: -Math.PI / 2, endAngle: (3 * Math.PI) / 2, samples: 64, closed: true });
   const incompleteLoop = arc({ id: "incomplete-loop", center: { x: 380, y: 7 }, radius: 4, startAngle: -Math.PI / 2, endAngle: (5 * Math.PI) / 4, samples: 44 });
 
-  return {
-    ...profile,
-    segments: [
+  const segments: TrackSegment[] = [
       line("reverse-runway", { x: -140, y: 0 }, { x: 76, y: 0 }),
       line("first-ramp", { x: 76, y: 0 }, { x: 84, y: 0 }, { x: 96, y: ramp1 }),
       line("first-landing", { x: landing1, y: 1.2 }, { x: landing1 + 13, y: 0 }, { x: 158, y: 0 }, { x: 168, y: 1.8 }, { x: 176, y: 3 }, { x: 180, y: 3 }),
@@ -187,7 +185,10 @@ function buildTrack(profile: TrackProfile): TrackDefinition {
       line("canyon-landing", { x: landing3, y: 0.8 }, { x: landing3 + 14, y: 0 }, { x: 510, y: 0 }),
       line("final-ramp", { x: 510, y: 0 }, { x: 520, y: 0 }, { x: 532, y: ramp4 }),
       line("finish-road", { x: landing4, y: 0.6 }, { x: landing4 + 13, y: 0 }, { x: 588, y: 0 }),
-    ],
+  ];
+  return {
+    ...profile,
+    segments,
     checkpoints: [
       { id: "start", position: { x: -12, y: 1.1 }, angle: 0, radius: 2 },
       { id: "first-landing", position: { x: landing1 + 5, y: 2.2 }, angle: -0.08, radius: 5 },
@@ -198,7 +199,10 @@ function buildTrack(profile: TrackProfile): TrackDefinition {
       { id: "canyon-landing", position: { x: landing3 + 6, y: 2 }, angle: -0.08, radius: 6 },
       { id: "final-landing", position: { x: landing4 + 6, y: 1.8 }, angle: -0.05, radius: 6 },
     ],
-    springboards: profile.springboards,
+    springboards: profile.springboards.map((board) => ({
+      ...board,
+      position: { ...board.position, y: trackSurfaceYAt(segments, board.position.x) },
+    })),
     hazards: [
       { id: "first-gorge", startX: 96, endX: landing1, depth: 8 },
       { id: "middle-gorge", startX: 264, endX: landing2, depth: 10 },
@@ -207,6 +211,24 @@ function buildTrack(profile: TrackProfile): TrackDefinition {
     ],
     killY: -12,
   };
+}
+
+export function trackSurfaceYAt(segments: readonly TrackSegment[], x: number): number {
+  const candidates: number[] = [];
+  for (const segment of segments) {
+    if (segment.kind !== "line") continue;
+    for (let index = 0; index < segment.points.length - 1; index += 1) {
+      const start = segment.points[index];
+      const end = segment.points[index + 1];
+      const minimum = Math.min(start.x, end.x);
+      const maximum = Math.max(start.x, end.x);
+      if (x < minimum || x > maximum) continue;
+      const width = end.x - start.x;
+      const progress = Math.abs(width) < 0.0001 ? 0 : (x - start.x) / width;
+      candidates.push(start.y + (end.y - start.y) * progress);
+    }
+  }
+  return candidates.length > 0 ? Math.max(...candidates) : 0;
 }
 
 export const TRACKS: readonly TrackDefinition[] = PROFILES.map(buildTrack);

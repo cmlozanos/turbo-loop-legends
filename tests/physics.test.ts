@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { createPhysicsWorld } from "../src/game/physics";
-import { arc, createDefaultTrack, line, physicsToScreen, renderPolylines, TRACKS } from "../src/game/track";
+import { arc, createDefaultTrack, line, physicsToScreen, renderPolylines, trackSurfaceYAt, TRACKS } from "../src/game/track";
 
 describe("track geometry", () => {
   it("samples closed and incomplete loops without degenerate closing edges", () => {
@@ -44,6 +44,17 @@ describe("track geometry", () => {
     expect(track.hazards).toHaveLength(4);
     expect(track.springboards).toHaveLength(3);
     expect(track.hazards.every((hazard) => hazard.endX > hazard.startX)).toBe(true);
+  });
+
+  it("places every springboard exactly on its track surface", () => {
+    const heights: number[] = [];
+    for (const track of TRACKS) {
+      for (const board of track.springboards) {
+        heights.push(board.position.y);
+        expect(board.position.y).toBeCloseTo(trackSurfaceYAt(track.segments, board.position.x), 5);
+      }
+    }
+    expect(heights.some((height) => height > 0)).toBe(true);
   });
 
   it("converts Planck coordinates to Phaser screen coordinates", () => {

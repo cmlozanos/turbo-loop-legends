@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 180">
+  <defs>
+    <linearGradient id="truck" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ff6540"/><stop offset=".48" stop-color="#df251e"/><stop offset="1" stop-color="#8e151b"/></linearGradient>
+    <linearGradient id="window" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#91d8ef"/><stop offset="1" stop-color="#172039"/></linearGradient>
+    <linearGradient id="flame" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#fff08a"/><stop offset="1" stop-color="#ff9d18"/></linearGradient>
+    <radialGradient id="truckTire"><stop offset=".44" stop-color="#374151"/><stop offset=".48" stop-color="#090b11"/><stop offset=".78" stop-color="#1b1d28"/><stop offset="1" stop-color="#080a10"/></radialGradient>
+    <radialGradient id="truckRim"><stop stop-color="#edf3f8"/><stop offset=".22" stop-color="#6c7787"/><stop offset=".3" stop-color="#202938"/><stop offset="1" stop-color="#0b0f17"/></radialGradient>
+    <filter id="shadow"><feGaussianBlur stdDeviation="6"/></filter>
+  </defs>
+  <ellipse cx="180" cy="155" rx="152" ry="11" fill="#06101b" opacity=".4" filter="url(#shadow)"/>
+  <g transform="translate(30 2)">
+    <path d="M12 51h79l25-28h72l35 30 60 10 7 39-25 9c-7-24-21-36-43-36-21 0-37 13-44 39H103c-7-26-23-39-45-39-22 0-37 12-44 35L5 98z" fill="url(#truck)" stroke="#64121a" stroke-width="4" stroke-linejoin="round"/>
+    <path d="m122 29-18 25h92l-27-25z" fill="url(#window)" stroke="#67151d" stroke-width="4"/><path d="M157 29v25" stroke="#11182a" stroke-width="5"/><rect x="89" y="19" width="31" height="37" rx="5" fill="#c51c20" stroke="#65131b" stroke-width="4"/><rect x="96" y="27" width="17" height="5" rx="2" fill="#ffd84d"/>
+    <path d="M14 57h76M222 60l56 10" stroke="#ff8b69" stroke-width="4" opacity=".8"/><path d="M31 63c26-18 48-5 66 6 18 10 38 3 42-10-2 24 21 20 29 3-1 29 23 27 37 9-7 29 22 27 34 18-14 15-30 19-48 14-30-9-47-7-67 2-32 14-62 7-93-42z" fill="url(#flame)" stroke="#d65315" stroke-width="3"/>
+    <path d="M89 71h105" stroke="#57131b" stroke-width="4"/><path d="M77 104 114 88M114 88l34 25M188 89l34 20M188 89l-30 25" stroke="#e2e9f0" stroke-width="7" stroke-linecap="round"/><path d="M83 98 107 78M194 79l24 22" stroke="#1a2634" stroke-width="5"/><g stroke="#ff4350" stroke-width="4"><path d="m99 82 5 23"/><path d="m204 84-5 23"/></g>
+    <rect x="126" y="104" width="50" height="17" rx="6" fill="#263343" stroke="#111923" stroke-width="4"/><path d="M11 80H2v19h15M278 78h16v20h-11" fill="#252f3b" stroke="#111823" stroke-width="3"/><path d="M231 69h40" stroke="#ffe978" stroke-width="7" stroke-linecap="round"/>
+  </g>
+  <g stroke="#dce8f2" stroke-width="6" stroke-linecap="round"><path d="m88 91 32 27m-1-28-31 28m164-27-31 27m0-28 31 28"/></g>
+  <g fill="url(#truckTire)" stroke="#05070c" stroke-width="7">
+    <circle cx="88" cy="119" r="43"/><circle cx="252" cy="119" r="43"/>
+  </g>
+  <g fill="none" stroke="#303541" stroke-width="5" stroke-dasharray="8 5"><circle cx="88" cy="119" r="37"/><circle cx="252" cy="119" r="37"/></g>
+  <g fill="url(#truckRim)" stroke="#8290a2" stroke-width="3"><circle cx="88" cy="119" r="20"/><circle cx="252" cy="119" r="20"/></g>
+  <g fill="#d9e2ea" stroke="#121823" stroke-width="4"><circle cx="88" cy="119" r="6"/><circle cx="252" cy="119" r="6"/></g>
+</svg>

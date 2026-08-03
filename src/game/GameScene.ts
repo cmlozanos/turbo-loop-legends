@@ -232,9 +232,17 @@ export class GameScene extends Phaser.Scene {
 
   private makeWheel(): Phaser.GameObjects.Graphics {
     const wheel = this.add.graphics().setDepth(6);
-    wheel.fillStyle(0x101723).fillCircle(0, 0, 21);
-    wheel.lineStyle(5, 0xeff6fb).strokeCircle(0, 0, 14);
-    wheel.lineStyle(3, this.sceneData.car.accent).lineBetween(-12, 0, 12, 0).lineBetween(0, -12, 0, 12);
+    const radius = this.sceneData.car.id === "lynx" ? 24 : 21;
+    wheel.fillStyle(0x060910).fillCircle(0, 0, radius);
+    wheel.lineStyle(4, 0x273243).strokeCircle(0, 0, radius - 3);
+    wheel.fillStyle(0x253247).fillCircle(0, 0, radius - 9);
+    wheel.lineStyle(3, this.sceneData.car.accent, 0.9).strokeCircle(0, 0, radius - 11);
+    wheel.lineStyle(3, 0xdcecff, 0.8);
+    const spoke = radius - 12;
+    wheel.lineBetween(-spoke, 0, spoke, 0).lineBetween(0, -spoke, 0, spoke);
+    wheel.lineBetween(-spoke * 0.7, -spoke * 0.7, spoke * 0.7, spoke * 0.7);
+    wheel.lineBetween(spoke * 0.7, -spoke * 0.7, -spoke * 0.7, spoke * 0.7);
+    wheel.fillStyle(0xe8f3fb).fillCircle(0, 0, 4);
     return wheel;
   }
 
@@ -255,24 +263,46 @@ export class GameScene extends Phaser.Scene {
     const chassisPoint = physicsToScreen(snapshot.chassis.position, PIXELS_PER_METRE, ORIGIN);
     const rearPoint = physicsToScreen(snapshot.rearWheel.position, PIXELS_PER_METRE, ORIGIN);
     const frontPoint = physicsToScreen(snapshot.frontWheel.position, PIXELS_PER_METRE, ORIGIN);
+    const rearMount = physicsToScreen(this.localToWorld(snapshot.chassis.position, snapshot.chassis.angle, { x: -0.72, y: -0.12 }), PIXELS_PER_METRE, ORIGIN);
+    const frontMount = physicsToScreen(this.localToWorld(snapshot.chassis.position, snapshot.chassis.angle, { x: 0.72, y: -0.12 }), PIXELS_PER_METRE, ORIGIN);
     const speed = Math.abs(snapshot.velocity.x);
     const height = Math.max(0, snapshot.chassis.position.y - 1.1);
     this.vehicleShadow.clear().fillStyle(0x07101c, Math.max(0.08, 0.3 - height * 0.018));
     this.vehicleShadow.fillEllipse(chassisPoint.x, chassisPoint.y + 42 + Math.min(height * 8, 80), Math.max(34, 115 - height * 5), 18);
-    this.suspension.clear().lineStyle(7, 0x152033, 0.92).lineBetween(chassisPoint.x - 34, chassisPoint.y + 8, rearPoint.x, rearPoint.y);
-    this.suspension.lineBetween(chassisPoint.x + 34, chassisPoint.y + 8, frontPoint.x, frontPoint.y);
-    this.suspension.lineStyle(3, this.sceneData.car.accent, 1).lineBetween(chassisPoint.x - 27, chassisPoint.y + 4, rearPoint.x, rearPoint.y);
-    this.suspension.lineBetween(chassisPoint.x + 27, chassisPoint.y + 4, frontPoint.x, frontPoint.y);
+    this.suspension.clear().lineStyle(7, 0x152033, 0.92).lineBetween(rearMount.x, rearMount.y, rearPoint.x, rearPoint.y);
+    this.suspension.lineBetween(frontMount.x, frontMount.y, frontPoint.x, frontPoint.y);
+    this.suspension.lineStyle(3, this.sceneData.car.accent, 1).lineBetween(rearMount.x, rearMount.y, rearPoint.x, rearPoint.y);
+    this.suspension.lineBetween(frontMount.x, frontMount.y, frontPoint.x, frontPoint.y);
     this.turboFlame.clear();
     if (this.sceneData.input.state.turbo && speed > 1) {
-      const direction = snapshot.velocity.x < 0 ? 1 : -1;
-      const flameX = chassisPoint.x + direction * 66;
-      this.turboFlame.fillStyle(0xff3bd4, 0.9).fillTriangle(flameX, chassisPoint.y - 7, flameX, chassisPoint.y + 10, flameX + direction * (32 + speed), chassisPoint.y + 2);
-      this.turboFlame.fillStyle(0x76f7ff, 1).fillTriangle(flameX, chassisPoint.y - 3, flameX, chassisPoint.y + 6, flameX + direction * (18 + speed * 0.5), chassisPoint.y + 2);
+      const anchorWorld = this.localToWorld(snapshot.chassis.position, snapshot.chassis.angle, this.sceneData.car.exhaustOffset);
+      const anchor = physicsToScreen(anchorWorld, PIXELS_PER_METRE, ORIGIN);
+      const backward = { x: -Math.cos(snapshot.chassis.angle), y: Math.sin(snapshot.chassis.angle) };
+      const normal = { x: -backward.y, y: backward.x };
+      const length = 30 + Math.min(speed * 2.2, 32);
+      this.drawFlame(anchor, backward, normal, length, 0xff3bd4, 10);
+      this.drawFlame(anchor, backward, normal, length * 0.62, 0x76f7ff, 5);
     }
     this.placeObject(this.chassis, snapshot.chassis.position, snapshot.chassis.angle);
     this.placeObject(this.rearWheel, snapshot.rearWheel.position, snapshot.rearWheel.angle);
     this.placeObject(this.frontWheel, snapshot.frontWheel.position, snapshot.frontWheel.angle);
+  }
+
+  private drawFlame(anchor: Point, backward: Point, normal: Point, length: number, color: number, width: number): void {
+    this.turboFlame.fillStyle(color, 0.95).beginPath();
+    this.turboFlame.moveTo(anchor.x + normal.x * width, anchor.y + normal.y * width);
+    this.turboFlame.lineTo(anchor.x + backward.x * length, anchor.y + backward.y * length);
+    this.turboFlame.lineTo(anchor.x - normal.x * width, anchor.y - normal.y * width);
+    this.turboFlame.closePath().fillPath();
+  }
+
+  private localToWorld(origin: Point, angle: number, offset: Point): Point {
+    const cosine = Math.cos(angle);
+    const sine = Math.sin(angle);
+    return {
+      x: origin.x + offset.x * cosine - offset.y * sine,
+      y: origin.y + offset.x * sine + offset.y * cosine,
+    };
   }
 
   private placeObject(object: Phaser.GameObjects.Components.Transform, position: Point, angle: number): void {
