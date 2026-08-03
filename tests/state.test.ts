@@ -5,7 +5,17 @@ describe("save data", () => {
   it("uses defaults when there is no saved game", () => {
     const result = loadSave({ getItem: () => null });
     expect(result).toEqual(DEFAULT_SAVE);
+    expect(result.settings.music).toBe(false);
+    expect(result.settings.sound).toBe(false);
     expect(result).not.toBe(DEFAULT_SAVE);
+  });
+
+  it("preserves an existing audio preference", () => {
+    const result = loadSave({
+      getItem: () => JSON.stringify({ ...DEFAULT_SAVE, settings: { ...DEFAULT_SAVE.settings, music: true, sound: true } }),
+    });
+    expect(result.settings.music).toBe(true);
+    expect(result.settings.sound).toBe(true);
   });
 
   it("recovers from invalid data", () => {

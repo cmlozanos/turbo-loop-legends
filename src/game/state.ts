@@ -27,8 +27,8 @@ export const DEFAULT_SAVE: SaveData = {
   finished: false,
   settings: {
     assists: true,
-    music: true,
-    sound: true,
+    music: false,
+    sound: false,
     reducedMotion: false
   }
 };

@@ -13,6 +13,7 @@ Videojuego 2D de coches para navegador, pensado primero para tablet y niños de 
 - Los loopings conservan el impulso real del coche: acelerador, gravedad y rozamiento modifican su velocidad, puede desprenderse si pierde contacto y puede volver a recorrerlos marcha atrás.
 
 El juego guarda ajustes, coche, pista elegida y desbloqueos únicamente en el dispositivo. Después de la primera carga puede funcionar sin conexión.
+En una instalación nueva, música y efectos de sonido comienzan desactivados y pueden habilitarse desde el garaje.
 
 Cada despliegue incorpora su versión en los nombres de JavaScript, CSS, manifiesto e imágenes públicas. La PWA activa el nuevo service worker y recarga una pestaña existente una sola vez para evitar que mezcle archivos de versiones distintas.
 
