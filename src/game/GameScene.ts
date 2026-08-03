@@ -3,7 +3,7 @@ import type { GameAudio } from "./audio";
 import type { CarSpec } from "./cars";
 import type { InputController } from "./input";
 import { createPhysicsWorld, type PhysicsWorld, type VehicleSnapshot } from "./physics";
-import { physicsToScreen, renderPolylines, type Point, type TrackDefinition } from "./track";
+import { physicsToScreen, renderPolylines, trackSurfaceYAt, type Point, type TrackDefinition } from "./track";
 
 const PIXELS_PER_METRE = 45;
 const ORIGIN: Point = { x: 850, y: 590 };
@@ -166,6 +166,22 @@ export class GameScene extends Phaser.Scene {
       hazards.lineTo(right - 28, ORIGIN.y + 70).lineTo(right, ORIGIN.y - 5).closePath().fillPath();
       hazards.lineStyle(7, 0x6b301f, 0.9).lineBetween(left, ORIGIN.y, left + 24, ORIGIN.y + 65);
       hazards.lineBetween(right, ORIGIN.y, right - 24, ORIGIN.y + 65);
+      if (hazard.requiresTurbo) {
+        hazards.lineStyle(6, 0xffd33d, 1).lineBetween(left - 32, ORIGIN.y - 8, left, ORIGIN.y - 8);
+        hazards.lineBetween(left, ORIGIN.y - 22, left, ORIGIN.y + 8);
+        const signPosition = physicsToScreen({
+          x: hazard.startX - 4,
+          y: trackSurfaceYAt(this.simulation.track.segments, hazard.startX - 4) + 2.2,
+        }, PIXELS_PER_METRE, ORIGIN);
+        this.add.text(signPosition.x, signPosition.y, "⚡ TURBO", {
+          color: "#251300",
+          backgroundColor: "#ffd33d",
+          fontFamily: "Arial Rounded MT Bold, sans-serif",
+          fontSize: "18px",
+          fontStyle: "bold",
+          padding: { x: 10, y: 6 },
+        }).setOrigin(0.5).setDepth(1);
+      }
     }
 
     const track = this.add.graphics().setDepth(-2);

@@ -9,6 +9,7 @@ Videojuego 2D de coches para navegador, pensado primero para tablet y niños de 
 - Las ayudas opcionales corrigen suavemente el coche y lo recuperan si queda volcado o cae.
 - El botón `⌂` vuelve al garaje durante una carrera para cambiar de coche o circuito.
 - Al cruzar la meta puedes iniciar inmediatamente el siguiente circuito. Las rocas y pilas de neumáticos se saltan; las cajas y barreras se rompen con suficiente velocidad.
+- Cada circuito incluye un megasalto amarillo marcado `⚡ TURBO`: su precipicio está calculado para que la velocidad normal no alcance el otro lado.
 
 El juego guarda ajustes, coche, pista elegida y desbloqueos únicamente en el dispositivo. Después de la primera carga puede funcionar sin conexión.
 

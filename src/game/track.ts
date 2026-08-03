@@ -32,6 +32,7 @@ export interface HazardGap {
   startX: number;
   endX: number;
   depth: number;
+  requiresTurbo?: boolean;
 }
 
 export type ObstacleStyle = "rock" | "tires" | "crates" | "roadblock";
@@ -150,10 +151,10 @@ export function arc(options: ArcOptions): TrackSegment {
 const PROFILES: readonly TrackProfile[] = [
   {
     id: "forest", name: "Bosque Turbo", tagline: "Rápida, amable y llena de saltos", difficulty: 1,
-    capabilities: ["Loopings pequeños", "2 saltadores", "Precipicios cortos"],
+    capabilities: ["Megasalto turbo", "Loopings pequeños", "2 saltadores"],
     theme: { skyTop: 0x79ccec, skyBottom: 0xeaf8f2, ground: 0x4f8e52, scenery: 0x376b42, road: 0x9b5a2f, roadEdge: 0xe6ad62, abyss: 0x15202b, accent: 0x5ce1a5 },
     physics: { gravity: -9.5, grip: 1.5, suspensionFrequency: 4.3, suspensionDamping: 0.9 },
-    gapWidths: [8, 7, 7, 7], rampHeights: [3.2, 3, 3.2, 2.8],
+    gapWidths: [16, 7, 7, 7], rampHeights: [3.2, 3, 3.2, 2.8],
     rampStyles: ["smooth", "wave", "smooth", "kicker"],
     loopDesign: { fullCenterX: 168, fullRadius: 3.25, brokenCenterX: 368, brokenRadius: 3.4, brokenEndAngle: Math.PI * 1.38, brokenGap: 2.4 },
     springboards: [
@@ -168,10 +169,10 @@ const PROFILES: readonly TrackProfile[] = [
   },
   {
     id: "canyon", name: "Cañón Salvaje", tagline: "Gargantas profundas y grandes vuelos", difficulty: 2,
-    capabilities: ["Saltos de cañón", "3 saltadores", "Looping roto"],
+    capabilities: ["Megasalto turbo", "Saltos de cañón", "Looping roto"],
     theme: { skyTop: 0x55b8df, skyBottom: 0xffddb0, ground: 0xa85b32, scenery: 0x743e35, road: 0x8b4b28, roadEdge: 0xffc260, abyss: 0x1b1015, accent: 0xffb12b },
     physics: { gravity: -10, grip: 1.45, suspensionFrequency: 4.4, suspensionDamping: 0.88 },
-    gapWidths: [11.5, 6, 10, 9.5], rampHeights: [4.2, 3.6, 4, 3.4],
+    gapWidths: [18, 6, 10, 9.5], rampHeights: [4.2, 3.6, 4, 3.4],
     rampStyles: ["smooth", "kicker", "wave", "smooth"],
     loopDesign: { fullCenterX: 180, fullRadius: 4, brokenCenterX: 380, brokenRadius: 4, brokenEndAngle: Math.PI * 1.25, brokenGap: 3 },
     springboards: [
@@ -188,11 +189,11 @@ const PROFILES: readonly TrackProfile[] = [
   },
   {
     id: "neon", name: "Ciudad Neón", tagline: "Velocidad, rebotes y luces eléctricas", difficulty: 3,
-    capabilities: ["Looping gigante", "Rampas escalonadas", "Agarre máximo"],
+    capabilities: ["Megasalto turbo", "Looping gigante", "Rampas escalonadas"],
     theme: { skyTop: 0x171448, skyBottom: 0x593783, ground: 0x18172d, scenery: 0x29265d, road: 0x26354e, roadEdge: 0x26f7ff, abyss: 0x06040f, accent: 0xff3bda },
     physics: { gravity: -10.5, grip: 1.7, suspensionFrequency: 4.8, suspensionDamping: 0.92 },
-    gapWidths: [8, 6, 8, 7], rampHeights: [4, 3.4, 4, 3.5],
-    rampStyles: ["stepped", "kicker", "stepped", "wave"],
+    gapWidths: [18, 6, 8, 7], rampHeights: [4, 3.4, 4, 3.5],
+    rampStyles: ["smooth", "kicker", "stepped", "wave"],
     loopDesign: { fullCenterX: 192, fullRadius: 5.1, brokenCenterX: 366, brokenRadius: 3.15, brokenEndAngle: Math.PI * 1.08, brokenGap: 6.5 },
     springboards: [218, 300, 408, 500].map((x, index) => ({ id: `neon-${index}`, position: { x, y: 0 }, width: 3, verticalBoost: 14 + index, forwardBoost: 5 })),
     obstacles: [
@@ -203,10 +204,10 @@ const PROFILES: readonly TrackProfile[] = [
   },
   {
     id: "volcano", name: "Volcán Furia", tagline: "La pista más agresiva de la Tierra", difficulty: 4,
-    capabilities: ["Looping roto enorme", "Rampas extremas", "5 saltadores"],
+    capabilities: ["Megasalto turbo", "Looping roto enorme", "Rampas extremas"],
     theme: { skyTop: 0x571c23, skyBottom: 0xf56c3b, ground: 0x3b2424, scenery: 0x271617, road: 0x4b3330, roadEdge: 0xff8a33, abyss: 0x190505, accent: 0xff4b22 },
     physics: { gravity: -11.5, grip: 1.55, suspensionFrequency: 5.2, suspensionDamping: 0.94 },
-    gapWidths: [10, 9, 10, 10], rampHeights: [5, 4.8, 5.2, 4.6],
+    gapWidths: [19, 9, 10, 10], rampHeights: [5, 4.8, 5.2, 4.6],
     rampStyles: ["kicker", "wave", "kicker", "stepped"],
     loopDesign: { fullCenterX: 174, fullRadius: 4.6, brokenCenterX: 394, brokenRadius: 5.25, brokenEndAngle: Math.PI * 1.46, brokenGap: 2.2 },
     springboards: [205, 244, 320, 418, 492].map((x, index) => ({ id: `volcano-${index}`, position: { x, y: 0 }, width: 3.2, verticalBoost: 16 + index * 0.4, forwardBoost: 5.5 })),
@@ -219,10 +220,10 @@ const PROFILES: readonly TrackProfile[] = [
   },
   {
     id: "moon", name: "Base Lunar", tagline: "Gravedad baja y saltos gigantes", difficulty: 5,
-    capabilities: ["Looping lunar XL", "Vuelos largos", "6 saltadores"],
+    capabilities: ["Megasalto turbo XL", "Looping lunar XL", "Vuelos largos"],
     theme: { skyTop: 0x070b22, skyBottom: 0x283460, ground: 0x777b91, scenery: 0x494e6b, road: 0x515772, roadEdge: 0xc8e6ff, abyss: 0x02030a, accent: 0x95f5ff },
     physics: { gravity: -6.2, grip: 1.25, suspensionFrequency: 3.5, suspensionDamping: 0.82 },
-    gapWidths: [13, 11, 13, 12], rampHeights: [4.5, 4.2, 4.8, 4.4],
+    gapWidths: [27, 11, 13, 12], rampHeights: [4.5, 4.2, 4.8, 4.4],
     rampStyles: ["smooth", "smooth", "wave", "smooth"],
     loopDesign: { fullCenterX: 188, fullRadius: 6, brokenCenterX: 372, brokenRadius: 4.7, brokenEndAngle: Math.PI * 1.16, brokenGap: 5 },
     springboards: [190, 228, 310, 350, 420, 490].map((x, index) => ({ id: `moon-${index}`, position: { x, y: 0 }, width: 3.5, verticalBoost: 11 + index * 0.3, forwardBoost: 4.5 })),
@@ -291,7 +292,7 @@ function buildTrack(profile: TrackProfile): TrackDefinition {
       position: { ...obstacle.position, y: trackSurfaceYAt(segments, obstacle.position.x) },
     })),
     hazards: [
-      { id: "first-gorge", startX: 96, endX: landing1, depth: 8 },
+      { id: "first-gorge", startX: 96, endX: landing1, depth: 8, requiresTurbo: true },
       { id: "middle-gorge", startX: 264, endX: landing2, depth: 10 },
       { id: "deep-canyon", startX: 442, endX: landing3, depth: 12 },
       { id: "final-chasm", startX: 532, endX: landing4, depth: 11 },

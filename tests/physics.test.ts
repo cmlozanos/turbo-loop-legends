@@ -46,6 +46,7 @@ describe("track geometry", () => {
     expect(track.obstacles?.some((obstacle) => obstacle.behavior === "avoid")).toBe(true);
     expect(track.obstacles?.some((obstacle) => obstacle.behavior === "breakable")).toBe(true);
     expect(track.hazards.every((hazard) => hazard.endX > hazard.startX)).toBe(true);
+    expect(TRACKS.every((candidate) => candidate.hazards.some((hazard) => hazard.requiresTurbo))).toBe(true);
   });
 
   it("places every springboard exactly on its track surface", () => {
@@ -244,20 +245,21 @@ describe("vehicle physics", () => {
     expect(snapshot.chassis.position.x).toBeCloseTo(track.checkpoints[0].position.x);
   });
 
-  it("can complete the parametrized course at full throttle", () => {
-    const simulation = createPhysicsWorld();
-    simulation.setInput({ throttle: 1 });
-    let snapshot = simulation.getSnapshot();
-    let reachedFinish = false;
-    for (let frame = 0; frame < 60 * 150; frame += 1) {
-      snapshot = simulation.step();
-      if (snapshot.chassis.position.x > 586) {
-        reachedFinish = true;
-        break;
+  it("cannot clear any marked mega jump without turbo", () => {
+    for (const track of TRACKS) {
+      const megaJump = track.hazards.find((hazard) => hazard.requiresTurbo);
+      expect(megaJump, `${track.name} needs a marked mega jump`).toBeDefined();
+
+      const simulation = createPhysicsWorld({ track });
+      simulation.setInput({ throttle: 1 });
+      let snapshot = simulation.getSnapshot();
+      for (let frame = 0; frame < 60 * 30 && snapshot.respawnCount === 0; frame += 1) {
+        snapshot = simulation.step();
       }
+
+      expect(snapshot.respawnCount, `${track.name} must reject a normal-speed attempt`).toBeGreaterThan(0);
+      expect(snapshot.checkpointIndex).toBe(0);
     }
-    expect(reachedFinish).toBe(true);
-    expect(snapshot.checkpointIndex).toBe(simulation.track.checkpoints.length - 1);
   });
 
   it("respawns the complete articulated vehicle at the active checkpoint", () => {
