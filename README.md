@@ -13,6 +13,8 @@ Videojuego 2D de coches para navegador, pensado primero para tablet y niños de 
 
 El juego guarda ajustes, coche, pista elegida y desbloqueos únicamente en el dispositivo. Después de la primera carga puede funcionar sin conexión.
 
+Cada despliegue incorpora su versión en los nombres de JavaScript, CSS, manifiesto e imágenes públicas. La PWA activa el nuevo service worker y recarga una pestaña existente una sola vez para evitar que mezcle archivos de versiones distintas.
+
 ## Desarrollo
 
 Requisitos: Node.js 20 o superior y npm.

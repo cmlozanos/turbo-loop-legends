@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { assetUrl } from "../assets";
 import type { GameAudio } from "./audio";
 import type { CarSpec } from "./cars";
 import type { InputController } from "./input";
@@ -58,7 +59,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   preload(): void {
-    this.load.image(`car-${this.sceneData.car.id}`, `${import.meta.env.BASE_URL}${this.sceneData.car.gameAsset}`);
+    this.load.image(`car-${this.sceneData.car.id}`, assetUrl(this.sceneData.car.gameAsset));
   }
 
   create(): void {

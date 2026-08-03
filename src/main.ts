@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import { registerSW } from "virtual:pwa-register";
+import { assetUrl } from "./assets";
 import { GameAudio } from "./game/audio";
 import { CARS, getCar, type CarId } from "./game/cars";
 import { GameScene, type GameSceneData } from "./game/GameScene";
@@ -22,7 +23,7 @@ app.innerHTML = `
     <div id="game-canvas" class="game-canvas" aria-hidden="true"></div>
     <section id="garage-screen" class="screen">
       <div class="garage">
-        <div class="splash-art" aria-hidden="true"><span class="splash-loop"></span><span class="speed-streak streak-one"></span><span class="speed-streak streak-two"></span><img src="${import.meta.env.BASE_URL}cars/comet-preview.svg" alt=""></div>
+        <div class="splash-art" aria-hidden="true"><span class="splash-loop"></span><span class="speed-streak streak-one"></span><span class="speed-streak streak-two"></span><img src="${assetUrl("cars/comet-preview.svg")}" alt=""></div>
         <header class="brand-lockup">
           <p class="brand-kicker">Una aventura sobre ruedas</p>
           <h1>Turbo <span>Loop</span> Legends</h1>
@@ -126,6 +127,10 @@ document.addEventListener("visibilitychange", () => {
   if (document.hidden && !hud.hidden) pauseRace();
 });
 
+const hadServiceWorkerController = "serviceWorker" in navigator && navigator.serviceWorker.controller !== null;
+if (hadServiceWorkerController) {
+  navigator.serviceWorker.addEventListener("controllerchange", () => window.location.reload(), { once: true });
+}
 registerSW({ immediate: true });
 
 function startRace(): void {
@@ -217,7 +222,7 @@ function renderCars(): void {
     button.setAttribute("aria-pressed", String(selectedCar === car.id));
     button.setAttribute("aria-label", unlocked ? `${car.name}: ${car.tagline}` : `${car.name} bloqueado: ${car.unlock}`);
     button.disabled = !unlocked;
-    button.innerHTML = `<span class="car-preview"><img src="${import.meta.env.BASE_URL}${car.asset}" alt="" draggable="false"></span><strong>${car.name}</strong><small>${unlocked ? car.tagline : car.unlock}</small>${unlocked ? "" : '<span class="lock-badge">🔒</span>'}`;
+    button.innerHTML = `<span class="car-preview"><img src="${assetUrl(car.asset)}" alt="" draggable="false"></span><strong>${car.name}</strong><small>${unlocked ? car.tagline : car.unlock}</small>${unlocked ? "" : '<span class="lock-badge">🔒</span>'}`;
     button.addEventListener("click", () => {
       selectedCar = car.id;
       save.selectedCar = car.id;

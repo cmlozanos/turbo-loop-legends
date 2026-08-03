@@ -11,7 +11,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "check": "npm run typecheck && npm test && npm run build",
+    "verify:cache": "node tools/verify-cache-busting.mjs",
+    "check": "npm run typecheck && npm test && npm run build && npm run verify:cache",
     "poc:physics": "tsx tools/physics-poc.ts"
   },
   "dependencies": {
