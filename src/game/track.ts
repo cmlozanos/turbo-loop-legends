@@ -194,7 +194,7 @@ const PROFILES: readonly TrackProfile[] = [
     physics: { gravity: -10.5, grip: 1.7, suspensionFrequency: 4.8, suspensionDamping: 0.92 },
     gapWidths: [18, 6, 8, 7], rampHeights: [4, 3.4, 4, 3.5],
     rampStyles: ["smooth", "kicker", "stepped", "wave"],
-    loopDesign: { fullCenterX: 192, fullRadius: 5.1, brokenCenterX: 366, brokenRadius: 3.15, brokenEndAngle: Math.PI * 1.08, brokenGap: 6.5 },
+    loopDesign: { fullCenterX: 192, fullRadius: 5.1, brokenCenterX: 366, brokenRadius: 3.15, brokenEndAngle: Math.PI * 1.4, brokenGap: 4.5 },
     springboards: [218, 300, 408, 500].map((x, index) => ({ id: `neon-${index}`, position: { x, y: 0 }, width: 3, verticalBoost: 14 + index, forwardBoost: 5 })),
     obstacles: [
       { id: "neon-tires", behavior: "avoid", style: "tires", position: { x: 222, y: 0 }, width: 1.2, height: 0.8 },

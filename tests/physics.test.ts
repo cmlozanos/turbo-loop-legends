@@ -1,7 +1,27 @@
 import { describe, expect, it } from "vitest";
 
 import { createPhysicsWorld } from "../src/game/physics";
-import { arc, createDefaultTrack, getNextTrackId, line, physicsToScreen, renderPolylines, trackSurfaceYAt, TRACKS } from "../src/game/track";
+import { arc, createDefaultTrack, getNextTrackId, line, physicsToScreen, renderPolylines, trackSurfaceYAt, TRACKS, type TrackDefinition } from "../src/game/track";
+
+function createLoopTestTrack(spawnX = -12): TrackDefinition {
+  return {
+    segments: [line("road", { x: -80, y: 0 }, { x: 80, y: 0 })],
+    checkpoints: [{ id: "start", position: { x: spawnX, y: 1.1 }, angle: 0, radius: 2 }],
+    springboards: [],
+    hazards: [],
+    killY: -20,
+    physics: { gravity: -10, grip: 1.5, suspensionFrequency: 4.4, suspensionDamping: 0.88 },
+    loopGuides: [{
+      id: "test-loop",
+      kind: "full",
+      center: { x: 0, y: 7 },
+      pathRadius: 6,
+      startAngle: -Math.PI / 2,
+      endAngle: 3 * Math.PI / 2,
+      entryX: -6,
+    }],
+  };
+}
 
 describe("track geometry", () => {
   it("samples closed and incomplete loops without degenerate closing edges", () => {
@@ -94,6 +114,57 @@ describe("track geometry", () => {
 });
 
 describe("vehicle physics", () => {
+  it("does not attach a stopped vehicle to a loop", () => {
+    const simulation = createPhysicsWorld({ track: createLoopTestTrack(0) });
+    let snapshot = simulation.getSnapshot();
+    for (let frame = 0; frame < 120; frame += 1) snapshot = simulation.step();
+
+    expect(snapshot.activeLoopId).toBeUndefined();
+    expect(Math.abs(snapshot.velocity.x)).toBeLessThan(0.1);
+  });
+
+  it("loses contact and falls when momentum is insufficient", () => {
+    const simulation = createPhysicsWorld({ track: createLoopTestTrack() });
+    simulation.setInput({ throttle: 1, turbo: true });
+    let snapshot = simulation.getSnapshot();
+    let enteredLoop = false;
+    let maximumY = snapshot.chassis.position.y;
+    for (let frame = 0; frame < 600; frame += 1) {
+      snapshot = simulation.step();
+      if (snapshot.activeLoopId) {
+        enteredLoop = true;
+        simulation.setInput({ throttle: 0 });
+      }
+      if (enteredLoop) maximumY = Math.max(maximumY, snapshot.chassis.position.y);
+      if (enteredLoop && !snapshot.activeLoopId) break;
+    }
+
+    expect(enteredLoop).toBe(true);
+    expect(maximumY).toBeGreaterThan(7);
+    expect(maximumY).toBeLessThan(12);
+    const detachedY = snapshot.chassis.position.y;
+    for (let frame = 0; frame < 120; frame += 1) snapshot = simulation.step();
+    expect(snapshot.chassis.position.y).toBeLessThan(detachedY - 2);
+  });
+
+  it("can enter the same loop again while reversing", () => {
+    const simulation = createPhysicsWorld({ track: createLoopTestTrack() });
+    simulation.setInput({ throttle: 1, turbo: true });
+    let snapshot = simulation.getSnapshot();
+    let entries = 0;
+    let wasAttached = false;
+    for (let frame = 0; frame < 1800 && entries < 2; frame += 1) {
+      snapshot = simulation.step();
+      const attached = snapshot.activeLoopId === "test-loop";
+      if (attached && !wasAttached) entries += 1;
+      if (entries === 1 && wasAttached && !attached) simulation.setInput({ throttle: -1, turbo: true });
+      wasAttached = attached;
+    }
+
+    expect(entries).toBe(2);
+    expect(snapshot.velocity.x).toBeLessThan(-3);
+  });
+
   it("smashes breakable barriers at speed but keeps avoidable objects solid", () => {
     const track = {
       segments: [line("flat", { x: -100, y: 0 }, { x: 100, y: 0 })],

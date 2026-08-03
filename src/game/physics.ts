@@ -8,7 +8,7 @@ import {
   type Body,
 } from "planck";
 
-import { createDefaultTrack, type Point, type TrackDefinition } from "./track";
+import { createDefaultTrack, type LoopGuide, type Point, type TrackDefinition } from "./track";
 
 export interface VehicleInput {
   throttle?: number;
@@ -31,6 +31,7 @@ export interface VehicleSnapshot {
   respawnCount: number;
   springboardActivations: number;
   brokenObstacleIds: readonly string[];
+  activeLoopId?: string;
 }
 
 export interface PhysicsOptions {
@@ -41,12 +42,12 @@ export interface PhysicsOptions {
 
 interface GuidedLoop {
   id: string;
-  kind: "full" | "incomplete";
   center: Point;
   pathRadius: number;
   angle: number;
+  startAngle: number;
   endAngle: number;
-  angularSpeed: number;
+  tangentialSpeed: number;
 }
 
 const WHEEL_OFFSETS = [
@@ -58,6 +59,12 @@ const MAX_WHEEL_SPEED = 26;
 const TURBO_WHEEL_SPEED = 38;
 const DRIVE_TORQUE = 110;
 const TURBO_TORQUE = 155;
+const LOOP_ENTRY_SPEED = 3;
+const LOOP_DRIVE_ACCELERATION = 8;
+const LOOP_TURBO_ACCELERATION = 12;
+const LOOP_BRAKE_DECELERATION = 18;
+const LOOP_ROLLING_DRAG = 0.08;
+const LOOP_REENTRY_COOLDOWN = 1.5;
 
 export class PhysicsWorld {
   readonly world: World;
@@ -73,7 +80,7 @@ export class PhysicsWorld {
   private checkpointIndex = 0;
   private respawnCount = 0;
   private guidedLoop?: GuidedLoop;
-  private readonly completedLoopIds = new Set<string>();
+  private readonly loopCooldowns = new Map<string, number>();
   private activeSpringboardId?: string;
   private springboardActivations = 0;
   private readonly obstacleBodies = new Map<string, Body>();
@@ -153,6 +160,7 @@ export class PhysicsWorld {
 
   step(deltaSeconds = this.fixedTimeStep): VehicleSnapshot {
     const step = Math.min(Math.max(deltaSeconds, 0), 1 / 15);
+    this.updateLoopCooldowns(step);
     this.startGuidedLoop();
     if (this.guidedLoop && step > 0) {
       this.advanceGuidedLoop(step);
@@ -206,6 +214,7 @@ export class PhysicsWorld {
       respawnCount: this.respawnCount,
       springboardActivations: this.springboardActivations,
       brokenObstacleIds: [...this.brokenObstacleIds],
+      activeLoopId: this.guidedLoop?.id,
     };
   }
 
@@ -219,10 +228,7 @@ export class PhysicsWorld {
   respawn(): VehicleSnapshot {
     const checkpoint = this.track.checkpoints[this.checkpointIndex];
     this.guidedLoop = undefined;
-    this.completedLoopIds.clear();
-    for (const guide of this.track.loopGuides ?? []) {
-      if (checkpoint.position.x > guide.center.x + guide.pathRadius) this.completedLoopIds.add(guide.id);
-    }
+    this.loopCooldowns.clear();
     this.activeSpringboardId = undefined;
     this.placeBody(this.chassis, checkpoint.position, checkpoint.angle);
     this.placeBody(
@@ -330,36 +336,60 @@ export class PhysicsWorld {
   private startGuidedLoop(): void {
     if (this.guidedLoop) return;
     const position = this.chassis.getPosition();
-    const speed = Math.abs(this.chassis.getLinearVelocity().x);
-    const guide = (this.track.loopGuides ?? []).find((candidate) => !this.completedLoopIds.has(candidate.id)
-      && position.x >= candidate.entryX
-      && position.x <= candidate.center.x + 2
-      && speed >= 2.5);
-    if (!guide) return;
+    const velocity = this.chassis.getLinearVelocity();
+    let entry: { guide: LoopGuide; angle: number; speed: number } | undefined;
+    for (const guide of this.track.loopGuides ?? []) {
+      if ((this.loopCooldowns.get(guide.id) ?? 0) > 0) continue;
+      const endpoints = [
+        { angle: guide.startAngle, direction: 1 },
+        { angle: guide.endAngle, direction: -1 },
+      ] as const;
+      for (const endpoint of endpoints) {
+        const point = this.loopPoint(guide.center, guide.pathRadius, endpoint.angle);
+        const distance = Math.hypot(position.x - point.x, position.y - point.y);
+        const tangent = { x: -Math.sin(endpoint.angle), y: Math.cos(endpoint.angle) };
+        const tangentialSpeed = velocity.x * tangent.x + velocity.y * tangent.y;
+        const approachingHorizontally = endpoint.direction > 0
+          ? velocity.x >= LOOP_ENTRY_SPEED
+          : velocity.x <= -LOOP_ENTRY_SPEED;
+        if (distance <= 3.2 && approachingHorizontally && tangentialSpeed * endpoint.direction >= LOOP_ENTRY_SPEED) {
+          entry = { guide, angle: endpoint.angle, speed: tangentialSpeed };
+          break;
+        }
+      }
+      if (entry) break;
+    }
+    if (!entry) return;
+    const { guide } = entry;
     this.guidedLoop = {
       id: guide.id,
-      kind: guide.kind,
       center: guide.center,
       pathRadius: guide.pathRadius,
-      angle: guide.startAngle,
+      angle: entry.angle,
       endAngle: guide.endAngle,
-      angularSpeed: Math.max(1.65, Math.min(5.5, speed / guide.pathRadius)),
+      startAngle: guide.startAngle,
+      tangentialSpeed: entry.speed,
     };
   }
 
   private advanceGuidedLoop(step: number): void {
     const ride = this.guidedLoop;
     if (!ride) return;
-    ride.angle = Math.min(ride.angle + ride.angularSpeed * step, ride.endAngle);
-    const chassisPosition = {
-      x: ride.center.x + Math.cos(ride.angle) * ride.pathRadius,
-      y: ride.center.y + Math.sin(ride.angle) * ride.pathRadius,
-    };
+    const gravity = Math.abs(this.track.physics?.gravity ?? -10);
+    const driveAcceleration = this.input.turbo ? LOOP_TURBO_ACCELERATION : LOOP_DRIVE_ACCELERATION;
+    const brakeAcceleration = this.input.brake ? -Math.sign(ride.tangentialSpeed) * LOOP_BRAKE_DECELERATION : 0;
+    const gravityAcceleration = -gravity * Math.cos(ride.angle);
+    const dragAcceleration = -ride.tangentialSpeed * LOOP_ROLLING_DRAG;
+    ride.tangentialSpeed += (this.input.throttle * driveAcceleration + brakeAcceleration + gravityAcceleration + dragAcceleration) * step;
+    const maximumLoopSpeed = this.input.turbo ? 24 : 14;
+    ride.tangentialSpeed = Math.max(-maximumLoopSpeed, Math.min(maximumLoopSpeed, ride.tangentialSpeed));
+    ride.angle += (ride.tangentialSpeed / ride.pathRadius) * step;
+    ride.angle = Math.max(ride.startAngle, Math.min(ride.endAngle, ride.angle));
+    const chassisPosition = this.loopPoint(ride.center, ride.pathRadius, ride.angle);
     const chassisAngle = ride.angle + Math.PI / 2;
-    const speed = ride.angularSpeed * ride.pathRadius;
     const velocity = {
-      x: -Math.sin(ride.angle) * speed,
-      y: Math.cos(ride.angle) * speed,
+      x: -Math.sin(ride.angle) * ride.tangentialSpeed,
+      y: Math.cos(ride.angle) * ride.tangentialSpeed,
     };
     this.placeGuidedBody(this.chassis, chassisPosition, chassisAngle, velocity);
     this.placeGuidedBody(
@@ -374,16 +404,32 @@ export class PhysicsWorld {
       chassisAngle,
       velocity,
     );
-    if (ride.angle >= ride.endAngle) {
-      this.completedLoopIds.add(ride.id);
-      if (ride.kind === "incomplete" && velocity.x < 7) {
-        const exitVelocity = { x: 7, y: velocity.y };
-        this.chassis.setLinearVelocity(exitVelocity);
-        this.rearWheel.setLinearVelocity(exitVelocity);
-        this.frontWheel.setLinearVelocity(exitVelocity);
-      }
-      this.guidedLoop = undefined;
+    const contactAcceleration = (ride.tangentialSpeed * ride.tangentialSpeed) / ride.pathRadius - gravity * Math.sin(ride.angle);
+    const lostContact = Math.sin(ride.angle) >= 0 && contactAcceleration <= 0;
+    const leftAtStart = ride.angle <= ride.startAngle && ride.tangentialSpeed < 0;
+    const leftAtEnd = ride.angle >= ride.endAngle && ride.tangentialSpeed > 0;
+    if (lostContact || leftAtStart || leftAtEnd) this.releaseGuidedLoop(ride.id);
+  }
+
+  private releaseGuidedLoop(id: string): void {
+    this.loopCooldowns.set(id, LOOP_REENTRY_COOLDOWN);
+    this.guidedLoop = undefined;
+  }
+
+  private updateLoopCooldowns(step: number): void {
+    if (step <= 0) return;
+    for (const [id, remaining] of this.loopCooldowns) {
+      const next = remaining - step;
+      if (next <= 0) this.loopCooldowns.delete(id);
+      else this.loopCooldowns.set(id, next);
     }
+  }
+
+  private loopPoint(center: Point, radius: number, angle: number): Point {
+    return {
+      x: center.x + Math.cos(angle) * radius,
+      y: center.y + Math.sin(angle) * radius,
+    };
   }
 
   private placeGuidedBody(body: Body, position: Point, angle: number, velocity: Point): void {
