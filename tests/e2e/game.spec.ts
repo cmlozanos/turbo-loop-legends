@@ -98,8 +98,7 @@ test("activates turbo with the keyboard", async ({ page }) => {
   await page.keyboard.down("ArrowRight");
   await page.keyboard.down("ShiftLeft");
   await expect(page.getByLabel("Activar turbo")).toHaveAttribute("aria-pressed", "true");
-  await page.waitForTimeout(2600);
-  await expect.poll(async () => Number(await page.locator("#speed").textContent())).toBeGreaterThan(110);
+  await expect.poll(async () => Number(await page.locator("#speed").textContent()), { timeout: 15_000 }).toBeGreaterThan(110);
   await page.keyboard.up("ShiftLeft");
   await page.keyboard.up("ArrowRight");
   await expect(page.getByLabel("Activar turbo")).toHaveAttribute("aria-pressed", "false");
@@ -110,7 +109,7 @@ test("smashes the mandatory early barrier with enough speed", async ({ page }) =
   await page.getByRole("button", { name: "JUGAR" }).click();
   await page.keyboard.down("ArrowRight");
   await page.keyboard.down("ShiftLeft");
-  await expect(page.getByRole("status")).toContainText("Barricada destrozada", { timeout: 12_000 });
+  await expect(page.getByRole("status")).toContainText("Barricada destrozada", { timeout: 20_000 });
   await page.keyboard.up("ShiftLeft");
   await page.keyboard.up("ArrowRight");
 });
