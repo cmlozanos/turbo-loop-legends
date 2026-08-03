@@ -195,6 +195,8 @@ h1 span { color: var(--orange); }
 .primary-button:focus-visible, .icon-button:focus-visible, .secondary-button:focus-visible { outline: 4px solid white; outline-offset: 3px; }
 
 .settings-row {
+  position: relative;
+  z-index: 3;
   display: flex;
   justify-content: center;
   flex-wrap: wrap;
@@ -214,6 +216,18 @@ h1 span { color: var(--orange); }
 }
 
 .toggle input { width: 20px; height: 20px; accent-color: var(--orange); }
+
+.install-button {
+  min-height: 42px;
+  border: 1px solid #ffd868;
+  border-radius: 999px;
+  padding: 7px 13px;
+  color: #10233f;
+  background: #ffd868;
+  font-weight: 900;
+  cursor: pointer;
+}
+.install-button:focus-visible { outline: 4px solid white; outline-offset: 3px; }
 
 .hud {
   position: absolute;
@@ -364,6 +378,7 @@ h1 span { color: var(--orange); }
   .settings-row { position: absolute; top: max(10px, env(safe-area-inset-top)); right: max(12px, env(safe-area-inset-right)); max-width: 45vw; justify-content: flex-end; }
   .toggle { min-height: 34px; padding: 4px 9px; }
   .toggle span { display: none; }
+  .install-button { min-height: 34px; padding: 4px 9px; }
   .primary-button { min-height: 48px; }
 }
 

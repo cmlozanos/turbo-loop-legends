@@ -12,7 +12,8 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "verify:cache": "node tools/verify-cache-busting.mjs",
-    "check": "npm run typecheck && npm test && npm run build && npm run verify:cache",
+    "verify:pwa": "node tools/verify-pwa.mjs",
+    "check": "npm run typecheck && npm test && npm run build && npm run verify:cache && npm run verify:pwa",
     "poc:physics": "tsx tools/physics-poc.ts"
   },
   "dependencies": {

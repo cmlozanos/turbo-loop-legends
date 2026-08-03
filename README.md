@@ -15,6 +15,13 @@ Videojuego 2D de coches para navegador, pensado primero para tablet y niños de 
 El juego guarda ajustes, coche, pista elegida y desbloqueos únicamente en el dispositivo. Después de la primera carga puede funcionar sin conexión.
 En una instalación nueva, música y efectos de sonido comienzan desactivados y pueden habilitarse desde el garaje.
 
+## Instalar en una tablet
+
+- Android/Chrome: pulsa `⬇ INSTALAR` cuando aparezca en el garaje.
+- iPad/Safari: pulsa `⬇ INSTALAR` para recordar la ruta `Compartir → Añadir a pantalla de inicio`.
+
+Una vez instalada, la app se abre en horizontal, sin la interfaz del navegador, y funciona offline después de su primera carga completa.
+
 Cada despliegue incorpora su versión en los nombres de JavaScript, CSS, manifiesto e imágenes públicas. La PWA activa el nuevo service worker y recarga una pestaña existente una sola vez para evitar que mezcle archivos de versiones distintas.
 
 ## Desarrollo

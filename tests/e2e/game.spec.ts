@@ -123,3 +123,14 @@ test("reopens after the network is disconnected", async ({ page, context, browse
   await page.reload();
   await expect(page.getByRole("heading", { name: /Turbo Loop Legends/i })).toBeVisible();
 });
+
+test("offers add-to-home-screen guidance on iPad and iPhone", async ({ page }) => {
+  await page.goto("");
+  const isiOS = await page.evaluate(() => /iPad|iPhone|iPod/.test(navigator.userAgent));
+  test.skip(!isiOS, "Esta ayuda solo corresponde a Safari en iPad y iPhone");
+
+  const install = page.locator("#install-button");
+  await expect(install).toBeVisible();
+  await install.click();
+  await expect(install).toHaveText("Safari: Compartir → Añadir a inicio");
+});

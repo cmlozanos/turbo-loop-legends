@@ -17,6 +17,7 @@ let selectedCar: CarId = save.unlockedCars.includes(save.selectedCar) ? save.sel
 let selectedTrack: TrackId = save.selectedTrack;
 let toastTimer: number | undefined;
 let sceneAdded = false;
+let installPrompt: BeforeInstallPromptEvent | undefined;
 
 app.innerHTML = `
   <div class="app-shell">
@@ -41,6 +42,7 @@ app.innerHTML = `
           <label class="toggle"><input id="music-toggle" type="checkbox"><span>♫ Música</span></label>
           <label class="toggle"><input id="sound-toggle" type="checkbox"><span>🔊 Sonido</span></label>
           <label class="toggle"><input id="motion-toggle" type="checkbox"><span>◉ Movimiento suave</span></label>
+          <button id="install-button" class="install-button" type="button" hidden>⬇ INSTALAR</button>
         </div>
       </div>
     </section>
@@ -88,6 +90,7 @@ const speedLabel = getElement("speed");
 const toast = getElement("toast");
 const carGrid = getElement("car-grid");
 const trackGrid = getElement("track-grid");
+const installButton = getElement("install-button");
 const audio = new GameAudio(save.settings.music, save.settings.sound);
 const input = new InputController(app);
 
@@ -111,6 +114,7 @@ const game = new Phaser.Game({
 renderCars();
 renderTracks();
 bindSettings();
+bindInstall();
 
 getElement("play-button").addEventListener("click", startRace);
 getElement("replay-button").addEventListener("click", startRace);
@@ -132,6 +136,40 @@ if (hadServiceWorkerController) {
   navigator.serviceWorker.addEventListener("controllerchange", () => window.location.reload(), { once: true });
 }
 registerSW({ immediate: true });
+
+interface BeforeInstallPromptEvent extends Event {
+  prompt(): Promise<void>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
+}
+
+function bindInstall(): void {
+  const standalone = window.matchMedia("(display-mode: standalone)").matches
+    || ("standalone" in navigator && navigator.standalone === true);
+  const isiPadOrIphone = /iPad|iPhone|iPod/.test(navigator.userAgent)
+    || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  if (isiPadOrIphone && !standalone) installButton.hidden = false;
+
+  window.addEventListener("beforeinstallprompt", (event) => {
+    event.preventDefault();
+    installPrompt = event as BeforeInstallPromptEvent;
+    installButton.hidden = false;
+  });
+  window.addEventListener("appinstalled", () => {
+    installPrompt = undefined;
+    installButton.hidden = true;
+  });
+  installButton.addEventListener("click", async () => {
+    if (installPrompt) {
+      await installPrompt.prompt();
+      const choice = await installPrompt.userChoice;
+      if (choice.outcome === "accepted") installButton.hidden = true;
+      installPrompt = undefined;
+      return;
+    }
+    installButton.textContent = "Safari: Compartir → Añadir a inicio";
+    window.setTimeout(() => { installButton.textContent = "⬇ INSTALAR"; }, 5000);
+  });
+}
 
 function startRace(): void {
   void audio.start();
