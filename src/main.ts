@@ -22,7 +22,7 @@ app.innerHTML = `
     <div id="game-canvas" class="game-canvas" aria-hidden="true"></div>
     <section id="garage-screen" class="screen">
       <div class="garage">
-        <div class="splash-art" aria-hidden="true"><span class="splash-loop"></span><span class="speed-streak streak-one"></span><span class="speed-streak streak-two"></span><img src="${import.meta.env.BASE_URL}cars/comet-preview-v2.svg" alt=""></div>
+        <div class="splash-art" aria-hidden="true"><span class="splash-loop"></span><span class="speed-streak streak-one"></span><span class="speed-streak streak-two"></span><img src="${import.meta.env.BASE_URL}cars/comet-preview.svg" alt=""></div>
         <header class="brand-lockup">
           <p class="brand-kicker">Una aventura sobre ruedas</p>
           <h1>Turbo <span>Loop</span> Legends</h1>

@@ -25,7 +25,6 @@ Comandos disponibles:
 
 ```bash
 make physics-poc  # Simulación completa hasta meta, sin render
-make cars         # Regenera las ilustraciones completas desde las carrocerías SVG
 make typecheck
 make test
 make install-e2e

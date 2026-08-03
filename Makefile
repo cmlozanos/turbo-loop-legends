@@ -1,4 +1,4 @@
-.PHONY: install install-e2e dev typecheck test test-e2e build preview check physics-poc cars
+.PHONY: install install-e2e dev typecheck test test-e2e build preview check physics-poc
 
 install:
 	npm ci
@@ -29,6 +29,3 @@ check:
 
 physics-poc:
 	npm run poc:physics
-
-cars:
-	node tools/build-car-previews.mjs
