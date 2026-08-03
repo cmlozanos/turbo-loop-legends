@@ -5,6 +5,7 @@ import { CARS, getCar, type CarId } from "./game/cars";
 import { GameScene, type GameSceneData } from "./game/GameScene";
 import { InputController } from "./game/input";
 import { loadSave, saveGame, unlockCar } from "./game/state";
+import { getTrack, TRACKS, type TrackId } from "./game/track";
 import "./styles/main.css";
 
 const app = document.querySelector<HTMLElement>("#app");
@@ -12,6 +13,7 @@ if (!app) throw new Error("No se encontró el contenedor del juego");
 
 const save = loadSave();
 let selectedCar: CarId = save.unlockedCars.includes(save.selectedCar) ? save.selectedCar : "comet";
+let selectedTrack: TrackId = save.selectedTrack;
 let toastTimer: number | undefined;
 let sceneAdded = false;
 
@@ -24,6 +26,10 @@ app.innerHTML = `
         <h1>Turbo <span>Loop</span> Legends</h1>
         <p class="garage-subtitle">Elige tu coche. Pisa a fondo. ¡Vuela por los loopings!</p>
         <div id="car-grid" class="car-grid" role="group" aria-label="Elige un coche"></div>
+        <div class="track-picker">
+          <p class="picker-label">ELIGE PISTA</p>
+          <div id="track-grid" class="track-grid" role="group" aria-label="Elige una pista"></div>
+        </div>
         <button id="play-button" class="primary-button">JUGAR</button>
         <div class="settings-row" aria-label="Ajustes">
           <label class="toggle"><input id="assists-toggle" type="checkbox"><span>✨ Ayudas</span></label>
@@ -36,6 +42,7 @@ app.innerHTML = `
     <section id="hud" class="hud" aria-label="Controles de carrera" hidden>
       <div class="speedometer" aria-live="off"><strong id="speed" class="speed-value">0</strong><span class="speed-unit">KM/H</span></div>
       <button class="icon-button reset-button" data-control="reset" aria-label="Volver al último punto de control">↻</button>
+      <button id="home-button" class="icon-button home-button" aria-label="Volver al garaje y cambiar coche o pista">⌂</button>
       <button id="pause-button" class="icon-button pause-button" aria-label="Pausa">Ⅱ</button>
       <button class="drive-control brake-control" data-control="brake" aria-label="Frenar y marcha atrás">◀</button>
       <button class="turbo-control" data-control="turbo" aria-label="Activar turbo" aria-pressed="false"><span>⚡</span>TURBO</button>
@@ -74,6 +81,7 @@ const finishScreen = getElement("finish-screen");
 const speedLabel = getElement("speed");
 const toast = getElement("toast");
 const carGrid = getElement("car-grid");
+const trackGrid = getElement("track-grid");
 const audio = new GameAudio(save.settings.music, save.settings.sound);
 const input = new InputController(app);
 
@@ -95,11 +103,13 @@ const game = new Phaser.Game({
 });
 
 renderCars();
+renderTracks();
 bindSettings();
 
 getElement("play-button").addEventListener("click", startRace);
 getElement("replay-button").addEventListener("click", startRace);
 getElement("pause-button").addEventListener("click", pauseRace);
+getElement("home-button").addEventListener("click", showGarage);
 getElement("resume-button").addEventListener("click", resumeRace);
 getElement("garage-button").addEventListener("click", showGarage);
 getElement("finish-garage-button").addEventListener("click", showGarage);
@@ -120,6 +130,7 @@ function startRace(): void {
   hud.hidden = false;
   const data: GameSceneData = {
     car: getCar(selectedCar),
+    track: getTrack(selectedTrack),
     assists: save.settings.assists,
     reducedMotion: save.settings.reducedMotion,
     input,
@@ -177,6 +188,7 @@ function showGarage(): void {
   hud.hidden = true;
   garageScreen.hidden = false;
   renderCars();
+  renderTracks();
 }
 
 function renderCars(): void {
@@ -194,6 +206,24 @@ function renderCars(): void {
       save.selectedCar = car.id;
       saveGame(save);
       renderCars();
+    });
+    return button;
+  }));
+}
+
+function renderTracks(): void {
+  trackGrid.replaceChildren(...TRACKS.map((track) => {
+    const button = document.createElement("button");
+    button.className = "track-card";
+    button.style.setProperty("--track-accent", `#${(track.theme?.accent ?? 0xffffff).toString(16).padStart(6, "0")}`);
+    button.setAttribute("aria-pressed", String(selectedTrack === track.id));
+    button.setAttribute("aria-label", `${track.name}: ${track.tagline}`);
+    button.innerHTML = `<span class="track-icon">${track.id === "forest" ? "🌲" : track.id === "canyon" ? "🏜️" : track.id === "neon" ? "🌃" : track.id === "volcano" ? "🌋" : "🌕"}</span><strong>${track.name}</strong><small>${"★".repeat(track.difficulty ?? 1)}</small><span>${track.capabilities?.[0] ?? "Aventura"}</span>`;
+    button.addEventListener("click", () => {
+      selectedTrack = track.id ?? "canyon";
+      save.selectedTrack = selectedTrack;
+      saveGame(save);
+      renderTracks();
     });
     return button;
   }));

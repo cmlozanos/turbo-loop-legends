@@ -1,4 +1,5 @@
 import type { CarId } from "./cars";
+import { isTrackId, type TrackId } from "./track";
 
 const STORAGE_KEY = "turbo-loop-legends:v1";
 
@@ -12,6 +13,7 @@ export interface GameSettings {
 export interface SaveData {
   schemaVersion: 1;
   selectedCar: CarId;
+  selectedTrack: TrackId;
   unlockedCars: CarId[];
   finished: boolean;
   settings: GameSettings;
@@ -20,6 +22,7 @@ export interface SaveData {
 export const DEFAULT_SAVE: SaveData = {
   schemaVersion: 1,
   selectedCar: "comet",
+  selectedTrack: "canyon",
   unlockedCars: ["comet"],
   finished: false,
   settings: {
@@ -40,6 +43,7 @@ export function loadSave(storage: Pick<Storage, "getItem"> = localStorage): Save
       ...structuredClone(DEFAULT_SAVE),
       ...parsed,
       settings: { ...DEFAULT_SAVE.settings, ...parsed.settings },
+      selectedTrack: parsed.selectedTrack && isTrackId(parsed.selectedTrack) ? parsed.selectedTrack : DEFAULT_SAVE.selectedTrack,
       unlockedCars: parsed.unlockedCars?.filter(isCarId) ?? ["comet"]
     };
   } catch {

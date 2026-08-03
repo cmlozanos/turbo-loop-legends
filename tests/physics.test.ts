@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { createPhysicsWorld } from "../src/game/physics";
-import { arc, createDefaultTrack, line, physicsToScreen, renderPolylines } from "../src/game/track";
+import { arc, createDefaultTrack, line, physicsToScreen, renderPolylines, TRACKS } from "../src/game/track";
 
 describe("track geometry", () => {
   it("samples closed and incomplete loops without degenerate closing edges", () => {
@@ -113,6 +113,34 @@ describe("vehicle physics", () => {
     expect(forwardSnapshot.velocity.x).toBeGreaterThan(14);
     expect(reverseSnapshot.velocity.x).toBeLessThan(-14);
     expect(Math.abs(reverseSnapshot.velocity.x)).toBeCloseTo(forwardSnapshot.velocity.x, 1);
+  });
+
+  it("reaches unrestricted reverse speed on the real track", () => {
+    const simulation = createPhysicsWorld({ track: TRACKS[0] });
+    simulation.setInput({ throttle: -1, turbo: true });
+    let snapshot = simulation.getSnapshot();
+    for (let frame = 0; frame < 300; frame += 1) snapshot = simulation.step();
+
+    expect(snapshot.velocity.x).toBeLessThan(-14);
+    expect(snapshot.chassis.position.x).toBeLessThan(-45);
+  });
+
+  it("can complete every track with turbo", () => {
+    for (const track of TRACKS) {
+      const simulation = createPhysicsWorld({ track });
+      simulation.setInput({ throttle: 1, turbo: true });
+      let snapshot = simulation.getSnapshot();
+      let reachedFinish = false;
+      for (let frame = 0; frame < 60 * 100; frame += 1) {
+        snapshot = simulation.step();
+        if (snapshot.chassis.position.x > 586) {
+          reachedFinish = true;
+          break;
+        }
+      }
+      expect(reachedFinish, `${track.name} should be completable`).toBe(true);
+      expect(snapshot.checkpointIndex).toBe(track.checkpoints.length - 1);
+    }
   });
 
   it("launches the complete vehicle when it lands on a springboard", () => {

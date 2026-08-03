@@ -12,6 +12,13 @@ describe("save data", () => {
     expect(loadSave({ getItem: () => "not json" })).toEqual(DEFAULT_SAVE);
   });
 
+  it("persists a valid selected track and rejects an unknown one", () => {
+    const valid = loadSave({ getItem: () => JSON.stringify({ ...DEFAULT_SAVE, selectedTrack: "moon" }) });
+    const invalid = loadSave({ getItem: () => JSON.stringify({ ...DEFAULT_SAVE, selectedTrack: "unknown" }) });
+    expect(valid.selectedTrack).toBe("moon");
+    expect(invalid.selectedTrack).toBe(DEFAULT_SAVE.selectedTrack);
+  });
+
   it("unlocks a car only once", () => {
     const data = structuredClone(DEFAULT_SAVE);
     const storage = globalThis.localStorage;

@@ -7,6 +7,7 @@ test("opens the garage and starts a race", async ({ page }) => {
 
   await expect(page.getByRole("heading", { name: /Turbo Loop Legends/i })).toBeVisible();
   await expect(page.getByRole("button", { name: /Cometa/i })).toBeEnabled();
+  await expect(page.getByRole("group", { name: "Elige una pista" }).getByRole("button")).toHaveCount(5);
   await page.getByRole("button", { name: "JUGAR" }).click();
 
   await expect(page.locator("canvas")).toBeVisible();
@@ -14,6 +15,17 @@ test("opens the garage and starts a race", async ({ page }) => {
   await expect(page.getByLabel("Activar turbo")).toBeVisible();
   await expect(page.getByText("KM/H")).toBeVisible();
   expect(errors).toEqual([]);
+});
+
+test("selects a track and returns to the garage during a race", async ({ page }) => {
+  await page.goto("");
+  const moon = page.getByRole("button", { name: "Base Lunar: Gravedad baja y saltos gigantes" });
+  await moon.click();
+  await expect(moon).toHaveAttribute("aria-pressed", "true");
+  await page.getByRole("button", { name: "JUGAR" }).click();
+  await page.getByRole("button", { name: "Volver al garaje y cambiar coche o pista" }).click();
+  await expect(page.getByRole("heading", { name: /Turbo Loop Legends/i })).toBeVisible();
+  await expect(moon).toHaveAttribute("aria-pressed", "true");
 });
 
 test("shows three distinct spectacular car designs", async ({ page }) => {

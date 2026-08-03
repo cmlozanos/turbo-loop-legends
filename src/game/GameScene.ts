@@ -3,13 +3,14 @@ import type { GameAudio } from "./audio";
 import type { CarSpec } from "./cars";
 import type { InputController } from "./input";
 import { createPhysicsWorld, type PhysicsWorld, type VehicleSnapshot } from "./physics";
-import { physicsToScreen, renderPolylines, type Point } from "./track";
+import { physicsToScreen, renderPolylines, type Point, type TrackDefinition } from "./track";
 
 const PIXELS_PER_METRE = 45;
 const ORIGIN: Point = { x: 850, y: 590 };
 
 export interface GameSceneData {
   car: CarSpec;
+  track: TrackDefinition;
   assists: boolean;
   reducedMotion: boolean;
   input: InputController;
@@ -26,6 +27,9 @@ export class GameScene extends Phaser.Scene {
   private chassis!: Phaser.GameObjects.Image;
   private rearWheel!: Phaser.GameObjects.Graphics;
   private frontWheel!: Phaser.GameObjects.Graphics;
+  private suspension!: Phaser.GameObjects.Graphics;
+  private vehicleShadow!: Phaser.GameObjects.Graphics;
+  private turboFlame!: Phaser.GameObjects.Graphics;
   private dust!: Phaser.GameObjects.Particles.ParticleEmitter;
   private lastSnapshot!: VehicleSnapshot;
   private accumulator = 0;
@@ -53,7 +57,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   create(): void {
-    this.simulation = createPhysicsWorld();
+    this.simulation = createPhysicsWorld({ track: this.sceneData.track });
     this.lastSnapshot = this.simulation.getSnapshot();
     this.finishX = Math.max(...this.simulation.track.segments.flatMap((segment) => segment.points.map((point) => point.x))) - 2;
     this.drawSky();
@@ -63,8 +67,10 @@ export class GameScene extends Phaser.Scene {
     this.createVehicle();
     this.createDust();
 
-    const worldWidth = (this.finishX + 28) * PIXELS_PER_METRE + ORIGIN.x;
-    this.cameras.main.setBounds(0, 0, worldWidth, 900);
+    const minimumX = Math.min(...this.simulation.track.segments.flatMap((segment) => segment.points.map((point) => point.x)));
+    const leftBound = physicsToScreen({ x: minimumX - 15, y: 0 }, PIXELS_PER_METRE, ORIGIN).x;
+    const rightBound = physicsToScreen({ x: this.finishX + 28, y: 0 }, PIXELS_PER_METRE, ORIGIN).x;
+    this.cameras.main.setBounds(leftBound, 0, rightBound - leftBound, 900);
     this.cameras.main.startFollow(this.chassis, true, this.sceneData.reducedMotion ? 1 : 0.085, this.sceneData.reducedMotion ? 1 : 0.085, -this.scale.width * 0.15, 70);
     this.cameras.main.setBackgroundColor("#8ed8ef");
     this.syncVehicle(this.lastSnapshot);
@@ -82,8 +88,8 @@ export class GameScene extends Phaser.Scene {
       lean = -normalizeAngle(this.lastSnapshot.chassis.angle) * 0.7;
     }
     this.simulation.setInput({
-      throttle: throttle ? this.sceneData.car.motor : brake && Math.abs(this.lastSnapshot.velocity.x) < 0.7 ? -1 : 0,
-      brake: brake && Math.abs(this.lastSnapshot.velocity.x) >= 0.7,
+      throttle: throttle ? this.sceneData.car.motor : brake && this.lastSnapshot.velocity.x <= 0.7 ? -1 : 0,
+      brake: brake && this.lastSnapshot.velocity.x > 0.7,
       lean,
       turbo: this.sceneData.input.state.turbo
     });
@@ -109,13 +115,14 @@ export class GameScene extends Phaser.Scene {
   }
 
   private drawSky(): void {
+    const theme = this.simulation.track.theme;
     const sky = this.add.graphics().setScrollFactor(0.08).setDepth(-20);
-    sky.fillGradientStyle(0x79ccec, 0x79ccec, 0xeaf8f2, 0xeaf8f2, 1);
-    sky.fillRect(-400, -100, 3200, 900);
+    sky.fillGradientStyle(theme?.skyTop ?? 0x79ccec, theme?.skyTop ?? 0x79ccec, theme?.skyBottom ?? 0xeaf8f2, theme?.skyBottom ?? 0xeaf8f2, 1);
+    sky.fillRect(-7000, -100, 36000, 1000);
     sky.fillStyle(0xffe4a3, 0.85).fillCircle(this.scale.width * 0.78, 130, 72);
 
     const far = this.add.graphics().setScrollFactor(0.28).setDepth(-18);
-    far.fillStyle(0x8cb8b1, 1);
+    far.fillStyle(theme?.scenery ?? 0x8cb8b1, 1);
     far.fillTriangle(-300, 630, 80, 230, 450, 630);
     far.fillTriangle(180, 630, 620, 180, 1100, 630);
     far.fillTriangle(850, 630, 1280, 270, 1760, 630);
@@ -132,10 +139,14 @@ export class GameScene extends Phaser.Scene {
   }
 
   private drawTrack(): void {
+    const theme = this.simulation.track.theme;
+    const minimumX = Math.min(...this.simulation.track.segments.flatMap((segment) => segment.points.map((point) => point.x)));
+    const sceneryLeft = physicsToScreen({ x: minimumX - 20, y: 0 }, PIXELS_PER_METRE, ORIGIN).x;
+    const sceneryRight = physicsToScreen({ x: this.finishX + 35, y: 0 }, PIXELS_PER_METRE, ORIGIN).x;
     const scenery = this.add.graphics().setDepth(-7);
-    scenery.fillStyle(0x4f8e52, 1).fillRect(0, ORIGIN.y + 10, (this.finishX + 35) * PIXELS_PER_METRE + ORIGIN.x, 350);
-    scenery.fillStyle(0x376b42, 1);
-    for (let x = 0; x < (this.finishX + 35) * PIXELS_PER_METRE + ORIGIN.x; x += 140) {
+    scenery.fillStyle(theme?.ground ?? 0x4f8e52, 1).fillRect(sceneryLeft, ORIGIN.y + 10, sceneryRight - sceneryLeft, 350);
+    scenery.fillStyle(theme?.scenery ?? 0x376b42, 1);
+    for (let x = sceneryLeft; x < sceneryRight; x += 140) {
       scenery.fillTriangle(x, ORIGIN.y + 28, x + 65, ORIGIN.y - 70 - (x % 3) * 15, x + 130, ORIGIN.y + 28);
     }
 
@@ -144,7 +155,7 @@ export class GameScene extends Phaser.Scene {
       const left = physicsToScreen({ x: hazard.startX, y: 0 }, PIXELS_PER_METRE, ORIGIN).x;
       const right = physicsToScreen({ x: hazard.endX, y: 0 }, PIXELS_PER_METRE, ORIGIN).x;
       const bottom = ORIGIN.y + hazard.depth * PIXELS_PER_METRE;
-      hazards.fillStyle(0x111522, 0.96).beginPath().moveTo(left, ORIGIN.y - 5);
+      hazards.fillStyle(theme?.abyss ?? 0x111522, 0.96).beginPath().moveTo(left, ORIGIN.y - 5);
       hazards.lineTo(left + 28, ORIGIN.y + 70).lineTo((left + right) / 2, bottom);
       hazards.lineTo(right - 28, ORIGIN.y + 70).lineTo(right, ORIGIN.y - 5).closePath().fillPath();
       hazards.lineStyle(7, 0x6b301f, 0.9).lineBetween(left, ORIGIN.y, left + 24, ORIGIN.y + 65);
@@ -157,10 +168,10 @@ export class GameScene extends Phaser.Scene {
       track.lineStyle(30, 0x4a2817, 0.48).beginPath().moveTo(screen[0].x, screen[0].y + 8);
       for (const point of screen.slice(1)) track.lineTo(point.x, point.y + 8);
       track.strokePath();
-      track.lineStyle(22, 0x9b5a2f, 1).beginPath().moveTo(screen[0].x, screen[0].y);
+      track.lineStyle(22, theme?.road ?? 0x9b5a2f, 1).beginPath().moveTo(screen[0].x, screen[0].y);
       for (const point of screen.slice(1)) track.lineTo(point.x, point.y);
       track.strokePath();
-      track.lineStyle(5, 0xe6ad62, 0.9).beginPath().moveTo(screen[0].x, screen[0].y - 4);
+      track.lineStyle(5, theme?.roadEdge ?? 0xe6ad62, 0.9).beginPath().moveTo(screen[0].x, screen[0].y - 4);
       for (const point of screen.slice(1)) track.lineTo(point.x, point.y - 4);
       track.strokePath();
 
@@ -178,7 +189,7 @@ export class GameScene extends Phaser.Scene {
       const point = physicsToScreen(board.position, PIXELS_PER_METRE, ORIGIN);
       const width = board.width * PIXELS_PER_METRE;
       track.fillStyle(0x17233c, 0.7).fillRoundedRect(point.x - width / 2, point.y - 4, width, 17, 7);
-      track.lineStyle(7, 0xffcf3f, 1).lineBetween(point.x - width / 2 + 8, point.y - 7, point.x + width / 2 - 8, point.y - 7);
+      track.lineStyle(7, theme?.accent ?? 0xffcf3f, 1).lineBetween(point.x - width / 2 + 8, point.y - 7, point.x + width / 2 - 8, point.y - 7);
       track.lineStyle(4, 0xf05252, 1);
       for (let x = point.x - width / 2 + 18; x < point.x + width / 2 - 12; x += 25) {
         track.beginPath().moveTo(x, point.y + 12).lineTo(x + 7, point.y + 23).lineTo(x + 14, point.y + 12).strokePath();
@@ -211,6 +222,9 @@ export class GameScene extends Phaser.Scene {
   }
 
   private createVehicle(): void {
+    this.vehicleShadow = this.add.graphics().setDepth(2);
+    this.suspension = this.add.graphics().setDepth(4);
+    this.turboFlame = this.add.graphics().setDepth(4);
     this.chassis = this.add.image(0, 0, `car-${this.sceneData.car.id}`).setDepth(5).setScale(this.sceneData.car.bodyScale);
     this.rearWheel = this.makeWheel();
     this.frontWheel = this.makeWheel();
@@ -238,6 +252,24 @@ export class GameScene extends Phaser.Scene {
   }
 
   private syncVehicle(snapshot: VehicleSnapshot): void {
+    const chassisPoint = physicsToScreen(snapshot.chassis.position, PIXELS_PER_METRE, ORIGIN);
+    const rearPoint = physicsToScreen(snapshot.rearWheel.position, PIXELS_PER_METRE, ORIGIN);
+    const frontPoint = physicsToScreen(snapshot.frontWheel.position, PIXELS_PER_METRE, ORIGIN);
+    const speed = Math.abs(snapshot.velocity.x);
+    const height = Math.max(0, snapshot.chassis.position.y - 1.1);
+    this.vehicleShadow.clear().fillStyle(0x07101c, Math.max(0.08, 0.3 - height * 0.018));
+    this.vehicleShadow.fillEllipse(chassisPoint.x, chassisPoint.y + 42 + Math.min(height * 8, 80), Math.max(34, 115 - height * 5), 18);
+    this.suspension.clear().lineStyle(7, 0x152033, 0.92).lineBetween(chassisPoint.x - 34, chassisPoint.y + 8, rearPoint.x, rearPoint.y);
+    this.suspension.lineBetween(chassisPoint.x + 34, chassisPoint.y + 8, frontPoint.x, frontPoint.y);
+    this.suspension.lineStyle(3, this.sceneData.car.accent, 1).lineBetween(chassisPoint.x - 27, chassisPoint.y + 4, rearPoint.x, rearPoint.y);
+    this.suspension.lineBetween(chassisPoint.x + 27, chassisPoint.y + 4, frontPoint.x, frontPoint.y);
+    this.turboFlame.clear();
+    if (this.sceneData.input.state.turbo && speed > 1) {
+      const direction = snapshot.velocity.x < 0 ? 1 : -1;
+      const flameX = chassisPoint.x + direction * 66;
+      this.turboFlame.fillStyle(0xff3bd4, 0.9).fillTriangle(flameX, chassisPoint.y - 7, flameX, chassisPoint.y + 10, flameX + direction * (32 + speed), chassisPoint.y + 2);
+      this.turboFlame.fillStyle(0x76f7ff, 1).fillTriangle(flameX, chassisPoint.y - 3, flameX, chassisPoint.y + 6, flameX + direction * (18 + speed * 0.5), chassisPoint.y + 2);
+    }
     this.placeObject(this.chassis, snapshot.chassis.position, snapshot.chassis.angle);
     this.placeObject(this.rearWheel, snapshot.rearWheel.position, snapshot.rearWheel.angle);
     this.placeObject(this.frontWheel, snapshot.frontWheel.position, snapshot.frontWheel.angle);

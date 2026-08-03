@@ -79,14 +79,14 @@ export class PhysicsWorld {
   constructor(options: PhysicsOptions = {}) {
     this.track = options.track ?? createDefaultTrack();
     this.fixedTimeStep = options.fixedTimeStep ?? 1 / 60;
-    this.world = new World({ gravity: options.gravity ?? { x: 0, y: -10 } });
+    this.world = new World({ gravity: options.gravity ?? { x: 0, y: this.track.physics?.gravity ?? -10 } });
 
     const ground = this.world.createBody({ type: "static" });
     for (const segment of this.track.segments) {
       if (segment.kind !== "line") continue;
       ground.createFixture({
         shape: new Chain([...segment.points], false),
-        friction: 0.9,
+        friction: this.track.physics?.grip ?? 0.9,
       });
     }
 
@@ -217,7 +217,7 @@ export class PhysicsWorld {
 
   private createWheel(position: Point): Body {
     const wheel = this.world.createBody({ type: "dynamic", position, bullet: true });
-    wheel.createFixture({ shape: new Circle(0.42), density: 1.05, friction: 1.45, restitution: 0.02 });
+    wheel.createFixture({ shape: new Circle(0.42), density: 1.05, friction: this.track.physics?.grip ?? 1.45, restitution: 0.02 });
     return wheel;
   }
 
@@ -227,8 +227,8 @@ export class PhysicsWorld {
         enableMotor: powered,
         motorSpeed: 0,
         maxMotorTorque: powered ? 60 : 0,
-        frequencyHz: 4.4,
-        dampingRatio: 0.88,
+        frequencyHz: this.track.physics?.suspensionFrequency ?? 4.4,
+        dampingRatio: this.track.physics?.suspensionDamping ?? 0.88,
       },
       this.chassis,
       wheel,

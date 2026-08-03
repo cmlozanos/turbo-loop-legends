@@ -1,14 +1,15 @@
 # Turbo Loop Legends
 
-Videojuego 2D de coches para navegador, pensado primero para tablet y niños de 4 a 6 años. El circuito combina suspensión física, rampas, precipicios, saltadores, un looping completo, un looping de madera incompleto, checkpoints y tres coches desbloqueables.
+Videojuego 2D de coches para navegador, pensado primero para tablet y niños de 4 a 6 años. Incluye cinco circuitos con gravedad, agarre, suspensión, rampas, precipicios y saltadores diferentes, además de tres coches desbloqueables.
 
 ## Jugar
 
 - Tablet o móvil: usa los botones grandes. El izquierdo frena o da marcha atrás, el derecho acelera y el botón central activa el turbo. En el aire también inclinan el coche.
 - Ordenador: `→`/`D` acelera, `←`/`A` frena y da marcha atrás, `Shift`/`Espacio` activa el turbo, `R` vuelve al checkpoint y `Esc` pausa.
 - Las ayudas opcionales corrigen suavemente el coche y lo recuperan si queda volcado o cae.
+- El botón `⌂` vuelve al garaje durante una carrera para cambiar de coche o circuito.
 
-El juego guarda ajustes, coche elegido y desbloqueos únicamente en el dispositivo. Después de la primera carga puede funcionar sin conexión.
+El juego guarda ajustes, coche, pista elegida y desbloqueos únicamente en el dispositivo. Después de la primera carga puede funcionar sin conexión.
 
 ## Desarrollo
 
@@ -41,7 +42,7 @@ make preview
 - Vitest + Playwright: geometría, física, persistencia y pruebas responsive.
 - Arte original: carrocerías vectoriales en `public/cars/*.svg` y versiones PNG transparentes optimizadas para Phaser.
 
-El nivel vive en `src/game/track.ts` como una definición declarativa de rectas, arcos y checkpoints. Los loopings usan una guía circular arcade para evitar colisiones fantasma en la intersección de la pista y conservar una experiencia predecible en pantallas táctiles.
+Las cinco pistas viven en `src/game/track.ts` como definiciones declarativas de rectas, arcos, checkpoints, aspecto y comportamiento físico. Los loopings usan una guía circular arcade para evitar colisiones fantasma en la intersección de la pista y conservar una experiencia predecible en pantallas táctiles.
 Las rampas, zonas sin suelo y plataformas impulsoras también se parametrizan en esa definición. Los saltadores aplican impulso vertical y horizontal al vehículo articulado completo, mientras los checkpoints admiten cruces a gran velocidad sin guardar caídas dentro de un precipicio.
 
 La comparativa y decisión técnica están en [`docs/TECHNICAL_DECISION.md`](docs/TECHNICAL_DECISION.md).
