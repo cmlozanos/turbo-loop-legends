@@ -40,6 +40,7 @@ export interface PhysicsOptions {
 }
 
 interface GuidedLoop {
+  id: string;
   kind: "full" | "incomplete";
   center: Point;
   pathRadius: number;
@@ -72,8 +73,7 @@ export class PhysicsWorld {
   private checkpointIndex = 0;
   private respawnCount = 0;
   private guidedLoop?: GuidedLoop;
-  private fullLoopComplete = false;
-  private incompleteLoopComplete = false;
+  private readonly completedLoopIds = new Set<string>();
   private activeSpringboardId?: string;
   private springboardActivations = 0;
   private readonly obstacleBodies = new Map<string, Body>();
@@ -174,7 +174,7 @@ export class PhysicsWorld {
       this.chassis.applyTorque(this.input.lean * 24 * airControl, true);
     }
     const x = this.chassis.getPosition().x;
-    const insideLoop = (x > 175 && x < 185) || (x > 375 && x < 385);
+    const insideLoop = (this.track.loopGuides ?? []).some((guide) => Math.abs(x - guide.center.x) < guide.pathRadius + 1.2);
     if (!insideLoop) {
       const angle = Math.atan2(Math.sin(this.chassis.getAngle()), Math.cos(this.chassis.getAngle()));
       this.chassis.applyTorque(-angle * 90 - this.chassis.getAngularVelocity() * 14, true);
@@ -219,8 +219,10 @@ export class PhysicsWorld {
   respawn(): VehicleSnapshot {
     const checkpoint = this.track.checkpoints[this.checkpointIndex];
     this.guidedLoop = undefined;
-    this.fullLoopComplete = checkpoint.position.x > 185;
-    this.incompleteLoopComplete = checkpoint.position.x > 385;
+    this.completedLoopIds.clear();
+    for (const guide of this.track.loopGuides ?? []) {
+      if (checkpoint.position.x > guide.center.x + guide.pathRadius) this.completedLoopIds.add(guide.id);
+    }
     this.activeSpringboardId = undefined;
     this.placeBody(this.chassis, checkpoint.position, checkpoint.angle);
     this.placeBody(
@@ -329,25 +331,20 @@ export class PhysicsWorld {
     if (this.guidedLoop) return;
     const position = this.chassis.getPosition();
     const speed = Math.abs(this.chassis.getLinearVelocity().x);
-    if (!this.fullLoopComplete && position.x >= 178.2 && speed >= 2.5) {
-      this.guidedLoop = {
-        kind: "full",
-        center: { x: 180, y: 7 },
-        pathRadius: 3.2,
-        angle: -Math.PI / 2,
-        endAngle: (3 * Math.PI) / 2,
-        angularSpeed: Math.max(2.1, Math.min(5.5, speed / 3.2)),
-      };
-    } else if (this.fullLoopComplete && !this.incompleteLoopComplete && position.x >= 378.2 && speed >= 2.5) {
-      this.guidedLoop = {
-        kind: "incomplete",
-        center: { x: 380, y: 7 },
-        pathRadius: 3.2,
-        angle: -Math.PI / 2,
-        endAngle: (5 * Math.PI) / 4,
-        angularSpeed: Math.max(2.1, Math.min(5.5, speed / 3.2)),
-      };
-    }
+    const guide = (this.track.loopGuides ?? []).find((candidate) => !this.completedLoopIds.has(candidate.id)
+      && position.x >= candidate.entryX
+      && position.x <= candidate.center.x + 2
+      && speed >= 2.5);
+    if (!guide) return;
+    this.guidedLoop = {
+      id: guide.id,
+      kind: guide.kind,
+      center: guide.center,
+      pathRadius: guide.pathRadius,
+      angle: guide.startAngle,
+      endAngle: guide.endAngle,
+      angularSpeed: Math.max(1.65, Math.min(5.5, speed / guide.pathRadius)),
+    };
   }
 
   private advanceGuidedLoop(step: number): void {
@@ -378,8 +375,13 @@ export class PhysicsWorld {
       velocity,
     );
     if (ride.angle >= ride.endAngle) {
-      if (ride.kind === "full") this.fullLoopComplete = true;
-      else this.incompleteLoopComplete = true;
+      this.completedLoopIds.add(ride.id);
+      if (ride.kind === "incomplete" && velocity.x < 7) {
+        const exitVelocity = { x: 7, y: velocity.y };
+        this.chassis.setLinearVelocity(exitVelocity);
+        this.rearWheel.setLinearVelocity(exitVelocity);
+        this.frontWheel.setLinearVelocity(exitVelocity);
+      }
       this.guidedLoop = undefined;
     }
   }

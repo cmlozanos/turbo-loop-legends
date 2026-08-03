@@ -167,7 +167,8 @@ h1 span { color: var(--orange); }
 }
 .track-card:hover, .track-card:focus-visible { transform: translateY(-3px); border-color: var(--track-accent); }
 .track-card[aria-pressed="true"] { border-color: var(--track-accent); box-shadow: inset 0 0 24px color-mix(in srgb, var(--track-accent) 25%, transparent), 0 0 18px color-mix(in srgb, var(--track-accent) 25%, transparent); }
-.track-card .track-icon { display: block; font-size: clamp(1.2rem, 2.5vw, 1.8rem); }
+.track-map { display: block; width: 100%; height: clamp(28px, 4vw, 42px); overflow: visible; }
+.track-map polyline { fill: none; stroke: var(--track-accent); stroke-width: 2.7; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 0 4px color-mix(in srgb, var(--track-accent) 65%, transparent)); }
 .track-card strong { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: clamp(.7rem, 1.4vw, .92rem); }
 .track-card small { color: #ffd760; letter-spacing: .05em; }
 .track-card > span:last-child { display: block; color: #b9d0e4; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: clamp(.56rem, 1vw, .7rem); }
@@ -359,7 +360,7 @@ h1 span { color: var(--orange); }
   .car-preview { height: clamp(52px, 10vw, 82px); }
   .track-card { min-height: 54px; padding: 4px; }
   .track-card > span:last-child { display: none; }
-  .track-card .track-icon { font-size: 1.1rem; }
+  .track-map { height: 22px; }
   .settings-row { position: absolute; top: max(10px, env(safe-area-inset-top)); right: max(12px, env(safe-area-inset-right)); max-width: 45vw; justify-content: flex-end; }
   .toggle { min-height: 34px; padding: 4px 9px; }
   .toggle span { display: none; }

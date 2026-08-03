@@ -76,6 +76,20 @@ describe("track geometry", () => {
     expect(getNextTrackId("canyon")).toBe("neon");
     expect(getNextTrackId("moon")).toBe("forest");
   });
+
+  it("gives every circuit a distinct loop, gap and ramp silhouette", () => {
+    const loopSignatures = TRACKS.map((track) => track.loopGuides?.map((guide) => [guide.center.x, guide.pathRadius, guide.endAngle.toFixed(2)]));
+    const rampSignatures = TRACKS.map((track) => track.segments.filter((segment) => segment.id.includes("ramp")).map((segment) => segment.points.length).join("-"));
+    const brokenGaps = TRACKS.map((track) => {
+      const brokenLoop = track.segments.find((segment) => segment.id === "incomplete-loop");
+      const landing = track.segments.find((segment) => segment.id === "broken-loop-landing");
+      return ((landing?.points[0].x ?? 0) - (brokenLoop?.points.at(-1)?.x ?? 0)).toFixed(1);
+    });
+
+    expect(new Set(loopSignatures.map((signature) => JSON.stringify(signature))).size).toBe(TRACKS.length);
+    expect(new Set(rampSignatures).size).toBe(TRACKS.length);
+    expect(new Set(brokenGaps).size).toBe(TRACKS.length);
+  });
 });
 
 describe("vehicle physics", () => {

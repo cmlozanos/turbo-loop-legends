@@ -235,7 +235,7 @@ function renderTracks(): void {
     button.style.setProperty("--track-accent", `#${(track.theme?.accent ?? 0xffffff).toString(16).padStart(6, "0")}`);
     button.setAttribute("aria-pressed", String(selectedTrack === track.id));
     button.setAttribute("aria-label", `${track.name}: ${track.tagline}`);
-    button.innerHTML = `<span class="track-icon">${track.id === "forest" ? "🌲" : track.id === "canyon" ? "🏜️" : track.id === "neon" ? "🌃" : track.id === "volcano" ? "🌋" : "🌕"}</span><strong>${track.name}</strong><small>${"★".repeat(track.difficulty ?? 1)}</small><span>${track.capabilities?.[0] ?? "Aventura"}</span>`;
+    button.innerHTML = `${renderTrackMap(track)}<strong>${track.name}</strong><small>${"★".repeat(track.difficulty ?? 1)}</small><span>${track.capabilities?.[0] ?? "Aventura"}</span>`;
     button.addEventListener("click", () => {
       selectedTrack = track.id ?? "canyon";
       save.selectedTrack = selectedTrack;
@@ -244,6 +244,24 @@ function renderTracks(): void {
     });
     return button;
   }));
+}
+
+function renderTrackMap(track: (typeof TRACKS)[number]): string {
+  const points = track.segments.flatMap((segment) => segment.points);
+  const minimumX = Math.min(...points.map((point) => point.x));
+  const maximumX = Math.max(...points.map((point) => point.x));
+  const maximumY = Math.max(...points.map((point) => point.y), 1);
+  const project = (point: { x: number; y: number }): string => {
+    const x = 4 + ((point.x - minimumX) / (maximumX - minimumX)) * 212;
+    const y = 43 - (point.y / maximumY) * 38;
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  };
+  const paths = track.segments.map((segment) => {
+    const pathPoints = segment.points.map(project);
+    if (segment.closed) pathPoints.push(pathPoints[0]);
+    return `<polyline points="${pathPoints.join(" ")}"/>`;
+  }).join("");
+  return `<svg class="track-map" viewBox="0 0 220 48" aria-hidden="true" focusable="false">${paths}</svg>`;
 }
 
 function bindSettings(): void {

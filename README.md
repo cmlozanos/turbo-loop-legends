@@ -43,7 +43,7 @@ make preview
 - Vitest + Playwright: geometría, física, persistencia y pruebas responsive.
 - Arte original: ilustraciones SVG autónomas para el garaje, carrocerías vectoriales y versiones PNG transparentes optimizadas para Phaser. Las ruedas, suspensiones y el fuego del turbo se sincronizan con la física durante la carrera.
 
-Las cinco pistas viven en `src/game/track.ts` como definiciones declarativas de rectas, arcos, checkpoints, aspecto y comportamiento físico. Los loopings usan una guía circular arcade para evitar colisiones fantasma en la intersección de la pista y conservar una experiencia predecible en pantallas táctiles.
+Las cinco pistas viven en `src/game/track.ts` como definiciones declarativas de rectas, arcos, checkpoints, aspecto y comportamiento físico. Cada una combina radios de looping, aberturas, perfiles de rampa y distancias de salto diferentes; el selector muestra un minimapa de su geometría real. Los loopings usan una guía circular arcade derivada de cada diseño para evitar colisiones fantasma y conservar una experiencia predecible en pantallas táctiles.
 Las rampas, zonas sin suelo y plataformas impulsoras también se parametrizan en esa definición. La altura de cada saltador se deriva de la superficie real de su pista y aplica impulso vertical y horizontal al vehículo articulado completo, mientras los checkpoints admiten cruces a gran velocidad sin guardar caídas dentro de un precipicio.
 
 La comparativa y decisión técnica están en [`docs/TECHNICAL_DECISION.md`](docs/TECHNICAL_DECISION.md). La investigación de referencias y sus límites de originalidad están en [`docs/VISUAL_DIRECTION.md`](docs/VISUAL_DIRECTION.md).

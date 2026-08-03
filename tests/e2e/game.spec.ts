@@ -58,6 +58,14 @@ test("shows three distinct spectacular car designs", async ({ page }) => {
   expect(standaloneAssets.every((asset) => !asset.includes("<image"))).toBe(true);
 });
 
+test("shows five distinct real track minimaps", async ({ page }) => {
+  await page.goto("");
+  const maps = page.locator(".track-map");
+  await expect(maps).toHaveCount(5);
+  const signatures = await maps.evaluateAll((elements) => elements.map((element) => element.innerHTML));
+  expect(new Set(signatures).size).toBe(5);
+});
+
 test("keeps touch controls inside the landscape viewport", async ({ page }) => {
   await page.goto("");
   await page.getByRole("button", { name: "JUGAR" }).click();
