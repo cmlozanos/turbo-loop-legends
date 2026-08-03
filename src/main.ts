@@ -5,7 +5,7 @@ import { CARS, getCar, type CarId } from "./game/cars";
 import { GameScene, type GameSceneData } from "./game/GameScene";
 import { InputController } from "./game/input";
 import { loadSave, saveGame, unlockCar } from "./game/state";
-import { getTrack, TRACKS, type TrackId } from "./game/track";
+import { getNextTrackId, getTrack, TRACKS, type TrackId } from "./game/track";
 import "./styles/main.css";
 
 const app = document.querySelector<HTMLElement>("#app");
@@ -22,9 +22,13 @@ app.innerHTML = `
     <div id="game-canvas" class="game-canvas" aria-hidden="true"></div>
     <section id="garage-screen" class="screen">
       <div class="garage">
-        <p class="brand-kicker">Una aventura sobre ruedas</p>
-        <h1>Turbo <span>Loop</span> Legends</h1>
-        <p class="garage-subtitle">Elige tu coche. Pisa a fondo. ¡Vuela por los loopings!</p>
+        <div class="splash-art" aria-hidden="true"><span class="splash-loop"></span><span class="speed-streak streak-one"></span><span class="speed-streak streak-two"></span><img src="${import.meta.env.BASE_URL}cars/comet-preview-v2.svg" alt=""></div>
+        <header class="brand-lockup">
+          <p class="brand-kicker">Una aventura sobre ruedas</p>
+          <h1>Turbo <span>Loop</span> Legends</h1>
+          <p class="garage-subtitle">Elige tu coche. Pisa a fondo. ¡Vuela por los loopings!</p>
+          <span class="splash-badge">5 CIRCUITOS · SALTOS · TURBO</span>
+        </header>
         <div id="car-grid" class="car-grid" role="group" aria-label="Elige un coche"></div>
         <div class="track-picker">
           <p class="picker-label">ELIGE PISTA</p>
@@ -65,7 +69,8 @@ app.innerHTML = `
         <h2>¡Leyenda!</h2>
         <p id="finish-message">Has conquistado todos los loopings.</p>
         <div class="modal-actions">
-          <button id="replay-button" class="primary-button">OTRA VEZ</button>
+          <button id="next-track-button" class="primary-button">SIGUIENTE CIRCUITO</button>
+          <button id="replay-button" class="secondary-button">OTRA VEZ</button>
           <button id="finish-garage-button" class="secondary-button">Elegir coche</button>
         </div>
       </div>
@@ -108,6 +113,7 @@ bindSettings();
 
 getElement("play-button").addEventListener("click", startRace);
 getElement("replay-button").addEventListener("click", startRace);
+getElement("next-track-button").addEventListener("click", startNextRace);
 getElement("pause-button").addEventListener("click", pauseRace);
 getElement("home-button").addEventListener("click", showGarage);
 getElement("resume-button").addEventListener("click", resumeRace);
@@ -142,6 +148,7 @@ function startRace(): void {
       if (id === "broken-loop-exit" && unlockCar(save, "lynx")) showToast("🔓 ¡Coche Lince desbloqueado!");
     },
     onFinish: finishRace,
+    onObstacleBreak: () => showToast("💥 ¡Barricada destrozada!"),
     onRespawn: () => showToast("¡Otra oportunidad!")
   };
   if (!sceneAdded) {
@@ -159,10 +166,20 @@ function finishRace(): void {
   const unlocked = unlockCar(save, "titan");
   saveGame(save);
   audio.playSuccess();
+  const nextTrack = getTrack(getNextTrackId(selectedTrack));
+  const nextTrackName = nextTrack.name ?? "Bosque Turbo";
   getElement("finish-message").textContent = unlocked
-    ? "¡Has conquistado el circuito y desbloqueado el Titán!"
-    : "Has conquistado todos los loopings.";
+    ? `¡Has desbloqueado el Titán! Siguiente reto: ${nextTrackName}.`
+    : `¡Circuito superado! Siguiente reto: ${nextTrackName}.`;
+  getElement("next-track-button").textContent = `SIGUIENTE: ${nextTrackName.toUpperCase()}`;
   window.setTimeout(() => { finishScreen.hidden = false; }, save.settings.reducedMotion ? 0 : 700);
+}
+
+function startNextRace(): void {
+  selectedTrack = getNextTrackId(selectedTrack);
+  save.selectedTrack = selectedTrack;
+  saveGame(save);
+  startRace();
 }
 
 function pauseRace(): void {

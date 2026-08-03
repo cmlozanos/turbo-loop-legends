@@ -18,6 +18,7 @@ export interface GameSceneData {
   onSpeed: (speed: number) => void;
   onCheckpoint: (id: string) => void;
   onFinish: () => void;
+  onObstacleBreak: () => void;
   onRespawn: () => void;
 }
 
@@ -30,6 +31,8 @@ export class GameScene extends Phaser.Scene {
   private suspension!: Phaser.GameObjects.Graphics;
   private vehicleShadow!: Phaser.GameObjects.Graphics;
   private turboFlame!: Phaser.GameObjects.Graphics;
+  private readonly obstacleVisuals = new Map<string, Phaser.GameObjects.Graphics>();
+  private readonly shatteredObstacles = new Set<string>();
   private dust!: Phaser.GameObjects.Particles.ParticleEmitter;
   private lastSnapshot!: VehicleSnapshot;
   private accumulator = 0;
@@ -50,6 +53,8 @@ export class GameScene extends Phaser.Scene {
     this.stuckSeconds = 0;
     this.finished = false;
     this.springboardActivations = 0;
+    this.obstacleVisuals.clear();
+    this.shatteredObstacles.clear();
   }
 
   preload(): void {
@@ -62,6 +67,7 @@ export class GameScene extends Phaser.Scene {
     this.finishX = Math.max(...this.simulation.track.segments.flatMap((segment) => segment.points.map((point) => point.x))) - 2;
     this.drawSky();
     this.drawTrack();
+    this.drawObstacles();
     this.drawCheckpoints();
     this.drawFinish();
     this.createVehicle();
@@ -209,6 +215,41 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
+  private drawObstacles(): void {
+    for (const obstacle of this.simulation.track.obstacles ?? []) {
+      const point = physicsToScreen(obstacle.position, PIXELS_PER_METRE, ORIGIN);
+      const visual = this.add.graphics().setPosition(point.x, point.y).setDepth(3);
+      if (obstacle.style === "rock") {
+        const width = obstacle.width * PIXELS_PER_METRE;
+        const height = obstacle.height * PIXELS_PER_METRE;
+        visual.fillStyle(0x596273).beginPath().moveTo(-width / 2, 0).lineTo(-width * 0.35, -height * 0.68);
+        visual.lineTo(0, -height).lineTo(width * 0.42, -height * 0.62).lineTo(width / 2, 0).closePath().fillPath();
+        visual.lineStyle(4, 0x99a6b5, 0.7).lineBetween(-width * 0.22, -height * 0.55, 0, -height * 0.78);
+      } else if (obstacle.style === "tires") {
+        visual.fillStyle(0x080b12).fillCircle(-17, -17, 18).fillCircle(17, -17, 18).fillCircle(0, -43, 18);
+        visual.lineStyle(5, 0x394558).strokeCircle(-17, -17, 12).strokeCircle(17, -17, 12).strokeCircle(0, -43, 12);
+      } else if (obstacle.style === "crates") {
+        this.drawCrate(visual, -23, -44, 44);
+        this.drawCrate(visual, 23, -44, 44);
+        this.drawCrate(visual, 0, -86, 44);
+      } else {
+        visual.fillStyle(0xe8eef4).fillRect(-30, -62, 7, 62).fillRect(23, -62, 7, 62);
+        visual.fillStyle(0xf5c44d).fillRoundedRect(-38, -66, 76, 26, 5);
+        visual.lineStyle(8, 0xd83d36);
+        for (let x = -28; x <= 22; x += 25) visual.lineBetween(x, -64, x + 16, -42);
+        visual.fillStyle(0xfff3a2).fillCircle(-27, -73, 5).fillCircle(27, -73, 5);
+      }
+      this.obstacleVisuals.set(obstacle.id, visual);
+    }
+  }
+
+  private drawCrate(graphics: Phaser.GameObjects.Graphics, x: number, y: number, size: number): void {
+    graphics.fillStyle(0xb8682b).fillRect(x - size / 2, y, size, size);
+    graphics.lineStyle(4, 0x6d371b).strokeRect(x - size / 2, y, size, size);
+    graphics.lineBetween(x - size / 2 + 5, y + 5, x + size / 2 - 5, y + size - 5);
+    graphics.lineBetween(x + size / 2 - 5, y + 5, x - size / 2 + 5, y + size - 5);
+  }
+
   private drawFinish(): void {
     const point = physicsToScreen({ x: this.finishX, y: 0 }, PIXELS_PER_METRE, ORIGIN);
     const finish = this.add.graphics().setDepth(-1);
@@ -274,6 +315,7 @@ export class GameScene extends Phaser.Scene {
     this.suspension.lineStyle(3, this.sceneData.car.accent, 1).lineBetween(rearMount.x, rearMount.y, rearPoint.x, rearPoint.y);
     this.suspension.lineBetween(frontMount.x, frontMount.y, frontPoint.x, frontPoint.y);
     this.turboFlame.clear();
+    this.syncObstacles(snapshot);
     if (this.sceneData.input.state.turbo && speed > 1) {
       const anchorWorld = this.localToWorld(snapshot.chassis.position, snapshot.chassis.angle, this.sceneData.car.exhaustOffset);
       const anchor = physicsToScreen(anchorWorld, PIXELS_PER_METRE, ORIGIN);
@@ -286,6 +328,31 @@ export class GameScene extends Phaser.Scene {
     this.placeObject(this.chassis, snapshot.chassis.position, snapshot.chassis.angle);
     this.placeObject(this.rearWheel, snapshot.rearWheel.position, snapshot.rearWheel.angle);
     this.placeObject(this.frontWheel, snapshot.frontWheel.position, snapshot.frontWheel.angle);
+  }
+
+  private syncObstacles(snapshot: VehicleSnapshot): void {
+    for (const id of snapshot.brokenObstacleIds) {
+      if (this.shatteredObstacles.has(id)) continue;
+      this.shatteredObstacles.add(id);
+      this.sceneData.onObstacleBreak();
+      const visual = this.obstacleVisuals.get(id);
+      if (!visual) continue;
+      visual.setVisible(false);
+      for (let index = 0; index < 8; index += 1) {
+        const fragment = this.add.rectangle(visual.x, visual.y - 35, 13, 9, index % 2 ? 0xf5c44d : 0xa95727).setDepth(7);
+        this.tweens.add({
+          targets: fragment,
+          x: visual.x + (index - 3.5) * 22,
+          y: visual.y - 65 - (index % 3) * 22,
+          angle: 180 + index * 35,
+          alpha: 0,
+          duration: 520,
+          ease: "Quad.easeOut",
+          onComplete: () => fragment.destroy(),
+        });
+      }
+      if (!this.sceneData.reducedMotion) this.cameras.main.shake(120, 0.005);
+    }
   }
 
   private drawFlame(anchor: Point, backward: Point, normal: Point, length: number, color: number, width: number): void {

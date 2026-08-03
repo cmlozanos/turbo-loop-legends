@@ -30,6 +30,7 @@ export interface VehicleSnapshot {
   checkpointIndex: number;
   respawnCount: number;
   springboardActivations: number;
+  brokenObstacleIds: readonly string[];
 }
 
 export interface PhysicsOptions {
@@ -75,6 +76,8 @@ export class PhysicsWorld {
   private incompleteLoopComplete = false;
   private activeSpringboardId?: string;
   private springboardActivations = 0;
+  private readonly obstacleBodies = new Map<string, Body>();
+  private readonly brokenObstacleIds = new Set<string>();
 
   constructor(options: PhysicsOptions = {}) {
     this.track = options.track ?? createDefaultTrack();
@@ -88,6 +91,23 @@ export class PhysicsWorld {
         shape: new Chain([...segment.points], false),
         friction: this.track.physics?.grip ?? 0.9,
       });
+    }
+    for (const obstacle of this.track.obstacles ?? []) {
+      const body = this.world.createBody({
+        type: "static",
+        position: { x: obstacle.position.x, y: obstacle.position.y + obstacle.height / 2 },
+      });
+      body.createFixture({
+        shape: new Polygon([
+          { x: -obstacle.width / 2, y: -obstacle.height / 2 },
+          { x: obstacle.width / 2, y: -obstacle.height / 2 },
+          { x: obstacle.width / 2, y: obstacle.height / 2 },
+          { x: -obstacle.width / 2, y: obstacle.height / 2 },
+        ]),
+        friction: 0.9,
+        restitution: obstacle.behavior === "avoid" ? 0.12 : 0.02,
+      });
+      this.obstacleBodies.set(obstacle.id, body);
     }
 
     const spawn = this.track.checkpoints[0];
@@ -161,6 +181,7 @@ export class PhysicsWorld {
     }
 
     if (step > 0) {
+      this.breakObstacles();
       this.world.step(step, 10, 6);
     }
     this.activateSpringboard();
@@ -184,6 +205,7 @@ export class PhysicsWorld {
       checkpointIndex: this.checkpointIndex,
       respawnCount: this.respawnCount,
       springboardActivations: this.springboardActivations,
+      brokenObstacleIds: [...this.brokenObstacleIds],
     };
   }
 
@@ -271,6 +293,22 @@ export class PhysicsWorld {
     this.chassis.setAngularVelocity(this.chassis.getAngularVelocity() * 0.35);
     this.activeSpringboardId = board.id;
     this.springboardActivations += 1;
+  }
+
+  private breakObstacles(): void {
+    const position = this.chassis.getPosition();
+    const velocity = this.chassis.getLinearVelocity();
+    for (const obstacle of this.track.obstacles ?? []) {
+      if (obstacle.behavior !== "breakable" || this.brokenObstacleIds.has(obstacle.id)) continue;
+      const impactReach = obstacle.width / 2 + 1.55 + Math.abs(velocity.x) * this.fixedTimeStep;
+      const closeEnough = Math.abs(position.x - obstacle.position.x) <= impactReach;
+      const atObstacleHeight = position.y <= obstacle.position.y + obstacle.height + 1;
+      if (!closeEnough || !atObstacleHeight || Math.abs(velocity.x) < (obstacle.breakSpeed ?? 8)) continue;
+      const body = this.obstacleBodies.get(obstacle.id);
+      if (body) this.world.destroyBody(body);
+      this.obstacleBodies.delete(obstacle.id);
+      this.brokenObstacleIds.add(obstacle.id);
+    }
   }
 
   private updateCheckpoint(): void {

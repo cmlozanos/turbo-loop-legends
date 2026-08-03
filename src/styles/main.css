@@ -49,18 +49,30 @@ button { font: inherit; }
   place-items: center;
   padding: max(18px, env(safe-area-inset-top)) max(18px, env(safe-area-inset-right)) max(18px, env(safe-area-inset-bottom)) max(18px, env(safe-area-inset-left));
   background:
-    radial-gradient(circle at 50% 110%, rgba(243,165,41,.34), transparent 44%),
+    linear-gradient(115deg, transparent 0 47%, rgba(255,255,255,.025) 47% 48%, transparent 48% 54%, rgba(255,255,255,.025) 54% 55%, transparent 55%),
+    radial-gradient(circle at 50% 110%, rgba(243,165,41,.38), transparent 44%),
     linear-gradient(135deg, rgba(6,20,38,.74), rgba(13,42,71,.92));
+  overflow: hidden;
 }
 
 .screen[hidden], .hud[hidden], .rotate-device[hidden] { display: none; }
 
 .garage {
+  position: relative;
+  isolation: isolate;
   width: min(1050px, 96vw);
   display: grid;
   gap: clamp(8px, 1.5vh, 16px);
   text-align: center;
 }
+
+.brand-lockup { position: relative; z-index: 1; display: grid; justify-items: center; gap: 7px; }
+.splash-art { position: absolute; inset: -80px -150px auto auto; width: 520px; height: 330px; z-index: -1; pointer-events: none; opacity: .48; }
+.splash-art img { position: absolute; width: 360px; right: 15px; top: 112px; transform: rotate(-5deg); filter: drop-shadow(0 18px 15px rgba(0,0,0,.55)); }
+.splash-loop { position: absolute; width: 285px; height: 285px; right: 8px; top: -55px; border-radius: 50%; background: repeating-conic-gradient(from 10deg, #c9782d 0 8deg, #f0a451 8deg 12deg, #7a3e19 12deg 14deg); -webkit-mask: radial-gradient(circle, transparent 0 58%, #000 59% 70%, transparent 71%); mask: radial-gradient(circle, transparent 0 58%, #000 59% 70%, transparent 71%); }
+.speed-streak { position: absolute; height: 8px; border-radius: 999px; background: linear-gradient(90deg, transparent, #8eeaff); transform: rotate(-8deg); }
+.streak-one { width: 250px; top: 205px; left: 15px; }.streak-two { width: 190px; top: 246px; left: 52px; opacity: .65; }
+.splash-badge { display: inline-block; border: 1px solid rgba(143,227,255,.42); border-radius: 999px; padding: 5px 12px; color: #bdeeff; background: rgba(4,18,33,.45); font-size: clamp(.58rem, 1vw, .72rem); font-weight: 900; letter-spacing: .12em; }
 
 .brand-kicker {
   margin: 0;
@@ -114,7 +126,9 @@ h1 span { color: var(--orange); }
 .car-card:hover, .car-card:focus-visible { transform: translateY(-4px); }
 .car-card:focus-visible { outline: 4px solid #fff; outline-offset: 3px; }
 .car-card[aria-pressed="true"] { border-color: var(--orange); background: linear-gradient(155deg, rgba(243,165,41,.24), rgba(255,255,255,.06)); }
-.car-card.is-locked { filter: saturate(.28); cursor: default; }
+.car-card[aria-pressed="true"]::after { content: ""; position: absolute; left: 14%; right: 14%; bottom: 9px; height: 3px; border-radius: 50%; background: var(--car-color); box-shadow: 0 0 18px var(--car-color); }
+.car-card.is-locked { cursor: default; }
+.car-card.is-locked .car-preview { opacity: .82; }
 
 .car-preview {
   display: block;
@@ -135,7 +149,7 @@ h1 span { color: var(--orange); }
 
 .car-card strong { display: block; font: 800 clamp(1rem, 2.5vw, 1.45rem) ui-rounded, "Arial Rounded MT Bold", sans-serif; }
 .car-card small { display: block; color: #bfd5e8; font-size: clamp(.7rem, 1.5vw, .92rem); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.lock-badge { position: absolute; top: 10px; right: 10px; font-size: 1.15rem; }
+.lock-badge { position: absolute; top: 10px; right: 10px; display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; background: rgba(5,16,30,.78); box-shadow: 0 5px 14px rgba(0,0,0,.35); font-size: 1rem; }
 
 .track-picker { display: grid; gap: 7px; }
 .picker-label { margin: 0; color: #8fe3ff; font-size: .74rem; font-weight: 900; letter-spacing: .2em; }
@@ -340,6 +354,7 @@ h1 span { color: var(--orange); }
 @media (max-height: 520px) {
   .garage { gap: 8px; }
   .garage-subtitle { display: none; }
+  .splash-badge, .splash-art { display: none; }
   .car-card { border-radius: 18px; padding: 8px 12px; }
   .car-preview { height: clamp(52px, 10vw, 82px); }
   .track-card { min-height: 54px; padding: 4px; }

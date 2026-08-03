@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { createPhysicsWorld } from "../src/game/physics";
-import { arc, createDefaultTrack, line, physicsToScreen, renderPolylines, trackSurfaceYAt, TRACKS } from "../src/game/track";
+import { arc, createDefaultTrack, getNextTrackId, line, physicsToScreen, renderPolylines, trackSurfaceYAt, TRACKS } from "../src/game/track";
 
 describe("track geometry", () => {
   it("samples closed and incomplete loops without degenerate closing edges", () => {
@@ -43,6 +43,8 @@ describe("track geometry", () => {
     expect(track.segments.filter((segment) => segment.id.includes("ramp"))).toHaveLength(4);
     expect(track.hazards).toHaveLength(4);
     expect(track.springboards).toHaveLength(3);
+    expect(track.obstacles?.some((obstacle) => obstacle.behavior === "avoid")).toBe(true);
+    expect(track.obstacles?.some((obstacle) => obstacle.behavior === "breakable")).toBe(true);
     expect(track.hazards.every((hazard) => hazard.endX > hazard.startX)).toBe(true);
   });
 
@@ -57,12 +59,47 @@ describe("track geometry", () => {
     expect(heights.some((height) => height > 0)).toBe(true);
   });
 
+  it("places every obstacle on its track surface", () => {
+    for (const track of TRACKS) {
+      for (const obstacle of track.obstacles ?? []) {
+        expect(obstacle.position.y).toBeCloseTo(trackSurfaceYAt(track.segments, obstacle.position.x), 5);
+      }
+    }
+  });
+
   it("converts Planck coordinates to Phaser screen coordinates", () => {
     expect(physicsToScreen({ x: 2, y: 3 }, 10, { x: 100, y: 200 })).toEqual({ x: 120, y: 170 });
+  });
+
+  it("advances through every circuit and wraps after the moon", () => {
+    expect(getNextTrackId("forest")).toBe("canyon");
+    expect(getNextTrackId("canyon")).toBe("neon");
+    expect(getNextTrackId("moon")).toBe("forest");
   });
 });
 
 describe("vehicle physics", () => {
+  it("smashes breakable barriers at speed but keeps avoidable objects solid", () => {
+    const track = {
+      segments: [line("flat", { x: -100, y: 0 }, { x: 100, y: 0 })],
+      checkpoints: [{ id: "start", position: { x: 0, y: 1.1 }, angle: 0, radius: 2 }],
+      springboards: [],
+      obstacles: [
+        { id: "wall", behavior: "breakable" as const, style: "roadblock" as const, position: { x: 25, y: 0 }, width: 1.2, height: 1.1, breakSpeed: 7 },
+        { id: "tires", behavior: "avoid" as const, style: "tires" as const, position: { x: 40, y: 0 }, width: 1.2, height: 0.8 },
+      ],
+      hazards: [],
+      killY: -8,
+    };
+    const simulation = createPhysicsWorld({ track });
+    simulation.setInput({ throttle: 1, turbo: true });
+    let snapshot = simulation.getSnapshot();
+    for (let frame = 0; frame < 420; frame += 1) snapshot = simulation.step();
+
+    expect(snapshot.brokenObstacleIds).toContain("wall");
+    expect(snapshot.brokenObstacleIds).not.toContain("tires");
+  });
+
   it("uses motorized wheels to move while keeping all poses finite", () => {
     const simulation = createPhysicsWorld();
     const start = simulation.getSnapshot().chassis.position.x;

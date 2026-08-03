@@ -28,6 +28,20 @@ test("selects a track and returns to the garage during a race", async ({ page })
   await expect(moon).toHaveAttribute("aria-pressed", "true");
 });
 
+test("starts the next circuit directly from the finish screen", async ({ page }) => {
+  await page.goto("");
+  await page.evaluate(() => {
+    const finish = document.getElementById("finish-screen");
+    const garage = document.getElementById("garage-screen");
+    if (finish) finish.hidden = false;
+    if (garage) garage.hidden = true;
+  });
+  await page.getByRole("button", { name: "SIGUIENTE CIRCUITO" }).click();
+  await expect(page.locator("canvas")).toBeVisible();
+  await page.getByRole("button", { name: "Volver al garaje y cambiar coche o pista" }).click();
+  await expect(page.getByRole("button", { name: "Ciudad Neón: Velocidad, rebotes y luces eléctricas" })).toHaveAttribute("aria-pressed", "true");
+});
+
 test("shows three distinct spectacular car designs", async ({ page }) => {
   await page.goto("");
   const images = page.locator(".car-preview img");
@@ -35,9 +49,9 @@ test("shows three distinct spectacular car designs", async ({ page }) => {
   const sources = await images.evaluateAll((elements) => elements.map((element) => (element as HTMLImageElement).src));
   expect(new Set(sources).size).toBe(3);
   expect(sources).toEqual(expect.arrayContaining([
-    expect.stringMatching(/cars\/comet-preview\.svg/),
-    expect.stringMatching(/cars\/lynx-preview\.svg/),
-    expect.stringMatching(/cars\/titan-preview\.svg/)
+    expect.stringMatching(/cars\/comet-preview-v2\.svg/),
+    expect.stringMatching(/cars\/lynx-preview-v2\.svg/),
+    expect.stringMatching(/cars\/titan-preview-v2\.svg/)
   ]));
   expect(await images.evaluateAll((elements) => elements.every((element) => (element as HTMLImageElement).naturalWidth > 0))).toBe(true);
   const standaloneAssets = await page.evaluate(async (urls) => Promise.all(urls.map(async (url) => (await fetch(url)).text())), sources);
@@ -81,6 +95,16 @@ test("activates turbo with the keyboard", async ({ page }) => {
   await page.keyboard.up("ShiftLeft");
   await page.keyboard.up("ArrowRight");
   await expect(page.getByLabel("Activar turbo")).toHaveAttribute("aria-pressed", "false");
+});
+
+test("smashes the mandatory early barrier with enough speed", async ({ page }) => {
+  await page.goto("");
+  await page.getByRole("button", { name: "JUGAR" }).click();
+  await page.keyboard.down("ArrowRight");
+  await page.keyboard.down("ShiftLeft");
+  await expect(page.getByRole("status")).toContainText("Barricada destrozada", { timeout: 12_000 });
+  await page.keyboard.up("ShiftLeft");
+  await page.keyboard.up("ArrowRight");
 });
 
 test("reopens after the network is disconnected", async ({ page, context, browserName }) => {

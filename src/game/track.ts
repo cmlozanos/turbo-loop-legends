@@ -34,6 +34,18 @@ export interface HazardGap {
   depth: number;
 }
 
+export type ObstacleStyle = "rock" | "tires" | "crates" | "roadblock";
+
+export interface TrackObstacle {
+  id: string;
+  behavior: "avoid" | "breakable";
+  style: ObstacleStyle;
+  position: Point;
+  width: number;
+  height: number;
+  breakSpeed?: number;
+}
+
 export interface TrackTheme {
   skyTop: number;
   skyBottom: number;
@@ -63,6 +75,7 @@ export interface TrackDefinition {
   segments: readonly TrackSegment[];
   checkpoints: readonly Checkpoint[];
   springboards: readonly Springboard[];
+  obstacles?: readonly TrackObstacle[];
   hazards: readonly HazardGap[];
   killY: number;
 }
@@ -88,6 +101,7 @@ interface TrackProfile {
   gapWidths: readonly [number, number, number, number];
   rampHeights: readonly [number, number, number, number];
   springboards: readonly Springboard[];
+  obstacles: readonly TrackObstacle[];
 }
 
 export function line(id: string, ...points: Point[]): TrackSegment {
@@ -114,7 +128,7 @@ export function arc(options: ArcOptions): TrackSegment {
 const PROFILES: readonly TrackProfile[] = [
   {
     id: "forest", name: "Bosque Turbo", tagline: "Rápida, amable y llena de saltos", difficulty: 1,
-    capabilities: ["Rampas suaves", "2 saltadores", "Precipicios cortos"],
+    capabilities: ["Rocas y cajas", "2 saltadores", "Precipicios cortos"],
     theme: { skyTop: 0x79ccec, skyBottom: 0xeaf8f2, ground: 0x4f8e52, scenery: 0x376b42, road: 0x9b5a2f, roadEdge: 0xe6ad62, abyss: 0x15202b, accent: 0x5ce1a5 },
     physics: { gravity: -9.5, grip: 1.5, suspensionFrequency: 4.3, suspensionDamping: 0.9 },
     gapWidths: [8, 7, 7, 7], rampHeights: [3.2, 3, 3.2, 2.8],
@@ -122,10 +136,15 @@ const PROFILES: readonly TrackProfile[] = [
       { id: "forest-one", position: { x: 232, y: 0 }, width: 3.2, verticalBoost: 13, forwardBoost: 3.5 },
       { id: "forest-two", position: { x: 488, y: 0 }, width: 3.4, verticalBoost: 14, forwardBoost: 4 },
     ],
+    obstacles: [
+      { id: "forest-rock", behavior: "avoid", style: "rock", position: { x: 236, y: 0 }, width: 1.25, height: 0.75 },
+      { id: "forest-crates", behavior: "breakable", style: "crates", position: { x: 55, y: 0 }, width: 1.1, height: 1.15, breakSpeed: 7 },
+      { id: "forest-tires", behavior: "avoid", style: "tires", position: { x: 492, y: 0 }, width: 1.15, height: 0.8 },
+    ],
   },
   {
     id: "canyon", name: "Cañón Salvaje", tagline: "Gargantas profundas y grandes vuelos", difficulty: 2,
-    capabilities: ["4 precipicios", "3 saltadores", "Looping roto"],
+    capabilities: ["Barreras rompibles", "3 saltadores", "Looping roto"],
     theme: { skyTop: 0x55b8df, skyBottom: 0xffddb0, ground: 0xa85b32, scenery: 0x743e35, road: 0x8b4b28, roadEdge: 0xffc260, abyss: 0x1b1015, accent: 0xffb12b },
     physics: { gravity: -10, grip: 1.45, suspensionFrequency: 4.4, suspensionDamping: 0.88 },
     gapWidths: [11.5, 6, 10, 9.5], rampHeights: [4.2, 3.6, 4, 3.4],
@@ -133,6 +152,12 @@ const PROFILES: readonly TrackProfile[] = [
       { id: "canyon-one", position: { x: 232, y: 0 }, width: 3.2, verticalBoost: 15, forwardBoost: 4.5 },
       { id: "canyon-two", position: { x: 318, y: 0 }, width: 3.2, verticalBoost: 15.5, forwardBoost: 4.5 },
       { id: "canyon-three", position: { x: 488, y: 0 }, width: 3.6, verticalBoost: 16, forwardBoost: 5 },
+    ],
+    obstacles: [
+      { id: "canyon-rock", behavior: "avoid", style: "rock", position: { x: 236, y: 0 }, width: 1.45, height: 0.9 },
+      { id: "canyon-crates", behavior: "breakable", style: "crates", position: { x: 55, y: 0 }, width: 1.2, height: 1.25, breakSpeed: 7.5 },
+      { id: "canyon-roadblock", behavior: "breakable", style: "roadblock", position: { x: 492, y: 0 }, width: 1.3, height: 1.1, breakSpeed: 8.5 },
+      { id: "canyon-tires", behavior: "avoid", style: "tires", position: { x: 322, y: 0 }, width: 1.2, height: 0.85 },
     ],
   },
   {
@@ -142,6 +167,11 @@ const PROFILES: readonly TrackProfile[] = [
     physics: { gravity: -10.5, grip: 1.7, suspensionFrequency: 4.8, suspensionDamping: 0.92 },
     gapWidths: [8, 6, 8, 7], rampHeights: [4, 3.4, 4, 3.5],
     springboards: [218, 300, 408, 500].map((x, index) => ({ id: `neon-${index}`, position: { x, y: 0 }, width: 3, verticalBoost: 14 + index, forwardBoost: 5 })),
+    obstacles: [
+      { id: "neon-tires", behavior: "avoid", style: "tires", position: { x: 222, y: 0 }, width: 1.2, height: 0.8 },
+      { id: "neon-roadblock", behavior: "breakable", style: "roadblock", position: { x: 55, y: 0 }, width: 1.25, height: 1.1, breakSpeed: 8 },
+      { id: "neon-crates", behavior: "breakable", style: "crates", position: { x: 405, y: 0 }, width: 1.1, height: 1.2, breakSpeed: 8 },
+    ],
   },
   {
     id: "volcano", name: "Volcán Furia", tagline: "La pista más agresiva de la Tierra", difficulty: 4,
@@ -150,6 +180,12 @@ const PROFILES: readonly TrackProfile[] = [
     physics: { gravity: -11.5, grip: 1.55, suspensionFrequency: 5.2, suspensionDamping: 0.94 },
     gapWidths: [10, 9, 10, 10], rampHeights: [5, 4.8, 5.2, 4.6],
     springboards: [205, 244, 320, 418, 492].map((x, index) => ({ id: `volcano-${index}`, position: { x, y: 0 }, width: 3.2, verticalBoost: 16 + index * 0.4, forwardBoost: 5.5 })),
+    obstacles: [
+      { id: "volcano-rock-one", behavior: "avoid", style: "rock", position: { x: 209, y: 0 }, width: 1.55, height: 1 },
+      { id: "volcano-roadblock", behavior: "breakable", style: "roadblock", position: { x: 55, y: 0 }, width: 1.35, height: 1.25, breakSpeed: 8.5 },
+      { id: "volcano-rock-two", behavior: "avoid", style: "rock", position: { x: 422, y: 0 }, width: 1.3, height: 0.9 },
+      { id: "volcano-crates", behavior: "breakable", style: "crates", position: { x: 495, y: 0 }, width: 1.25, height: 1.3, breakSpeed: 9 },
+    ],
   },
   {
     id: "moon", name: "Base Lunar", tagline: "Gravedad baja y saltos gigantes", difficulty: 5,
@@ -158,6 +194,12 @@ const PROFILES: readonly TrackProfile[] = [
     physics: { gravity: -6.2, grip: 1.25, suspensionFrequency: 3.5, suspensionDamping: 0.82 },
     gapWidths: [13, 11, 13, 12], rampHeights: [4.5, 4.2, 4.8, 4.4],
     springboards: [190, 228, 310, 350, 420, 490].map((x, index) => ({ id: `moon-${index}`, position: { x, y: 0 }, width: 3.5, verticalBoost: 11 + index * 0.3, forwardBoost: 4.5 })),
+    obstacles: [
+      { id: "moon-rock", behavior: "avoid", style: "rock", position: { x: 194, y: 0 }, width: 1.3, height: 0.9 },
+      { id: "moon-crates", behavior: "breakable", style: "crates", position: { x: 55, y: 0 }, width: 1.2, height: 1.25, breakSpeed: 6 },
+      { id: "moon-roadblock", behavior: "breakable", style: "roadblock", position: { x: 494, y: 0 }, width: 1.35, height: 1.2, breakSpeed: 6 },
+      { id: "moon-tires", behavior: "avoid", style: "tires", position: { x: 354, y: 0 }, width: 1.2, height: 0.85 },
+    ],
   },
 ] as const;
 
@@ -203,6 +245,10 @@ function buildTrack(profile: TrackProfile): TrackDefinition {
       ...board,
       position: { ...board.position, y: trackSurfaceYAt(segments, board.position.x) },
     })),
+    obstacles: profile.obstacles.map((obstacle) => ({
+      ...obstacle,
+      position: { ...obstacle.position, y: trackSurfaceYAt(segments, obstacle.position.x) },
+    })),
     hazards: [
       { id: "first-gorge", startX: 96, endX: landing1, depth: 8 },
       { id: "middle-gorge", startX: 264, endX: landing2, depth: 10 },
@@ -235,6 +281,11 @@ export const TRACKS: readonly TrackDefinition[] = PROFILES.map(buildTrack);
 
 export function getTrack(id: TrackId): TrackDefinition {
   return TRACKS.find((track) => track.id === id) ?? TRACKS[0];
+}
+
+export function getNextTrackId(id: TrackId): TrackId {
+  const index = TRACKS.findIndex((track) => track.id === id);
+  return TRACKS[(index + 1) % TRACKS.length].id ?? "forest";
 }
 
 export function createDefaultTrack(): TrackDefinition {
