@@ -8,7 +8,8 @@ import {
   type Body,
 } from "planck";
 
-import { createDefaultTrack, type LoopGuide, type Point, type TrackDefinition } from "./track";
+import type { CarSpec } from "./cars";
+import { carCanPassObstacle, createDefaultTrack, type LoopGuide, type Point, type TrackDefinition } from "./track";
 
 export interface VehicleInput {
   throttle?: number;
@@ -31,6 +32,7 @@ export interface VehicleSnapshot {
   respawnCount: number;
   springboardActivations: number;
   brokenObstacleIds: readonly string[];
+  blockedObstacleId?: string;
   activeLoopId?: string;
 }
 
@@ -38,6 +40,7 @@ export interface PhysicsOptions {
   track?: TrackDefinition;
   gravity?: Point;
   fixedTimeStep?: number;
+  car?: CarSpec;
 }
 
 interface GuidedLoop {
@@ -85,9 +88,12 @@ export class PhysicsWorld {
   private springboardActivations = 0;
   private readonly obstacleBodies = new Map<string, Body>();
   private readonly brokenObstacleIds = new Set<string>();
+  private readonly car?: CarSpec;
+  private blockedObstacleId?: string;
 
   constructor(options: PhysicsOptions = {}) {
     this.track = options.track ?? createDefaultTrack();
+    this.car = options.car;
     this.fixedTimeStep = options.fixedTimeStep ?? 1 / 60;
     this.world = new World({ gravity: options.gravity ?? { x: 0, y: this.track.physics?.gravity ?? -10 } });
 
@@ -100,6 +106,7 @@ export class PhysicsWorld {
       });
     }
     for (const obstacle of this.track.obstacles ?? []) {
+      if (obstacle.behavior === "challenge" && (!this.car || carCanPassObstacle(this.car, obstacle))) continue;
       const body = this.world.createBody({
         type: "static",
         position: { x: obstacle.position.x, y: obstacle.position.y + obstacle.height / 2 },
@@ -167,9 +174,11 @@ export class PhysicsWorld {
       this.updateCheckpoint();
       return this.getSnapshot();
     }
-    const wheelSpeed = this.input.turbo ? TURBO_WHEEL_SPEED : MAX_WHEEL_SPEED;
+    const accelerationFactor = this.car ? 0.82 + this.car.capabilities.acceleration * 0.06 : 1;
+    const brakingFactor = this.car ? 0.75 + this.car.capabilities.braking * 0.08 : 1;
+    const wheelSpeed = (this.input.turbo ? TURBO_WHEEL_SPEED : MAX_WHEEL_SPEED) * accelerationFactor;
     const motorSpeed = this.input.brake ? 0 : -this.input.throttle * wheelSpeed;
-    const motorTorque = this.input.turbo ? TURBO_TORQUE : DRIVE_TORQUE;
+    const motorTorque = (this.input.turbo ? TURBO_TORQUE : DRIVE_TORQUE) * (this.input.brake ? brakingFactor : accelerationFactor);
 
     this.rearJoint.enableMotor(this.input.brake || Math.abs(this.input.throttle) > 0.001);
     this.rearJoint.setMotorSpeed(motorSpeed);
@@ -192,6 +201,7 @@ export class PhysicsWorld {
       this.breakObstacles();
       this.world.step(step, 10, 6);
     }
+    this.updateBlockedObstacle();
     this.activateSpringboard();
     this.updateCheckpoint();
 
@@ -214,6 +224,7 @@ export class PhysicsWorld {
       respawnCount: this.respawnCount,
       springboardActivations: this.springboardActivations,
       brokenObstacleIds: [...this.brokenObstacleIds],
+      blockedObstacleId: this.blockedObstacleId,
       activeLoopId: this.guidedLoop?.id,
     };
   }
@@ -230,6 +241,7 @@ export class PhysicsWorld {
     this.guidedLoop = undefined;
     this.loopCooldowns.clear();
     this.activeSpringboardId = undefined;
+    this.blockedObstacleId = undefined;
     this.placeBody(this.chassis, checkpoint.position, checkpoint.angle);
     this.placeBody(
       this.rearWheel,
@@ -247,7 +259,12 @@ export class PhysicsWorld {
 
   private createWheel(position: Point): Body {
     const wheel = this.world.createBody({ type: "dynamic", position, bullet: true });
-    wheel.createFixture({ shape: new Circle(0.42), density: 1.05, friction: this.track.physics?.grip ?? 1.45, restitution: 0.02 });
+    wheel.createFixture({
+      shape: new Circle(0.42),
+      density: 1.05,
+      friction: (this.track.physics?.grip ?? 1.45) * (this.car?.grip ?? 1),
+      restitution: 0.02,
+    });
     return wheel;
   }
 
@@ -317,6 +334,22 @@ export class PhysicsWorld {
       this.obstacleBodies.delete(obstacle.id);
       this.brokenObstacleIds.add(obstacle.id);
     }
+  }
+
+  private updateBlockedObstacle(): void {
+    if (!this.car || Math.abs(this.input.throttle) < 0.2) {
+      this.blockedObstacleId = undefined;
+      return;
+    }
+    const position = this.chassis.getPosition();
+    const velocity = this.chassis.getLinearVelocity();
+    this.blockedObstacleId = (this.track.obstacles ?? []).find((obstacle) => {
+      if (obstacle.behavior !== "challenge" || carCanPassObstacle(this.car!, obstacle)) return false;
+      const movingToward = Math.sign(this.input.throttle) === Math.sign(obstacle.position.x - position.x);
+      return movingToward
+        && Math.abs(position.x - obstacle.position.x) <= obstacle.width / 2 + 2.2
+        && Math.abs(velocity.x) < 0.75;
+    })?.id;
   }
 
   private updateCheckpoint(): void {

@@ -1,9 +1,11 @@
+import type { CarId, CarSize, CarSpec } from "./cars";
+
 export interface Point {
   x: number;
   y: number;
 }
 
-export type TrackId = "forest" | "canyon" | "neon" | "volcano" | "moon";
+export type TrackId = "forest" | "canyon" | "neon" | "volcano" | "moon" | "jungle" | "glacier" | "factory";
 
 export interface TrackSegment {
   id: string;
@@ -35,16 +37,28 @@ export interface HazardGap {
   requiresTurbo?: boolean;
 }
 
-export type ObstacleStyle = "rock" | "tires" | "crates" | "roadblock";
+export type ObstacleStyle = "rock" | "tires" | "crates" | "roadblock" | "tunnel" | "highWall" | "iceGate" | "brakeGate" | "heavyGate";
+
+export type RequirementStat = "size" | "grip" | "braking" | "jump" | "power";
+
+export interface ObstacleRequirement {
+  stat: RequirementStat;
+  minimum?: number;
+  size?: CarSize;
+  label: string;
+  hint: string;
+  recommendedCarIds: readonly CarId[];
+}
 
 export interface TrackObstacle {
   id: string;
-  behavior: "avoid" | "breakable";
+  behavior: "avoid" | "breakable" | "challenge";
   style: ObstacleStyle;
   position: Point;
   width: number;
   height: number;
   breakSpeed?: number;
+  requirement?: ObstacleRequirement;
 }
 
 export interface TrackTheme {
@@ -88,6 +102,7 @@ export interface TrackDefinition {
   checkpoints: readonly Checkpoint[];
   springboards: readonly Springboard[];
   obstacles?: readonly TrackObstacle[];
+  requirements?: readonly ObstacleRequirement[];
   hazards: readonly HazardGap[];
   killY: number;
 }
@@ -234,6 +249,51 @@ const PROFILES: readonly TrackProfile[] = [
       { id: "moon-tires", behavior: "avoid", style: "tires", position: { x: 354, y: 0 }, width: 1.2, height: 0.85 },
     ],
   },
+  {
+    id: "jungle", name: "Jungla Secreta", tagline: "Túneles bajos y vuelos entre lianas", difficulty: 3,
+    capabilities: ["Coche pequeño", "Salto nivel 4", "Túnel bajo"],
+    theme: { skyTop: 0x3abf91, skyBottom: 0xdaf5b0, ground: 0x286447, scenery: 0x173f35, road: 0x79512e, roadEdge: 0xf3d46c, abyss: 0x071c18, accent: 0x9dff70 },
+    physics: { gravity: -9.8, grip: 1.58, suspensionFrequency: 4.5, suspensionDamping: 0.9 },
+    gapWidths: [17, 8, 9, 8], rampHeights: [3.8, 4.6, 3.3, 4.1],
+    rampStyles: ["wave", "smooth", "stepped", "kicker"],
+    loopDesign: { fullCenterX: 184, fullRadius: 3.7, brokenCenterX: 388, brokenRadius: 4.45, brokenEndAngle: Math.PI * 1.33, brokenGap: 3.6 },
+    springboards: [228, 315, 486].map((x, index) => ({ id: `jungle-${index}`, position: { x, y: 0 }, width: 3.1, verticalBoost: 14.5 + index, forwardBoost: 4.5 })),
+    obstacles: [
+      { id: "jungle-tunnel", behavior: "challenge", style: "tunnel", position: { x: 220, y: 0 }, width: 2.4, height: 1.8, requirement: { stat: "size", size: "small", label: "Tamaño pequeño", hint: "Pasa por debajo", recommendedCarIds: ["spark"] } },
+      { id: "jungle-wall", behavior: "challenge", style: "highWall", position: { x: 315, y: 0 }, width: 1.3, height: 1.5, requirement: { stat: "jump", minimum: 4, label: "Salto 4", hint: "Pasa por encima", recommendedCarIds: ["spark", "lynx"] } },
+      { id: "jungle-crates", behavior: "breakable", style: "crates", position: { x: 55, y: 0 }, width: 1.15, height: 1.2, breakSpeed: 7.5 },
+    ],
+  },
+  {
+    id: "glacier", name: "Glaciar Cristal", tagline: "Hielo veloz y frenadas de precisión", difficulty: 4,
+    capabilities: ["Agarre nivel 5", "Frenada nivel 5", "Hielo"],
+    theme: { skyTop: 0x478bc7, skyBottom: 0xe9fbff, ground: 0x8fd7e8, scenery: 0x5b9fc5, road: 0x8dbccc, roadEdge: 0xe5ffff, abyss: 0x0a2e4a, accent: 0x71f4ff },
+    physics: { gravity: -10.2, grip: 1.16, suspensionFrequency: 4.1, suspensionDamping: 0.84 },
+    gapWidths: [20, 7, 11, 8.5], rampHeights: [4.4, 3.1, 5, 3.7],
+    rampStyles: ["smooth", "stepped", "smooth", "kicker"],
+    loopDesign: { fullCenterX: 176, fullRadius: 5.45, brokenCenterX: 374, brokenRadius: 3.75, brokenEndAngle: Math.PI * 1.2, brokenGap: 4.1 },
+    springboards: [218, 304, 414, 493].map((x, index) => ({ id: `glacier-${index}`, position: { x, y: 0 }, width: 3.3, verticalBoost: 13 + index * 0.8, forwardBoost: 4.8 })),
+    obstacles: [
+      { id: "glacier-grip", behavior: "challenge", style: "iceGate", position: { x: 220, y: 0 }, width: 2.5, height: 1.15, requirement: { stat: "grip", minimum: 5, label: "Agarre 5", hint: "Cruza el hielo", recommendedCarIds: ["gecko", "titan"] } },
+      { id: "glacier-brake", behavior: "challenge", style: "brakeGate", position: { x: 304, y: 0 }, width: 1.4, height: 1.4, requirement: { stat: "braking", minimum: 5, label: "Frenada 5", hint: "Frena con precisión", recommendedCarIds: ["gecko"] } },
+      { id: "glacier-roadblock", behavior: "breakable", style: "roadblock", position: { x: 55, y: 0 }, width: 1.2, height: 1.15, breakSpeed: 7 },
+    ],
+  },
+  {
+    id: "factory", name: "Fábrica Colosal", tagline: "Muros altos y compuertas pesadas", difficulty: 5,
+    capabilities: ["Tamaño grande", "Fuerza nivel 5", "Ruedas gigantes"],
+    theme: { skyTop: 0x29364b, skyBottom: 0xb87342, ground: 0x353b42, scenery: 0x222830, road: 0x59616a, roadEdge: 0xffaa3c, abyss: 0x0c1016, accent: 0xff8b38 },
+    physics: { gravity: -10.8, grip: 1.62, suspensionFrequency: 5, suspensionDamping: 0.95 },
+    gapWidths: [18.5, 9.5, 8.5, 11], rampHeights: [4.5, 4.1, 3.8, 5.4],
+    rampStyles: ["smooth", "stepped", "wave", "smooth"],
+    loopDesign: { fullCenterX: 196, fullRadius: 4.35, brokenCenterX: 382, brokenRadius: 5.6, brokenEndAngle: Math.PI * 1.43, brokenGap: 2.8 },
+    springboards: [222, 322, 408, 497].map((x, index) => ({ id: `factory-${index}`, position: { x, y: 0 }, width: 3.5, verticalBoost: 15 + index * 0.7, forwardBoost: 5 })),
+    obstacles: [
+      { id: "factory-step", behavior: "challenge", style: "highWall", position: { x: 220, y: 0 }, width: 1.5, height: 1.7, requirement: { stat: "size", size: "large", label: "Tamaño grande", hint: "Sube por encima", recommendedCarIds: ["mammoth", "titan"] } },
+      { id: "factory-gate", behavior: "challenge", style: "heavyGate", position: { x: 322, y: 0 }, width: 1.5, height: 1.8, requirement: { stat: "power", minimum: 5, label: "Fuerza 5", hint: "Empuja la compuerta", recommendedCarIds: ["mammoth", "titan"] } },
+      { id: "factory-crates", behavior: "breakable", style: "crates", position: { x: 55, y: 0 }, width: 1.3, height: 1.3, breakSpeed: 8 },
+    ],
+  },
 ] as const;
 
 function buildTrack(profile: TrackProfile): TrackDefinition {
@@ -291,6 +351,7 @@ function buildTrack(profile: TrackProfile): TrackDefinition {
       ...obstacle,
       position: { ...obstacle.position, y: trackSurfaceYAt(segments, obstacle.position.x) },
     })),
+    requirements: profile.obstacles.flatMap((obstacle) => obstacle.requirement ? [obstacle.requirement] : []),
     hazards: [
       { id: "first-gorge", startX: 96, endX: landing1, depth: 8, requiresTurbo: true },
       { id: "middle-gorge", startX: 264, endX: landing2, depth: 10 },
@@ -336,6 +397,19 @@ export function getTrack(id: TrackId): TrackDefinition {
 export function getNextTrackId(id: TrackId): TrackId {
   const index = TRACKS.findIndex((track) => track.id === id);
   return TRACKS[(index + 1) % TRACKS.length].id ?? "forest";
+}
+
+export function carMeetsRequirement(car: CarSpec, requirement: ObstacleRequirement): boolean {
+  if (requirement.stat === "size") return car.capabilities.size === requirement.size;
+  return car.capabilities[requirement.stat] >= (requirement.minimum ?? 0);
+}
+
+export function carCanPassObstacle(car: CarSpec, obstacle: TrackObstacle): boolean {
+  return !obstacle.requirement || carMeetsRequirement(car, obstacle.requirement);
+}
+
+export function carCanCompleteTrack(car: CarSpec, track: TrackDefinition): boolean {
+  return (track.obstacles ?? []).every((obstacle) => carCanPassObstacle(car, obstacle));
 }
 
 export function createDefaultTrack(): TrackDefinition {

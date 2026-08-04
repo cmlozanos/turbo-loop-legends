@@ -6,7 +6,7 @@ import { CARS, getCar, type CarId } from "./game/cars";
 import { GameScene, type GameSceneData } from "./game/GameScene";
 import { InputController } from "./game/input";
 import { loadSave, saveGame, unlockCar } from "./game/state";
-import { getNextTrackId, getTrack, TRACKS, type TrackId } from "./game/track";
+import { carCanCompleteTrack, getNextTrackId, getTrack, TRACKS, type TrackId, type TrackObstacle } from "./game/track";
 import "./styles/main.css";
 
 const app = document.querySelector<HTMLElement>("#app");
@@ -18,6 +18,7 @@ let selectedTrack: TrackId = save.selectedTrack;
 let toastTimer: number | undefined;
 let sceneAdded = false;
 let installPrompt: BeforeInstallPromptEvent | undefined;
+let recommendedCar: CarId | undefined;
 
 app.innerHTML = `
   <div class="app-shell">
@@ -29,13 +30,14 @@ app.innerHTML = `
           <p class="brand-kicker">Una aventura sobre ruedas</p>
           <h1>Turbo <span>Loop</span> Legends</h1>
           <p class="garage-subtitle">Elige tu coche. Pisa a fondo. ¡Vuela por los loopings!</p>
-          <span class="splash-badge">5 CIRCUITOS · SALTOS · TURBO</span>
+          <span class="splash-badge">8 CIRCUITOS · 6 COCHES · RETOS DE INGENIO</span>
         </header>
         <div id="car-grid" class="car-grid" role="group" aria-label="Elige un coche"></div>
         <div class="track-picker">
           <p class="picker-label">ELIGE PISTA</p>
           <div id="track-grid" class="track-grid" role="group" aria-label="Elige una pista"></div>
         </div>
+        <div id="track-advice" class="track-advice" aria-live="polite"></div>
         <button id="play-button" class="primary-button">JUGAR</button>
         <div class="settings-row" aria-label="Ajustes">
           <label class="toggle"><input id="assists-toggle" type="checkbox"><span>✨ Ayudas</span></label>
@@ -78,6 +80,17 @@ app.innerHTML = `
         </div>
       </div>
     </section>
+    <section id="challenge-screen" class="screen" hidden>
+      <div class="modal challenge-modal">
+        <p class="brand-kicker">Pista de ingeniero</p>
+        <h2>¡Prueba otro coche!</h2>
+        <p id="challenge-message"></p>
+        <div class="modal-actions">
+          <button id="change-car-button" class="primary-button">CAMBIAR COCHE</button>
+          <button id="challenge-continue-button" class="secondary-button">SEGUIR INTENTANDO</button>
+        </div>
+      </div>
+    </section>
     <aside class="rotate-device" hidden><div><span>📱</span><h2>Gira el dispositivo</h2><p>Los loopings se ven mejor en horizontal.</p></div></aside>
   </div>
 `;
@@ -86,6 +99,7 @@ const garageScreen = getElement("garage-screen");
 const hud = getElement("hud");
 const pauseScreen = getElement("pause-screen");
 const finishScreen = getElement("finish-screen");
+const challengeScreen = getElement("challenge-screen");
 const speedLabel = getElement("speed");
 const toast = getElement("toast");
 const carGrid = getElement("car-grid");
@@ -113,6 +127,7 @@ const game = new Phaser.Game({
 
 renderCars();
 renderTracks();
+renderGarageAdvice();
 bindSettings();
 bindInstall();
 
@@ -124,6 +139,8 @@ getElement("home-button").addEventListener("click", showGarage);
 getElement("resume-button").addEventListener("click", resumeRace);
 getElement("garage-button").addEventListener("click", showGarage);
 getElement("finish-garage-button").addEventListener("click", showGarage);
+getElement("change-car-button").addEventListener("click", chooseRecommendedCar);
+getElement("challenge-continue-button").addEventListener("click", continueChallenge);
 window.addEventListener("keydown", (event) => {
   if (event.code === "Escape" && !hud.hidden) pauseRace();
 });
@@ -176,6 +193,7 @@ function startRace(): void {
   garageScreen.hidden = true;
   pauseScreen.hidden = true;
   finishScreen.hidden = true;
+  challengeScreen.hidden = true;
   hud.hidden = false;
   const data: GameSceneData = {
     car: getCar(selectedCar),
@@ -192,7 +210,8 @@ function startRace(): void {
     },
     onFinish: finishRace,
     onObstacleBreak: () => showToast("💥 ¡Barricada destrozada!"),
-    onRespawn: () => showToast("¡Otra oportunidad!")
+    onRespawn: () => showToast("¡Otra oportunidad!"),
+    onChallengeFailure: handleChallengeFailure
   };
   if (!sceneAdded) {
     game.scene.add("GameScene", GameScene, true, data);
@@ -245,10 +264,12 @@ function showGarage(): void {
   audio.stop();
   pauseScreen.hidden = true;
   finishScreen.hidden = true;
+  challengeScreen.hidden = true;
   hud.hidden = true;
   garageScreen.hidden = false;
   renderCars();
   renderTracks();
+  renderGarageAdvice();
 }
 
 function renderCars(): void {
@@ -260,12 +281,15 @@ function renderCars(): void {
     button.setAttribute("aria-pressed", String(selectedCar === car.id));
     button.setAttribute("aria-label", unlocked ? `${car.name}: ${car.tagline}` : `${car.name} bloqueado: ${car.unlock}`);
     button.disabled = !unlocked;
-    button.innerHTML = `<span class="car-preview"><img src="${assetUrl(car.asset)}" alt="" draggable="false"></span><strong>${car.name}</strong><small>${unlocked ? car.tagline : car.unlock}</small>${unlocked ? "" : '<span class="lock-badge">🔒</span>'}`;
+    const sizeLabel = car.capabilities.size === "small" ? "PEQUEÑO" : car.capabilities.size === "large" ? "GRANDE" : "MEDIANO";
+    button.innerHTML = `<span class="car-preview"><img src="${assetUrl(car.asset)}" alt="" draggable="false"></span><strong>${car.name}</strong><small>${unlocked ? car.tagline : car.unlock}</small>${unlocked ? `<span class="car-stats"><b>${sizeLabel}</b><span>⚡${car.capabilities.acceleration}</span><span>🛞${car.capabilities.grip}</span><span>🛑${car.capabilities.braking}</span><span>↗${car.capabilities.jump}</span><span>💪${car.capabilities.power}</span></span><em>${car.wheelName}</em>` : '<span class="lock-badge">🔒</span>'}`;
     button.addEventListener("click", () => {
       selectedCar = car.id;
       save.selectedCar = car.id;
       saveGame(save);
       renderCars();
+      renderTracks();
+      renderGarageAdvice();
     });
     return button;
   }));
@@ -275,18 +299,69 @@ function renderTracks(): void {
   trackGrid.replaceChildren(...TRACKS.map((track) => {
     const button = document.createElement("button");
     button.className = "track-card";
+    const compatible = carCanCompleteTrack(getCar(selectedCar), track);
+    button.classList.toggle("is-compatible", compatible);
+    button.classList.toggle("is-incompatible", !compatible);
     button.style.setProperty("--track-accent", `#${(track.theme?.accent ?? 0xffffff).toString(16).padStart(6, "0")}`);
     button.setAttribute("aria-pressed", String(selectedTrack === track.id));
     button.setAttribute("aria-label", `${track.name}: ${track.tagline}`);
-    button.innerHTML = `${renderTrackMap(track)}<strong>${track.name}</strong><small>${"★".repeat(track.difficulty ?? 1)}</small><span>${track.capabilities?.[0] ?? "Aventura"}</span>`;
+    button.innerHTML = `${renderTrackMap(track)}<strong>${track.name}</strong><small>${"★".repeat(track.difficulty ?? 1)}</small><span>${track.capabilities?.[0] ?? "Aventura"}</span><i>${compatible ? "✓ APTO" : "? REVISA"}</i>`;
     button.addEventListener("click", () => {
       selectedTrack = track.id ?? "canyon";
       save.selectedTrack = selectedTrack;
       saveGame(save);
       renderTracks();
+      renderGarageAdvice();
     });
     return button;
   }));
+}
+
+function renderGarageAdvice(): void {
+  const advice = getElement("track-advice");
+  const track = getTrack(selectedTrack);
+  const car = getCar(selectedCar);
+  const requirements = track.requirements ?? [];
+  if (requirements.length === 0) {
+    advice.innerHTML = `<strong>✓ ${car.name} puede afrontar este circuito</strong><span>Elige por velocidad, salto o agarre.</span>`;
+    advice.className = "track-advice is-good";
+    return;
+  }
+  const compatible = carCanCompleteTrack(car, track);
+  advice.innerHTML = `<strong>${compatible ? "✓ Buena elección" : "💡 Piensa antes de correr"}: ${car.name}</strong><span>La pista pide ${requirements.map((requirement) => requirement.label).join(" · ")}</span>`;
+  advice.className = `track-advice ${compatible ? "is-good" : "is-warning"}`;
+}
+
+function handleChallengeFailure(obstacle: TrackObstacle, attempts: number): void {
+  if (attempts < 3 || !obstacle.requirement) {
+    showToast(`Intento ${attempts}/3: ${obstacle.requirement?.hint ?? "Prueba otra forma"}`);
+    return;
+  }
+  recommendedCar = obstacle.requirement.recommendedCarIds.find((id) => save.unlockedCars.includes(id));
+  const car = recommendedCar ? getCar(recommendedCar) : undefined;
+  if (!car) return;
+  game.scene.pause("GameScene");
+  audio.stop();
+  hud.hidden = true;
+  getElement("challenge-message").textContent = `Has probado 3 veces. ${obstacle.requirement.hint} necesita ${obstacle.requirement.label.toLowerCase()}. ${car.name} tiene ${car.wheelName.toLowerCase()} y puede superar este reto.`;
+  getElement("change-car-button").textContent = `PROBAR CON ${car.name.toUpperCase()}`;
+  challengeScreen.hidden = false;
+}
+
+function chooseRecommendedCar(): void {
+  if (recommendedCar) {
+    selectedCar = recommendedCar;
+    save.selectedCar = recommendedCar;
+    saveGame(save);
+  }
+  showGarage();
+}
+
+function continueChallenge(): void {
+  challengeScreen.hidden = true;
+  hud.hidden = false;
+  void audio.start();
+  game.scene.resume("GameScene");
 }
 
 function renderTrackMap(track: (typeof TRACKS)[number]): string {

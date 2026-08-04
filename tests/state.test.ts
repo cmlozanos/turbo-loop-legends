@@ -18,6 +18,11 @@ describe("save data", () => {
     expect(result.settings.sound).toBe(true);
   });
 
+  it("adds the three tactical cars to an existing save", () => {
+    const result = loadSave({ getItem: () => JSON.stringify({ ...DEFAULT_SAVE, unlockedCars: ["comet"] }) });
+    expect(result.unlockedCars).toEqual(expect.arrayContaining(["comet", "spark", "gecko", "mammoth"]));
+  });
+
   it("recovers from invalid data", () => {
     expect(loadSave({ getItem: () => "not json" })).toEqual(DEFAULT_SAVE);
   });

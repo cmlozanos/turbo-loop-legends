@@ -7,7 +7,7 @@ test("opens the garage and starts a race", async ({ page }) => {
 
   await expect(page.getByRole("heading", { name: /Turbo Loop Legends/i })).toBeVisible();
   await expect(page.getByRole("button", { name: /Cometa/i })).toBeEnabled();
-  await expect(page.getByRole("group", { name: "Elige una pista" }).getByRole("button")).toHaveCount(5);
+  await expect(page.getByRole("group", { name: "Elige una pista" }).getByRole("button")).toHaveCount(8);
   await page.getByRole("button", { name: "JUGAR" }).click();
 
   await expect(page.locator("canvas")).toBeVisible();
@@ -42,28 +42,40 @@ test("starts the next circuit directly from the finish screen", async ({ page })
   await expect(page.getByRole("button", { name: "Ciudad Neón: Velocidad, rebotes y luces eléctricas" })).toHaveAttribute("aria-pressed", "true");
 });
 
-test("shows three distinct spectacular car designs", async ({ page }) => {
+test("shows six distinct spectacular car designs and their capabilities", async ({ page }) => {
   await page.goto("");
   const images = page.locator(".car-preview img");
-  await expect(images).toHaveCount(3);
+  await expect(images).toHaveCount(6);
   const sources = await images.evaluateAll((elements) => elements.map((element) => (element as HTMLImageElement).src));
-  expect(new Set(sources).size).toBe(3);
+  expect(new Set(sources).size).toBe(6);
   expect(sources).toEqual(expect.arrayContaining([
     expect.stringMatching(/cars\/comet-preview\.svg/),
     expect.stringMatching(/cars\/lynx-preview\.svg/),
-    expect.stringMatching(/cars\/titan-preview\.svg/)
+    expect.stringMatching(/cars\/titan-preview\.svg/),
+    expect.stringMatching(/cars\/spark-preview\.svg/),
+    expect.stringMatching(/cars\/gecko-preview\.svg/),
+    expect.stringMatching(/cars\/mammoth-preview\.svg/)
   ]));
   expect(await images.evaluateAll((elements) => elements.every((element) => (element as HTMLImageElement).naturalWidth > 0))).toBe(true);
   const standaloneAssets = await page.evaluate(async (urls) => Promise.all(urls.map(async (url) => (await fetch(url)).text())), sources);
   expect(standaloneAssets.every((asset) => !asset.includes("<image"))).toBe(true);
 });
 
-test("shows five distinct real track minimaps", async ({ page }) => {
+test("shows eight distinct real track minimaps", async ({ page }) => {
   await page.goto("");
   const maps = page.locator(".track-map");
-  await expect(maps).toHaveCount(5);
+  await expect(maps).toHaveCount(8);
   const signatures = await maps.evaluateAll((elements) => elements.map((element) => element.innerHTML));
-  expect(new Set(signatures).size).toBe(5);
+  expect(new Set(signatures).size).toBe(8);
+});
+
+test("explains whether the selected car fits a capability circuit", async ({ page }) => {
+  await page.goto("");
+  await page.getByRole("button", { name: "Jungla Secreta: Túneles bajos y vuelos entre lianas" }).click();
+  await expect(page.locator("#track-advice")).toContainText("Piensa antes de correr");
+  await page.getByRole("button", { name: "Chispa: Pequeño, rápido y saltarín" }).click();
+  await expect(page.locator("#track-advice")).toContainText("Buena elección");
+  await expect(page.locator("#track-advice")).toContainText("Tamaño pequeño");
 });
 
 test("keeps touch controls inside the landscape viewport", async ({ page }) => {

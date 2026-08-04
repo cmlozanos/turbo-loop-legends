@@ -4,7 +4,7 @@ import type { GameAudio } from "./audio";
 import type { CarSpec } from "./cars";
 import type { InputController } from "./input";
 import { createPhysicsWorld, type PhysicsWorld, type VehicleSnapshot } from "./physics";
-import { physicsToScreen, renderPolylines, trackSurfaceYAt, type Point, type TrackDefinition } from "./track";
+import { physicsToScreen, renderPolylines, trackSurfaceYAt, type Point, type TrackDefinition, type TrackObstacle } from "./track";
 
 const PIXELS_PER_METRE = 45;
 const ORIGIN: Point = { x: 850, y: 590 };
@@ -21,6 +21,7 @@ export interface GameSceneData {
   onFinish: () => void;
   onObstacleBreak: () => void;
   onRespawn: () => void;
+  onChallengeFailure: (obstacle: TrackObstacle, attempts: number) => void;
 }
 
 export class GameScene extends Phaser.Scene {
@@ -42,6 +43,7 @@ export class GameScene extends Phaser.Scene {
   private finished = false;
   private finishX = 0;
   private springboardActivations = 0;
+  private readonly challengeAttempts = new Map<string, number>();
 
   constructor() {
     super({ key: "GameScene", active: false });
@@ -56,6 +58,7 @@ export class GameScene extends Phaser.Scene {
     this.springboardActivations = 0;
     this.obstacleVisuals.clear();
     this.shatteredObstacles.clear();
+    this.challengeAttempts.clear();
   }
 
   preload(): void {
@@ -63,7 +66,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   create(): void {
-    this.simulation = createPhysicsWorld({ track: this.sceneData.track });
+    this.simulation = createPhysicsWorld({ track: this.sceneData.track, car: this.sceneData.car });
     this.lastSnapshot = this.simulation.getSnapshot();
     this.finishX = Math.max(...this.simulation.track.segments.flatMap((segment) => segment.points.map((point) => point.x))) - 2;
     this.drawSky();
@@ -249,12 +252,41 @@ export class GameScene extends Phaser.Scene {
         this.drawCrate(visual, -23, -44, 44);
         this.drawCrate(visual, 23, -44, 44);
         this.drawCrate(visual, 0, -86, 44);
-      } else {
+      } else if (obstacle.style === "roadblock") {
         visual.fillStyle(0xe8eef4).fillRect(-30, -62, 7, 62).fillRect(23, -62, 7, 62);
         visual.fillStyle(0xf5c44d).fillRoundedRect(-38, -66, 76, 26, 5);
         visual.lineStyle(8, 0xd83d36);
         for (let x = -28; x <= 22; x += 25) visual.lineBetween(x, -64, x + 16, -42);
         visual.fillStyle(0xfff3a2).fillCircle(-27, -73, 5).fillCircle(27, -73, 5);
+      } else if (obstacle.style === "tunnel") {
+        visual.fillStyle(0x243246).fillRoundedRect(-60, -90, 120, 22, 8).fillRect(-60, -90, 16, 90).fillRect(44, -90, 16, 90);
+        visual.lineStyle(5, 0xffcf4d).lineBetween(-38, -70, 38, -70);
+      } else if (obstacle.style === "iceGate") {
+        visual.fillStyle(0x8ef4ff, 0.72).fillTriangle(-58, 0, -34, -58, -10, 0).fillTriangle(-16, 0, 10, -72, 36, 0).fillTriangle(20, 0, 48, -50, 64, 0);
+        visual.lineStyle(4, 0xe9ffff, 0.9).lineBetween(-48, -4, 52, -4);
+      } else if (obstacle.style === "brakeGate") {
+        visual.fillStyle(0xe83c3c).fillRoundedRect(-44, -72, 88, 72, 10);
+        visual.fillStyle(0xffffff).fillCircle(0, -38, 25);
+        visual.fillStyle(0xe83c3c).fillRect(-20, -43, 40, 10);
+      } else if (obstacle.style === "heavyGate") {
+        visual.fillStyle(0x3d4652).fillRoundedRect(-42, -86, 84, 86, 7);
+        visual.lineStyle(8, 0xffa52f).lineBetween(-35, -72, 35, -12).lineBetween(35, -72, -35, -12);
+        visual.fillStyle(0xf7d45b).fillCircle(0, -43, 12);
+      } else {
+        visual.fillStyle(0x4a5360).fillRoundedRect(-48, -68, 96, 68, 8);
+        visual.lineStyle(6, 0xffc943).lineBetween(-38, -55, 38, -55);
+        visual.fillStyle(0xffffff).fillTriangle(-13, -30, 13, -30, 0, -51);
+      }
+      if (obstacle.requirement) {
+        this.add.text(point.x, point.y - obstacle.height * PIXELS_PER_METRE - 42, `${obstacle.requirement.hint}\n${obstacle.requirement.label}`, {
+          color: "#10233f",
+          backgroundColor: "#fff2a8",
+          fontFamily: "Arial Rounded MT Bold, sans-serif",
+          fontSize: "15px",
+          fontStyle: "bold",
+          align: "center",
+          padding: { x: 8, y: 5 },
+        }).setOrigin(0.5).setDepth(4);
       }
       this.obstacleVisuals.set(obstacle.id, visual);
     }
@@ -290,7 +322,7 @@ export class GameScene extends Phaser.Scene {
 
   private makeWheel(): Phaser.GameObjects.Graphics {
     const wheel = this.add.graphics().setDepth(6);
-    const radius = this.sceneData.car.id === "lynx" ? 24 : 21;
+    const radius = this.sceneData.car.wheelRadius;
     wheel.fillStyle(0x060910).fillCircle(0, 0, radius);
     wheel.lineStyle(4, 0x273243).strokeCircle(0, 0, radius - 3);
     wheel.fillStyle(0x253247).fillCircle(0, 0, radius - 9);
@@ -406,12 +438,20 @@ export class GameScene extends Phaser.Scene {
   }
 
   private checkRecovery(delta: number, throttle: boolean): void {
-    if (!this.sceneData.assists) return;
     const angle = Math.abs(normalizeAngle(this.lastSnapshot.chassis.angle));
     const slow = Math.abs(this.lastSnapshot.velocity.x) < 0.25;
-    if (angle > 1.9 || (slow && throttle)) this.stuckSeconds += delta;
+    const blocked = this.lastSnapshot.blockedObstacleId;
+    if (blocked || (this.sceneData.assists && (angle > 1.9 || (slow && throttle)))) this.stuckSeconds += delta;
     else this.stuckSeconds = 0;
-    if (this.stuckSeconds > 2.3) this.respawn();
+    if (this.stuckSeconds > 2.3) {
+      if (blocked) {
+        const attempts = (this.challengeAttempts.get(blocked) ?? 0) + 1;
+        this.challengeAttempts.set(blocked, attempts);
+        const obstacle = this.simulation.track.obstacles?.find((candidate) => candidate.id === blocked);
+        if (obstacle) this.sceneData.onChallengeFailure(obstacle, attempts);
+      }
+      this.respawn();
+    }
   }
 
   private respawn(): void {

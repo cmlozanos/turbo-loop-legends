@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 
 import { createPhysicsWorld } from "../src/game/physics";
-import { arc, createDefaultTrack, getNextTrackId, line, physicsToScreen, renderPolylines, trackSurfaceYAt, TRACKS, type TrackDefinition } from "../src/game/track";
+import { getCar } from "../src/game/cars";
+import { arc, carCanCompleteTrack, createDefaultTrack, getNextTrackId, line, physicsToScreen, renderPolylines, trackSurfaceYAt, TRACKS, type TrackDefinition } from "../src/game/track";
 
 function createLoopTestTrack(spawnX = -12): TrackDefinition {
   return {
@@ -92,10 +93,18 @@ describe("track geometry", () => {
     expect(physicsToScreen({ x: 2, y: 3 }, 10, { x: 100, y: 200 })).toEqual({ x: 120, y: 170 });
   });
 
-  it("advances through every circuit and wraps after the moon", () => {
+  it("advances through every circuit and wraps after the factory", () => {
     expect(getNextTrackId("forest")).toBe("canyon");
     expect(getNextTrackId("canyon")).toBe("neon");
-    expect(getNextTrackId("moon")).toBe("forest");
+    expect(getNextTrackId("moon")).toBe("jungle");
+    expect(getNextTrackId("factory")).toBe("forest");
+  });
+
+  it("assigns a genuinely suitable car to every capability circuit", () => {
+    expect(carCanCompleteTrack(getCar("spark"), TRACKS.find((track) => track.id === "jungle")!)).toBe(true);
+    expect(carCanCompleteTrack(getCar("gecko"), TRACKS.find((track) => track.id === "glacier")!)).toBe(true);
+    expect(carCanCompleteTrack(getCar("mammoth"), TRACKS.find((track) => track.id === "factory")!)).toBe(true);
+    expect(carCanCompleteTrack(getCar("comet"), TRACKS.find((track) => track.id === "jungle")!)).toBe(false);
   });
 
   it("gives every circuit a distinct loop, gap and ramp silhouette", () => {
@@ -114,6 +123,38 @@ describe("track geometry", () => {
 });
 
 describe("vehicle physics", () => {
+  it("blocks an unsuitable car and lets the required car pass", () => {
+    const track: TrackDefinition = {
+      segments: [line("flat", { x: -10, y: 0 }, { x: 200, y: 0 })],
+      checkpoints: [{ id: "start", position: { x: 0, y: 1.1 }, angle: 0, radius: 2 }],
+      springboards: [],
+      obstacles: [{
+        id: "small-only",
+        behavior: "challenge",
+        style: "tunnel",
+        position: { x: 8, y: 0 },
+        width: 1.5,
+        height: 1.8,
+        requirement: { stat: "size", size: "small", label: "Tamaño pequeño", hint: "Pasa por debajo", recommendedCarIds: ["spark"] },
+      }],
+      hazards: [],
+      killY: -8,
+    };
+    const blocked = createPhysicsWorld({ track, car: getCar("comet") });
+    blocked.setInput({ throttle: 1 });
+    let blockedSnapshot = blocked.getSnapshot();
+    for (let frame = 0; frame < 360; frame += 1) blockedSnapshot = blocked.step();
+
+    const suitable = createPhysicsWorld({ track, car: getCar("spark") });
+    suitable.setInput({ throttle: 1 });
+    let suitableSnapshot = suitable.getSnapshot();
+    for (let frame = 0; frame < 360; frame += 1) suitableSnapshot = suitable.step();
+
+    expect(blockedSnapshot.chassis.position.x).toBeLessThan(8);
+    expect(blockedSnapshot.blockedObstacleId).toBe("small-only");
+    expect(suitableSnapshot.chassis.position.x).toBeGreaterThan(15);
+    expect(suitableSnapshot.blockedObstacleId).toBeUndefined();
+  });
   it("does not attach a stopped vehicle to a loop", () => {
     const simulation = createPhysicsWorld({ track: createLoopTestTrack(0) });
     let snapshot = simulation.getSnapshot();
@@ -273,6 +314,19 @@ describe("vehicle physics", () => {
         }
       }
       expect(reachedFinish, `${track.name} should be completable`).toBe(true);
+      expect(snapshot.checkpointIndex).toBe(track.checkpoints.length - 1);
+    }
+  });
+
+  it("lets each recommended tactical car complete its circuit", () => {
+    const pairings = [["jungle", "spark"], ["glacier", "gecko"], ["factory", "mammoth"]] as const;
+    for (const [trackId, carId] of pairings) {
+      const track = TRACKS.find((candidate) => candidate.id === trackId)!;
+      const simulation = createPhysicsWorld({ track, car: getCar(carId) });
+      simulation.setInput({ throttle: 1, turbo: true });
+      let snapshot = simulation.getSnapshot();
+      for (let frame = 0; frame < 60 * 100 && snapshot.chassis.position.x <= 586; frame += 1) snapshot = simulation.step();
+      expect(snapshot.chassis.position.x, `${carId} should complete ${trackId}`).toBeGreaterThan(586);
       expect(snapshot.checkpointIndex).toBe(track.checkpoints.length - 1);
     }
   });
