@@ -1,5 +1,46 @@
 import { expect, test } from "@playwright/test";
 
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(() => {
+    if (window.location.search.includes("require-math")) return;
+    const now = Date.now();
+    sessionStorage.setItem("turbo-loop-legends:math-session", JSON.stringify({ firstSolvedAt: now, lastSolvedAt: now }));
+  });
+});
+
+test("requires a correct random addition before the first race", async ({ page }) => {
+  await page.goto("?require-math=1");
+  await page.getByRole("button", { name: "JUGAR" }).click();
+
+  const screen = page.getByLabel("Reto de suma");
+  await expect(screen).toBeVisible();
+  const question = await page.locator("#math-question").innerText();
+  const match = question.match(/(\d) \+ (\d)/);
+  expect(match).not.toBeNull();
+  const answer = Number(match![1]) + Number(match![2]);
+  expect(answer).toBeLessThan(10);
+
+  const wrongAnswer = answer === 9 ? 8 : 9;
+  await page.getByRole("button", { name: `Respuesta ${wrongAnswer}` }).click();
+  await expect(page.getByRole("status").filter({ hasText: "Inténtalo otra vez" })).toBeVisible();
+  await page.getByRole("button", { name: `Respuesta ${answer}` }).click();
+
+  await expect(screen).toBeHidden();
+  await expect(page.getByLabel("Acelerar")).toBeVisible();
+});
+
+test("shows the five-minute gate when it is due after the first hour", async ({ page }) => {
+  await page.addInitScript(() => {
+    const now = Date.now();
+    sessionStorage.setItem("turbo-loop-legends:math-session", JSON.stringify({
+      firstSolvedAt: now - 61 * 60 * 1000,
+      lastSolvedAt: now - 6 * 60 * 1000,
+    }));
+  });
+  await page.goto("?require-math=timer");
+  await expect(page.getByLabel("Reto de suma")).toBeVisible({ timeout: 3_000 });
+});
+
 test("opens the garage and starts a race", async ({ page }) => {
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));

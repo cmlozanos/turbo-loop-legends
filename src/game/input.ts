@@ -39,6 +39,13 @@ export class InputController {
     return requested;
   }
 
+  releaseAll(): void {
+    this.state.throttle = false;
+    this.state.brake = false;
+    this.state.resetRequested = false;
+    this.setHeld("turbo", false);
+  }
+
   destroy(): void {
     window.removeEventListener("keydown", this.onKeyDown);
     window.removeEventListener("keyup", this.onKeyUp);

@@ -5,6 +5,7 @@ import { GameAudio } from "./game/audio";
 import { CARS, getCar, type CarId } from "./game/cars";
 import { GameScene, type GameSceneData } from "./game/GameScene";
 import { InputController } from "./game/input";
+import { createAdditionChallenge, needsMathChallenge, recordSolvedChallenge, type AdditionChallenge, type MathGateSession } from "./game/mathGate";
 import { loadSave, saveGame, unlockCar } from "./game/state";
 import { carCanCompleteTrack, getNextTrackId, getTrack, TRACKS, type TrackId, type TrackObstacle } from "./game/track";
 import "./styles/main.css";
@@ -12,6 +13,7 @@ import "./styles/main.css";
 const app = document.querySelector<HTMLElement>("#app");
 if (!app) throw new Error("No se encontró el contenedor del juego");
 
+const MATH_SESSION_KEY = "turbo-loop-legends:math-session";
 const save = loadSave();
 let selectedCar: CarId = save.unlockedCars.includes(save.selectedCar) ? save.selectedCar : "comet";
 let selectedTrack: TrackId = save.selectedTrack;
@@ -19,6 +21,10 @@ let toastTimer: number | undefined;
 let sceneAdded = false;
 let installPrompt: BeforeInstallPromptEvent | undefined;
 let recommendedCar: CarId | undefined;
+let mathSession = loadMathSession();
+let mathChallenge: AdditionChallenge | undefined;
+let pendingMathAction: (() => void) | undefined;
+let resumeRaceAfterMath = false;
 
 app.innerHTML = `
   <div class="app-shell">
@@ -91,6 +97,17 @@ app.innerHTML = `
         </div>
       </div>
     </section>
+    <section id="math-screen" class="screen math-screen" aria-label="Reto de suma" hidden>
+      <div class="modal math-modal">
+        <p class="brand-kicker">Parada de repostaje</p>
+        <h2>Resuelve para jugar</h2>
+        <div id="math-question" class="math-question" aria-live="polite"></div>
+        <p id="math-feedback" class="math-feedback" role="status">Elige el resultado correcto</p>
+        <div class="math-keypad" role="group" aria-label="Elige el resultado">
+          ${Array.from({ length: 10 }, (_, value) => `<button type="button" class="math-answer" data-answer="${value}" aria-label="Respuesta ${value}">${value}</button>`).join("")}
+        </div>
+      </div>
+    </section>
     <aside class="rotate-device" hidden><div><span>📱</span><h2>Gira el dispositivo</h2><p>Los loopings se ven mejor en horizontal.</p></div></aside>
   </div>
 `;
@@ -100,6 +117,7 @@ const hud = getElement("hud");
 const pauseScreen = getElement("pause-screen");
 const finishScreen = getElement("finish-screen");
 const challengeScreen = getElement("challenge-screen");
+const mathScreen = getElement("math-screen");
 const speedLabel = getElement("speed");
 const toast = getElement("toast");
 const carGrid = getElement("car-grid");
@@ -131,9 +149,9 @@ renderGarageAdvice();
 bindSettings();
 bindInstall();
 
-getElement("play-button").addEventListener("click", startRace);
-getElement("replay-button").addEventListener("click", startRace);
-getElement("next-track-button").addEventListener("click", startNextRace);
+getElement("play-button").addEventListener("click", () => requestMathThen(startRace));
+getElement("replay-button").addEventListener("click", () => requestMathThen(startRace));
+getElement("next-track-button").addEventListener("click", () => requestMathThen(startNextRace));
 getElement("pause-button").addEventListener("click", pauseRace);
 getElement("home-button").addEventListener("click", showGarage);
 getElement("resume-button").addEventListener("click", resumeRace);
@@ -141,9 +159,19 @@ getElement("garage-button").addEventListener("click", showGarage);
 getElement("finish-garage-button").addEventListener("click", showGarage);
 getElement("change-car-button").addEventListener("click", chooseRecommendedCar);
 getElement("challenge-continue-button").addEventListener("click", continueChallenge);
+for (const button of document.querySelectorAll<HTMLButtonElement>(".math-answer")) {
+  button.addEventListener("click", () => submitMathAnswer(Number(button.dataset.answer)));
+}
 window.addEventListener("keydown", (event) => {
+  if (!mathScreen.hidden) {
+    const answer = event.code.startsWith("Digit") || event.code.startsWith("Numpad") ? Number(event.key) : Number.NaN;
+    if (Number.isInteger(answer)) submitMathAnswer(answer);
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    return;
+  }
   if (event.code === "Escape" && !hud.hidden) pauseRace();
-});
+}, true);
 document.addEventListener("visibilitychange", () => {
   if (document.hidden && !hud.hidden) pauseRace();
 });
@@ -153,6 +181,7 @@ if (hadServiceWorkerController) {
   navigator.serviceWorker.addEventListener("controllerchange", () => window.location.reload(), { once: true });
 }
 registerSW({ immediate: true });
+window.setInterval(checkTimedMathGate, 1000);
 
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
@@ -186,6 +215,76 @@ function bindInstall(): void {
     installButton.textContent = "Safari: Compartir → Añadir a inicio";
     window.setTimeout(() => { installButton.textContent = "⬇ INSTALAR"; }, 5000);
   });
+}
+
+function requestMathThen(action: () => void): void {
+  if (needsMathChallenge(mathSession, new Date())) {
+    openMathGate(action);
+    return;
+  }
+  action();
+}
+
+function checkTimedMathGate(): void {
+  if (mathSession.firstSolvedAt === undefined || !mathScreen.hidden) return;
+  if (needsMathChallenge(mathSession, new Date())) openMathGate();
+}
+
+function openMathGate(action?: () => void): void {
+  mathChallenge = createAdditionChallenge();
+  pendingMathAction = action;
+  resumeRaceAfterMath = sceneAdded && game.scene.isActive("GameScene") && !game.scene.isPaused("GameScene");
+  if (resumeRaceAfterMath) game.scene.pause("GameScene");
+  input.releaseAll();
+  audio.stop();
+  getElement("math-question").textContent = `${mathChallenge.left} + ${mathChallenge.right} = ?`;
+  const feedback = getElement("math-feedback");
+  feedback.textContent = "Elige el resultado correcto";
+  feedback.classList.remove("is-wrong");
+  mathScreen.hidden = false;
+}
+
+function submitMathAnswer(answer: number): void {
+  if (!mathChallenge || mathScreen.hidden) return;
+  if (answer !== mathChallenge.answer) {
+    const feedback = getElement("math-feedback");
+    feedback.textContent = "Casi. ¡Inténtalo otra vez!";
+    feedback.classList.remove("is-wrong");
+    void feedback.offsetWidth;
+    feedback.classList.add("is-wrong");
+    return;
+  }
+  mathSession = recordSolvedChallenge(mathSession, Date.now());
+  saveMathSession(mathSession);
+  mathScreen.hidden = true;
+  mathChallenge = undefined;
+  const action = pendingMathAction;
+  pendingMathAction = undefined;
+  if (action) {
+    resumeRaceAfterMath = false;
+    action();
+    return;
+  }
+  if (resumeRaceAfterMath) {
+    void audio.start();
+    game.scene.resume("GameScene");
+  }
+  resumeRaceAfterMath = false;
+}
+
+function loadMathSession(): MathGateSession {
+  try {
+    const stored = sessionStorage.getItem(MATH_SESSION_KEY);
+    if (!stored) return {};
+    const parsed = JSON.parse(stored) as MathGateSession;
+    return Number.isFinite(parsed.firstSolvedAt) && Number.isFinite(parsed.lastSolvedAt) ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function saveMathSession(session: MathGateSession): void {
+  sessionStorage.setItem(MATH_SESSION_KEY, JSON.stringify(session));
 }
 
 function startRace(): void {

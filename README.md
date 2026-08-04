@@ -1,6 +1,6 @@
 # Turbo Loop Legends
 
-Videojuego 2D de coches para navegador, pensado primero para tablet y niños de 4 a 6 años. Incluye cinco circuitos con gravedad, agarre, suspensión, rampas, precipicios, saltadores, obstáculos esquivables y barreras rompibles, además de tres coches desbloqueables.
+Videojuego 2D de coches para navegador, pensado primero para tablet y niños de 4 a 6 años. Incluye ocho circuitos con gravedad, agarre, suspensión, rampas, precipicios, saltadores y obstáculos de capacidad, además de seis coches con tamaños, ruedas y comportamientos diferentes.
 
 ## Jugar
 
@@ -11,6 +11,7 @@ Videojuego 2D de coches para navegador, pensado primero para tablet y niños de 
 - Al cruzar la meta puedes iniciar inmediatamente el siguiente circuito. Las rocas y pilas de neumáticos se saltan; las cajas y barreras se rompen con suficiente velocidad.
 - Cada circuito incluye un megasalto amarillo marcado `⚡ TURBO`: su precipicio está calculado para que la velocidad normal no alcance el otro lado.
 - Los loopings conservan el impulso real del coche: acelerador, gravedad y rozamiento modifican su velocidad, puede desprenderse si pierde contacto y puede volver a recorrerlos marcha atrás.
+- Antes de la primera carrera se resuelve una suma aleatoria con sumandos y resultado inferiores a 10. Tras una hora de sesión se solicita otra cada cinco minutos; desde las 23:00 se aplica directamente esa cadencia de cinco minutos.
 
 El juego guarda ajustes, coche, pista elegida y desbloqueos únicamente en el dispositivo. Después de la primera carga puede funcionar sin conexión.
 En una instalación nueva, música y efectos de sonido comienzan desactivados y pueden habilitarse desde el garaje.
@@ -55,7 +56,7 @@ make preview
 - Vitest + Playwright: geometría, física, persistencia y pruebas responsive.
 - Arte original: ilustraciones SVG autónomas para el garaje, carrocerías vectoriales y versiones PNG transparentes optimizadas para Phaser. Las ruedas, suspensiones y el fuego del turbo se sincronizan con la física durante la carrera.
 
-Las cinco pistas viven en `src/game/track.ts` como definiciones declarativas de rectas, arcos, checkpoints, aspecto y comportamiento físico. Cada una combina radios de looping, aberturas, perfiles de rampa y distancias de salto diferentes; el selector muestra un minimapa de su geometría real. Los loopings usan una guía circular arcade derivada de cada diseño para evitar colisiones fantasma y conservar una experiencia predecible en pantallas táctiles.
+Las ocho pistas viven en `src/game/track.ts` como definiciones declarativas de rectas, arcos, checkpoints, aspecto y comportamiento físico. Cada una combina radios de looping, aberturas, perfiles de rampa y distancias de salto diferentes; el selector muestra un minimapa de su geometría real. Los loopings usan una guía circular arcade derivada de cada diseño para evitar colisiones fantasma y conservar una experiencia predecible en pantallas táctiles.
 Las rampas, zonas sin suelo y plataformas impulsoras también se parametrizan en esa definición. La altura de cada saltador se deriva de la superficie real de su pista y aplica impulso vertical y horizontal al vehículo articulado completo, mientras los checkpoints admiten cruces a gran velocidad sin guardar caídas dentro de un precipicio.
 
 La comparativa y decisión técnica están en [`docs/TECHNICAL_DECISION.md`](docs/TECHNICAL_DECISION.md). La investigación de referencias y sus límites de originalidad están en [`docs/VISUAL_DIRECTION.md`](docs/VISUAL_DIRECTION.md).
