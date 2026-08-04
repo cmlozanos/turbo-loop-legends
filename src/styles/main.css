@@ -169,10 +169,10 @@ h1 span { color: var(--orange); }
   transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease;
 }
 .track-card:hover, .track-card:focus-visible { transform: translateY(-3px); border-color: var(--track-accent); }
-.track-card[aria-pressed="true"] { border-color: var(--track-accent); box-shadow: inset 0 0 24px color-mix(in srgb, var(--track-accent) 25%, transparent), 0 0 18px color-mix(in srgb, var(--track-accent) 25%, transparent); }
+.track-card[aria-pressed="true"] { border-color: var(--track-accent); box-shadow: inset 0 0 24px rgba(255,255,255,.1), 0 0 18px rgba(54,196,255,.2); }
 .track-icon { float: left; display: grid; place-items: center; width: 30px; height: 30px; margin-top: 4px; border-radius: 50%; background: rgba(255,255,255,.08); font-size: 1.05rem; }
 .track-map { display: block; width: calc(100% - 34px); height: clamp(22px, 3vw, 30px); margin-left: 34px; overflow: visible; }
-.track-map polyline { fill: none; stroke: var(--track-accent); stroke-width: 2.7; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 0 4px color-mix(in srgb, var(--track-accent) 65%, transparent)); }
+.track-map polyline { fill: none; stroke: var(--track-accent); stroke-width: 2.7; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 0 4px rgba(78,211,255,.5)); }
 .track-card strong { display: block; font-size: clamp(.72rem, 1.2vw, .86rem); line-height: 1.2; }
 
 .track-advice { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 4px 14px; min-height: 38px; border: 1px solid rgba(255,255,255,.12); border-radius: 14px; padding: 6px 12px; color: #d9edfb; background: rgba(3,16,30,.48); font-size: clamp(.7rem, 1.3vw, .84rem); }

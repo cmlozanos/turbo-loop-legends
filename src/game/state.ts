@@ -34,21 +34,29 @@ export const DEFAULT_SAVE: SaveData = {
   }
 };
 
+function createDefaultSave(): SaveData {
+  return {
+    ...DEFAULT_SAVE,
+    unlockedCars: [...DEFAULT_SAVE.unlockedCars],
+    settings: { ...DEFAULT_SAVE.settings },
+  };
+}
+
 export function loadSave(storage: Pick<Storage, "getItem"> = localStorage): SaveData {
   try {
     const value = storage.getItem(STORAGE_KEY);
-    if (!value) return structuredClone(DEFAULT_SAVE);
+    if (!value) return createDefaultSave();
     const parsed = JSON.parse(value) as Partial<SaveData>;
-    if (parsed.schemaVersion !== 1) return structuredClone(DEFAULT_SAVE);
+    if (parsed.schemaVersion !== 1) return createDefaultSave();
     return {
-      ...structuredClone(DEFAULT_SAVE),
+      ...createDefaultSave(),
       ...parsed,
       settings: { ...DEFAULT_SAVE.settings, ...parsed.settings },
       selectedTrack: parsed.selectedTrack && isTrackId(parsed.selectedTrack) ? parsed.selectedTrack : DEFAULT_SAVE.selectedTrack,
       unlockedCars: [...new Set<CarId>([...(parsed.unlockedCars?.filter(isCarId) ?? []), ...ALWAYS_AVAILABLE_CARS])]
     };
   } catch {
-    return structuredClone(DEFAULT_SAVE);
+    return createDefaultSave();
   }
 }
 

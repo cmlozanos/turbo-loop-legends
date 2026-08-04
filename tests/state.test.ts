@@ -8,6 +8,8 @@ describe("save data", () => {
     expect(result.settings.music).toBe(false);
     expect(result.settings.sound).toBe(false);
     expect(result).not.toBe(DEFAULT_SAVE);
+    expect(result.settings).not.toBe(DEFAULT_SAVE.settings);
+    expect(result.unlockedCars).not.toBe(DEFAULT_SAVE.unlockedCars);
   });
 
   it("preserves an existing audio preference", () => {

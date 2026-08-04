@@ -13,7 +13,8 @@
     "test:e2e": "playwright test",
     "verify:cache": "node tools/verify-cache-busting.mjs",
     "verify:pwa": "node tools/verify-pwa.mjs",
-    "check": "npm run typecheck && npm test && npm run build && npm run verify:cache && npm run verify:pwa",
+    "verify:chrome95": "node tools/verify-chrome95.mjs",
+    "check": "npm run typecheck && npm test && npm run build && npm run verify:cache && npm run verify:pwa && npm run verify:chrome95",
     "poc:physics": "tsx tools/physics-poc.ts"
   },
   "dependencies": {

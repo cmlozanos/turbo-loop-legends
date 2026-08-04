@@ -73,7 +73,7 @@ export default defineConfig({
     })
   ],
   build: {
-    target: "es2022",
+    target: "chrome95",
     sourcemap: true,
     rollupOptions: {
       output: {

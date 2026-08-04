@@ -308,7 +308,7 @@ function buildTrack(profile: TrackProfile): TrackDefinition {
   const brokenCenter = { x: brokenCenterX, y: brokenRadius + 3 };
   const fullLoop = arc({ id: "full-loop", center: fullCenter, radius: fullRadius, startAngle: -Math.PI / 2, endAngle: (3 * Math.PI) / 2, samples: 64, closed: true });
   const incompleteLoop = arc({ id: "incomplete-loop", center: brokenCenter, radius: brokenRadius, startAngle: -Math.PI / 2, endAngle: brokenEndAngle, samples: 44 });
-  const brokenExit = incompleteLoop.points.at(-1) ?? { x: brokenCenterX, y: 3 };
+  const brokenExit = incompleteLoop.points[incompleteLoop.points.length - 1] ?? { x: brokenCenterX, y: 3 };
   const brokenLandingX = Math.min(brokenExit.x + brokenGap, 414);
 
   const segments: TrackSegment[] = [

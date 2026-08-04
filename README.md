@@ -44,6 +44,7 @@ make install-e2e
 make test-e2e
 make build
 make check
+make verify-chrome95
 make preview
 ```
 
@@ -53,6 +54,7 @@ make preview
 - Planck 1.4.2: chasis, ruedas, suspensión, motor, colisiones y reaparición.
 - Vite + TypeScript: aplicación web estática.
 - PWA: caché offline e instalación en pantalla de inicio.
+- Compatibilidad: bundle dirigido a Chrome 95 para tablets Android antiguas, compartido con navegadores modernos.
 - Vitest + Playwright: geometría, física, persistencia y pruebas responsive.
 - Arte original: ilustraciones SVG autónomas para el garaje, carrocerías vectoriales y versiones PNG transparentes optimizadas para Phaser. Las ruedas, suspensiones y el fuego del turbo se sincronizan con la física durante la carrera.
 

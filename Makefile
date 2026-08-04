@@ -1,4 +1,4 @@
-.PHONY: install install-e2e dev typecheck test test-e2e build preview check verify-cache verify-pwa physics-poc
+.PHONY: install install-e2e dev typecheck test test-e2e build preview check verify-cache verify-pwa verify-chrome95 physics-poc
 
 install:
 	npm ci
@@ -32,6 +32,9 @@ verify-cache:
 
 verify-pwa:
 	npm run verify:pwa
+
+verify-chrome95:
+	npm run verify:chrome95
 
 physics-poc:
 	npm run poc:physics

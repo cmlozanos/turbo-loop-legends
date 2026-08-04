@@ -45,10 +45,10 @@ describe("track geometry", () => {
     });
 
     expect(full.points).toHaveLength(16);
-    expect(full.points.at(-1)).not.toEqual(full.points[0]);
+    expect(full.points[full.points.length - 1]).not.toEqual(full.points[0]);
     expect(partial.points).toHaveLength(9);
-    expect(partial.points.at(-1)?.x).toBeCloseTo(-2);
-    expect(partial.points.at(-1)?.y).toBeCloseTo(0);
+    expect(partial.points[partial.points.length - 1]?.x).toBeCloseTo(-2);
+    expect(partial.points[partial.points.length - 1]?.y).toBeCloseTo(0);
   });
 
   it("contains straight sections plus complete and incomplete loops", () => {
@@ -113,7 +113,7 @@ describe("track geometry", () => {
     const brokenGaps = TRACKS.map((track) => {
       const brokenLoop = track.segments.find((segment) => segment.id === "incomplete-loop");
       const landing = track.segments.find((segment) => segment.id === "broken-loop-landing");
-      return ((landing?.points[0].x ?? 0) - (brokenLoop?.points.at(-1)?.x ?? 0)).toFixed(1);
+      return ((landing?.points[0].x ?? 0) - (brokenLoop?.points[(brokenLoop?.points.length ?? 1) - 1]?.x ?? 0)).toFixed(1);
     });
 
     expect(new Set(loopSignatures.map((signature) => JSON.stringify(signature))).size).toBe(TRACKS.length);
