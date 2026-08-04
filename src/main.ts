@@ -26,6 +26,34 @@ let mathChallenge: AdditionChallenge | undefined;
 let pendingMathAction: (() => void) | undefined;
 let resumeRaceAfterMath = false;
 
+const CAR_ROLES: Record<CarId, { icon: string; label: string }> = {
+  comet: { icon: "⚖️", label: "Equilibrado" },
+  lynx: { icon: "↗️", label: "Especialista en saltos" },
+  titan: { icon: "🛞", label: "Máximo agarre" },
+  spark: { icon: "⚡", label: "Ligero y rápido" },
+  gecko: { icon: "🛑", label: "Frenada precisa" },
+  mammoth: { icon: "💪", label: "Fuerza gigante" },
+};
+
+const TRACK_ICONS: Record<TrackId, string> = {
+  forest: "🌲",
+  canyon: "🏜️",
+  neon: "🌃",
+  volcano: "🌋",
+  moon: "🌙",
+  jungle: "🌴",
+  glacier: "❄️",
+  factory: "🏭",
+};
+
+const REQUIREMENT_ICONS = {
+  size: "↔️",
+  grip: "🛞",
+  braking: "🛑",
+  jump: "↗️",
+  power: "💪",
+};
+
 app.innerHTML = `
   <div class="app-shell">
     <div id="game-canvas" class="game-canvas" aria-hidden="true"></div>
@@ -33,10 +61,8 @@ app.innerHTML = `
       <div class="garage">
         <div class="splash-art" aria-hidden="true"><span class="splash-loop"></span><span class="speed-streak streak-one"></span><span class="speed-streak streak-two"></span><img src="${assetUrl("cars/comet-preview.svg")}" alt=""></div>
         <header class="brand-lockup">
-          <p class="brand-kicker">Una aventura sobre ruedas</p>
           <h1>Turbo <span>Loop</span> Legends</h1>
-          <p class="garage-subtitle">Elige tu coche. Pisa a fondo. ¡Vuela por los loopings!</p>
-          <span class="splash-badge">8 CIRCUITOS · 6 COCHES · RETOS DE INGENIO</span>
+          <p class="garage-subtitle">Elige un coche y una pista</p>
         </header>
         <div id="car-grid" class="car-grid" role="group" aria-label="Elige un coche"></div>
         <div class="track-picker">
@@ -46,10 +72,10 @@ app.innerHTML = `
         <div id="track-advice" class="track-advice" aria-live="polite"></div>
         <button id="play-button" class="primary-button">JUGAR</button>
         <div class="settings-row" aria-label="Ajustes">
-          <label class="toggle"><input id="assists-toggle" type="checkbox"><span>✨ Ayudas</span></label>
-          <label class="toggle"><input id="music-toggle" type="checkbox"><span>♫ Música</span></label>
-          <label class="toggle"><input id="sound-toggle" type="checkbox"><span>🔊 Sonido</span></label>
-          <label class="toggle"><input id="motion-toggle" type="checkbox"><span>◉ Movimiento suave</span></label>
+          <label class="toggle" data-short="✨"><input id="assists-toggle" type="checkbox"><span>Ayudas</span></label>
+          <label class="toggle" data-short="♫"><input id="music-toggle" type="checkbox"><span>Música</span></label>
+          <label class="toggle" data-short="🔊"><input id="sound-toggle" type="checkbox"><span>Sonido</span></label>
+          <label class="toggle" data-short="◉"><input id="motion-toggle" type="checkbox"><span>Movimiento suave</span></label>
           <button id="install-button" class="install-button" type="button" hidden>⬇ INSTALAR</button>
         </div>
       </div>
@@ -380,8 +406,7 @@ function renderCars(): void {
     button.setAttribute("aria-pressed", String(selectedCar === car.id));
     button.setAttribute("aria-label", unlocked ? `${car.name}: ${car.tagline}` : `${car.name} bloqueado: ${car.unlock}`);
     button.disabled = !unlocked;
-    const sizeLabel = car.capabilities.size === "small" ? "PEQUEÑO" : car.capabilities.size === "large" ? "GRANDE" : "MEDIANO";
-    button.innerHTML = `<span class="car-preview"><img src="${assetUrl(car.asset)}" alt="" draggable="false"></span><strong>${car.name}</strong><small>${unlocked ? car.tagline : car.unlock}</small>${unlocked ? `<span class="car-stats"><b>${sizeLabel}</b><span>⚡${car.capabilities.acceleration}</span><span>🛞${car.capabilities.grip}</span><span>🛑${car.capabilities.braking}</span><span>↗${car.capabilities.jump}</span><span>💪${car.capabilities.power}</span></span><em>${car.wheelName}</em>` : '<span class="lock-badge">🔒</span>'}`;
+    button.innerHTML = `<span class="car-preview"><img src="${assetUrl(car.asset)}" alt="" draggable="false"></span><strong>${car.name}</strong><span class="role-icon" aria-hidden="true">${unlocked ? CAR_ROLES[car.id].icon : "🔒"}</span>${unlocked ? "" : '<span class="lock-badge">🔒</span>'}`;
     button.addEventListener("click", () => {
       selectedCar = car.id;
       save.selectedCar = car.id;
@@ -398,13 +423,10 @@ function renderTracks(): void {
   trackGrid.replaceChildren(...TRACKS.map((track) => {
     const button = document.createElement("button");
     button.className = "track-card";
-    const compatible = carCanCompleteTrack(getCar(selectedCar), track);
-    button.classList.toggle("is-compatible", compatible);
-    button.classList.toggle("is-incompatible", !compatible);
     button.style.setProperty("--track-accent", `#${(track.theme?.accent ?? 0xffffff).toString(16).padStart(6, "0")}`);
     button.setAttribute("aria-pressed", String(selectedTrack === track.id));
     button.setAttribute("aria-label", `${track.name}: ${track.tagline}`);
-    button.innerHTML = `${renderTrackMap(track)}<strong>${track.name}</strong><small>${"★".repeat(track.difficulty ?? 1)}</small><span>${track.capabilities?.[0] ?? "Aventura"}</span><i>${compatible ? "✓ APTO" : "? REVISA"}</i>`;
+    button.innerHTML = `<span class="track-icon" aria-hidden="true">${TRACK_ICONS[track.id ?? "forest"]}</span>${renderTrackMap(track)}<strong>${track.name}</strong>`;
     button.addEventListener("click", () => {
       selectedTrack = track.id ?? "canyon";
       save.selectedTrack = selectedTrack;
@@ -421,13 +443,16 @@ function renderGarageAdvice(): void {
   const track = getTrack(selectedTrack);
   const car = getCar(selectedCar);
   const requirements = track.requirements ?? [];
+  const carRole = CAR_ROLES[car.id];
+  const trackIcon = TRACK_ICONS[track.id ?? "forest"];
   if (requirements.length === 0) {
-    advice.innerHTML = `<strong>✓ ${car.name} puede afrontar este circuito</strong><span>Elige por velocidad, salto o agarre.</span>`;
+    advice.innerHTML = `<span class="visual-choice" aria-hidden="true"><b>${carRole.icon}</b><i>→</i><b>${trackIcon}</b><em>✅</em></span><span class="sr-only">${car.name}, ${carRole.label}. Buena elección para ${track.name}.</span>`;
     advice.className = "track-advice is-good";
     return;
   }
   const compatible = carCanCompleteTrack(car, track);
-  advice.innerHTML = `<strong>${compatible ? "✓ Buena elección" : "💡 Piensa antes de correr"}: ${car.name}</strong><span>La pista pide ${requirements.map((requirement) => requirement.label).join(" · ")}</span>`;
+  const requirementIcons = requirements.map((requirement) => REQUIREMENT_ICONS[requirement.stat]).join(" ");
+  advice.innerHTML = `<span class="visual-choice" aria-hidden="true"><b>${carRole.icon}</b><i>→</i><b>${trackIcon}</b><em>${compatible ? "✅" : "⚠️"}</em>${compatible ? "" : `<small>${requirementIcons}</small>`}</span><span class="sr-only">${car.name}, ${carRole.label}. ${compatible ? "Cumple los requisitos" : `Esta pista pide ${requirements.map((requirement) => requirement.label).join(", ")}`}.</span>`;
   advice.className = `track-advice ${compatible ? "is-good" : "is-warning"}`;
 }
 

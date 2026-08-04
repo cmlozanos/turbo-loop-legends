@@ -113,10 +113,21 @@ test("shows eight distinct real track minimaps", async ({ page }) => {
 test("explains whether the selected car fits a capability circuit", async ({ page }) => {
   await page.goto("");
   await page.getByRole("button", { name: "Jungla Secreta: Túneles bajos y vuelos entre lianas" }).click();
-  await expect(page.locator("#track-advice")).toContainText("Piensa antes de correr");
+  await expect(page.locator("#track-advice .visual-choice")).toContainText("⚠️");
   await page.getByRole("button", { name: "Chispa: Pequeño, rápido y saltarín" }).click();
-  await expect(page.locator("#track-advice")).toContainText("Buena elección");
-  await expect(page.locator("#track-advice")).toContainText("Tamaño pequeño");
+  await expect(page.locator("#track-advice .visual-choice")).toContainText("✅");
+  await expect(page.locator("#track-advice")).toContainText("Cumple los requisitos");
+});
+
+test("shows car ability icons and complete track names without clipped text", async ({ page }) => {
+  await page.goto("");
+  const clipped = await page.locator(".track-card strong").evaluateAll((elements) => elements
+    .filter((element) => element.scrollWidth > element.clientWidth || element.scrollHeight > element.clientHeight)
+    .map((element) => element.textContent));
+  expect(clipped).toEqual([]);
+  await expect(page.getByRole("button", { name: "Fábrica Colosal: Muros altos y compuertas pesadas" })).toBeVisible();
+  await expect(page.locator(".car-gecko .role-icon")).toHaveText("🛑");
+  await expect(page.locator(".track-card .track-icon")).toHaveCount(8);
 });
 
 test("keeps touch controls inside the landscape viewport", async ({ page }) => {
