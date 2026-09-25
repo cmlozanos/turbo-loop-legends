@@ -239,6 +239,9 @@ h1 span { color: var(--orange); }
   cursor: pointer;
 }
 .install-button:focus-visible { outline: 4px solid white; outline-offset: 3px; }
+.garage-launch { display: flex; align-items: center; justify-content: center; gap: 12px; }
+.games-link { display: grid; place-items: center; min-width: 44px; min-height: 44px; border-radius: 14px; color: #10233f; background: #ffd868; font-size: 1.5rem; text-decoration: none; }
+.games-link:focus-visible { outline: 4px solid white; outline-offset: 3px; }
 
 .hud {
   position: absolute;
@@ -279,7 +282,7 @@ h1 span { color: var(--orange); }
 
 .pause-button { top: max(12px, env(safe-area-inset-top)); right: max(14px, env(safe-area-inset-right)); }
 .reset-button { top: max(12px, env(safe-area-inset-top)); left: max(14px, env(safe-area-inset-left)); }
-.home-button { top: max(12px, env(safe-area-inset-top)); left: calc(max(14px, env(safe-area-inset-left)) + clamp(58px, 8vw, 72px)); color: #17243a; background: linear-gradient(#fff4a6, #f3a529); }
+.home-button { top: max(12px, env(safe-area-inset-top)); left: calc(max(14px, env(safe-area-inset-left)) + clamp(58px, 8vw, 72px)); color: #17243a; background: linear-gradient(#fff4a6, #f3a529); display: grid; place-items: center; text-decoration: none; }
 
 .drive-control {
   position: absolute;

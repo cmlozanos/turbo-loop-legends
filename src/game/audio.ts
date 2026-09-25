@@ -4,12 +4,18 @@ export class GameAudio {
   private engineGain?: GainNode;
   private musicTimer?: number;
   private noteIndex = 0;
+  private paused = false;
 
   constructor(private musicEnabled: boolean, private soundEnabled: boolean) {}
 
   async start(): Promise<void> {
+    if (this.paused) return;
     this.context ??= new AudioContext();
     await this.context.resume();
+    if (this.paused) {
+      await this.context.suspend();
+      return;
+    }
     if (!this.engine) {
       this.engine = this.context.createOscillator();
       this.engine.type = "sawtooth";
@@ -22,6 +28,7 @@ export class GameAudio {
   }
 
   updateEngine(speed: number, throttle: boolean): void {
+    if (this.paused) return;
     if (!this.context || !this.engine || !this.engineGain) return;
     const now = this.context.currentTime;
     this.engine.frequency.setTargetAtTime(55 + Math.min(speed, 80) * 2.2, now, 0.04);
@@ -50,10 +57,18 @@ export class GameAudio {
     this.engineGain?.gain.setTargetAtTime(0, this.context?.currentTime ?? 0, 0.04);
   }
 
+  setPaused(paused: boolean): void {
+    this.paused = paused;
+    if (paused) {
+      this.stop();
+      void this.context?.suspend().catch(() => {});
+    }
+  }
+
   private updateMusic(): void {
     if (this.musicTimer) window.clearInterval(this.musicTimer);
     this.musicTimer = undefined;
-    if (!this.musicEnabled || !this.context) return;
+    if (this.paused || !this.musicEnabled || !this.context) return;
     const notes = [196, 247, 294, 330, 294, 247];
     this.musicTimer = window.setInterval(() => {
       this.playTone(notes[this.noteIndex++ % notes.length], 0.08, 0.018);
@@ -61,7 +76,7 @@ export class GameAudio {
   }
 
   private playTone(frequency: number, duration: number, volume = 0.07): void {
-    if (!this.context || (!this.soundEnabled && volume > 0.02)) return;
+    if (this.paused || !this.context || (!this.soundEnabled && volume > 0.02)) return;
     const oscillator = this.context.createOscillator();
     const gain = this.context.createGain();
     oscillator.type = "triangle";

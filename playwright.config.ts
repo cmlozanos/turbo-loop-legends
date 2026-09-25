@@ -13,7 +13,15 @@ export default defineConfig({
   projects: [
     { name: "tablet", use: { ...devices["iPad (gen 7) landscape"] } },
     { name: "phone", use: { ...devices["iPhone 13 landscape"] } },
-    { name: "desktop", use: { ...devices["Desktop Chrome"] } }
+    { name: "desktop", use: { ...devices["Desktop Chrome"] } },
+    ...(process.env.CHROME95_PATH ? [{
+      name: "chrome95",
+      use: {
+        ...devices["Desktop Chrome"],
+        viewport: { width: 1024, height: 768 },
+        launchOptions: { executablePath: process.env.CHROME95_PATH }
+      }
+    }] : [])
   ],
   webServer: {
     command: "npm run build && npm run preview -- --port 4173",

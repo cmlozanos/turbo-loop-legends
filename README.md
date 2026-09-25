@@ -7,11 +7,11 @@ Videojuego 2D de coches para navegador, pensado primero para tablet y niños de 
 - Tablet o móvil: usa los botones grandes. El izquierdo frena o da marcha atrás, el derecho acelera y el botón central activa el turbo. En el aire también inclinan el coche.
 - Ordenador: `→`/`D` acelera, `←`/`A` frena y da marcha atrás, `Shift`/`Espacio` activa el turbo, `R` vuelve al checkpoint y `Esc` pausa.
 - Las ayudas opcionales corrigen suavemente el coche y lo recuperan si queda volcado o cae.
-- El botón `⌂` vuelve al garaje durante una carrera para cambiar de coche o circuito.
+- El botón `⌂` abre [todos los juegos](https://cmlozanos.github.io/games/). Para cambiar de coche o circuito durante una carrera, pulsa pausa y después Garaje; también sigue disponible al terminar.
 - Al cruzar la meta puedes iniciar inmediatamente el siguiente circuito. Las rocas y pilas de neumáticos se saltan; las cajas y barreras se rompen con suficiente velocidad.
 - Cada circuito incluye un megasalto amarillo marcado `⚡ TURBO`: su precipicio está calculado para que la velocidad normal no alcance el otro lado.
 - Los loopings conservan el impulso real del coche: acelerador, gravedad y rozamiento modifican su velocidad, puede desprenderse si pierde contacto y puede volver a recorrerlos marcha atrás.
-- Antes de la primera carrera se resuelve una suma aleatoria con sumandos y resultado inferiores a 10. Tras una hora de sesión se solicita otra cada cinco minutos; desde las 23:00 se aplica directamente esa cadencia de cinco minutos.
+- Cada apertura exige un reto aleatorio: suma, resta sin resultados negativos o trazo guiado de una letra. Los operandos y resultados son menores de 10. Se repite cada diez minutos desde la resolución, también de noche y contando el tiempo en otras aplicaciones. El coche, los temporizadores y el sonido se pausan; una pausa manual no se cancela al resolver el reto.
 
 El juego guarda ajustes, coche, pista elegida y desbloqueos únicamente en el dispositivo. Después de la primera carga puede funcionar sin conexión.
 En una instalación nueva, música y efectos de sonido comienzan desactivados y pueden habilitarse desde el garaje.
@@ -45,8 +45,11 @@ make test-e2e
 make build
 make check
 make verify-chrome95
+make verify-learning-gate
 make preview
 ```
+
+Para ejecutar también las pruebas de interfaz en un Chromium 95 instalado, configura `CHROME95_PATH` con la ruta a su ejecutable al lanzar `make test-e2e`. La comprobación estática `verify-chrome95` no sustituye esta ejecución ni la prueba física en Android.
 
 ## Arquitectura
 
@@ -55,6 +58,7 @@ make preview
 - Vite + TypeScript: aplicación web estática.
 - PWA: caché offline e instalación en pantalla de inicio.
 - Compatibilidad: bundle dirigido a Chrome 95 para tablets Android antiguas, compartido con navegadores modernos.
+- Retos educativos: copia autónoma de `home/learning-gate/gate.js` en `public/learning-gate.js`, versionada y precargada por la PWA. El módulo histórico `src/game/mathGate.ts` y sus pruebas se conservan como referencia, pero ya no se usan en la aplicación; su sesión anterior no desbloquea el nuevo sistema.
 - Vitest + Playwright: geometría, física, persistencia y pruebas responsive.
 - Arte original: ilustraciones SVG autónomas para el garaje, carrocerías vectoriales y versiones PNG transparentes optimizadas para Phaser. Las ruedas, suspensiones y el fuego del turbo se sincronizan con la física durante la carrera.
 

@@ -5,7 +5,7 @@ const version = (process.env.VITE_BUILD_VERSION ?? process.env.GITHUB_SHA ?? "lo
   .slice(0, 12);
 const index = await readFile("dist/index.html", "utf8");
 const references = [...index.matchAll(/(?:src|href)="([^"]+)"/g)].map((match) => match[1]);
-const versionedReferences = references.filter((reference) => /\.(?:js|css|webmanifest)$/.test(reference));
+const versionedReferences = references.filter((reference) => /\.(?:js|css|webmanifest)(?:\?.*)?$/.test(reference));
 
 if (versionedReferences.length < 3 || versionedReferences.some((reference) => !reference.includes(version))) {
   throw new Error(`index.html no versiona todos sus estáticos con ${version}`);

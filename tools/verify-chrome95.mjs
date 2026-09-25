@@ -5,6 +5,7 @@ const assetsDirectory = new URL("../dist/assets/", import.meta.url);
 const runtimeFiles = readdirSync(assetsDirectory)
   .filter((name) => name.endsWith(".js") || name.endsWith(".css"))
   .map((name) => ({ name, content: readFileSync(join(assetsDirectory.pathname, name), "utf8") }));
+runtimeFiles.push({ name: "learning-gate.js", content: readFileSync(new URL("../dist/learning-gate.js", import.meta.url), "utf8") });
 
 const unsupportedRuntimePatterns = [
   ["structuredClone", /\bstructuredClone\s*\(/],

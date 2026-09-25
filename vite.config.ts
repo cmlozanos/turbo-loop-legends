@@ -22,6 +22,7 @@ export default defineConfig({
       registerType: "autoUpdate",
       manifestFilename: `manifest-${buildVersion}.webmanifest`,
       includeAssets: [
+        "learning-gate.js",
         "icons/icon.svg",
         "icons/icon-maskable.svg",
         "icons/icon-192.png",

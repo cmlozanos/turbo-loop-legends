@@ -5,15 +5,20 @@ import { GameAudio } from "./game/audio";
 import { CARS, getCar, type CarId } from "./game/cars";
 import { GameScene, type GameSceneData } from "./game/GameScene";
 import { InputController } from "./game/input";
-import { createAdditionChallenge, needsMathChallenge, recordSolvedChallenge, type AdditionChallenge, type MathGateSession } from "./game/mathGate";
 import { loadSave, saveGame, unlockCar } from "./game/state";
 import { carCanCompleteTrack, getNextTrackId, getTrack, TRACKS, type TrackId, type TrackObstacle } from "./game/track";
 import "./styles/main.css";
 
 const app = document.querySelector<HTMLElement>("#app");
 if (!app) throw new Error("No se encontró el contenedor del juego");
+if (!window.LearningGate) {
+  app.textContent = "No se pudo cargar el reto. Recarga la página para jugar.";
+  throw new Error("Falta el reto educativo");
+}
 
-const MATH_SESSION_KEY = "turbo-loop-legends:math-session";
+const learningTimers = window.LearningGate.createTimers();
+let learningLocked = true;
+let resumeRaceAfterGate = false;
 const save = loadSave();
 let selectedCar: CarId = save.unlockedCars.includes(save.selectedCar) ? save.selectedCar : "comet";
 let selectedTrack: TrackId = save.selectedTrack;
@@ -21,10 +26,6 @@ let toastTimer: number | undefined;
 let sceneAdded = false;
 let installPrompt: BeforeInstallPromptEvent | undefined;
 let recommendedCar: CarId | undefined;
-let mathSession = loadMathSession();
-let mathChallenge: AdditionChallenge | undefined;
-let pendingMathAction: (() => void) | undefined;
-let resumeRaceAfterMath = false;
 
 const CAR_ROLES: Record<CarId, { icon: string; label: string }> = {
   comet: { icon: "⚖️", label: "Equilibrado" },
@@ -70,7 +71,10 @@ app.innerHTML = `
           <div id="track-grid" class="track-grid" role="group" aria-label="Elige una pista"></div>
         </div>
         <div id="track-advice" class="track-advice" aria-live="polite"></div>
-        <button id="play-button" class="primary-button">JUGAR</button>
+        <div class="garage-launch">
+          <a class="games-link" href="https://cmlozanos.github.io/games/" aria-label="Volver a todos los juegos">⌂</a>
+          <button id="play-button" class="primary-button">JUGAR</button>
+        </div>
         <div class="settings-row" aria-label="Ajustes">
           <label class="toggle" data-short="✨"><input id="assists-toggle" type="checkbox"><span>Ayudas</span></label>
           <label class="toggle" data-short="♫"><input id="music-toggle" type="checkbox"><span>Música</span></label>
@@ -83,7 +87,7 @@ app.innerHTML = `
     <section id="hud" class="hud" aria-label="Controles de carrera" hidden>
       <div class="speedometer" aria-live="off"><strong id="speed" class="speed-value">0</strong><span class="speed-unit">KM/H</span></div>
       <button class="icon-button reset-button" data-control="reset" aria-label="Volver al último punto de control">↻</button>
-      <button id="home-button" class="icon-button home-button" aria-label="Volver al garaje y cambiar coche o pista">⌂</button>
+      <a id="home-button" class="icon-button home-button" href="https://cmlozanos.github.io/games/" aria-label="Volver a todos los juegos">⌂</a>
       <button id="pause-button" class="icon-button pause-button" aria-label="Pausa">Ⅱ</button>
       <button class="drive-control brake-control" data-control="brake" aria-label="Frenar y marcha atrás">◀</button>
       <button class="turbo-control" data-control="turbo" aria-label="Activar turbo" aria-pressed="false"><span>⚡</span>TURBO</button>
@@ -123,17 +127,6 @@ app.innerHTML = `
         </div>
       </div>
     </section>
-    <section id="math-screen" class="screen math-screen" aria-label="Reto de suma" hidden>
-      <div class="modal math-modal">
-        <p class="brand-kicker">Parada de repostaje</p>
-        <h2>Resuelve para jugar</h2>
-        <div id="math-question" class="math-question" aria-live="polite"></div>
-        <p id="math-feedback" class="math-feedback" role="status">Elige el resultado correcto</p>
-        <div class="math-keypad" role="group" aria-label="Elige el resultado">
-          ${Array.from({ length: 10 }, (_, value) => `<button type="button" class="math-answer" data-answer="${value}" aria-label="Respuesta ${value}">${value}</button>`).join("")}
-        </div>
-      </div>
-    </section>
     <aside class="rotate-device" hidden><div><span>📱</span><h2>Gira el dispositivo</h2><p>Los loopings se ven mejor en horizontal.</p></div></aside>
   </div>
 `;
@@ -143,7 +136,6 @@ const hud = getElement("hud");
 const pauseScreen = getElement("pause-screen");
 const finishScreen = getElement("finish-screen");
 const challengeScreen = getElement("challenge-screen");
-const mathScreen = getElement("math-screen");
 const speedLabel = getElement("speed");
 const toast = getElement("toast");
 const carGrid = getElement("car-grid");
@@ -175,27 +167,17 @@ renderGarageAdvice();
 bindSettings();
 bindInstall();
 
-getElement("play-button").addEventListener("click", () => requestMathThen(startRace));
-getElement("replay-button").addEventListener("click", () => requestMathThen(startRace));
-getElement("next-track-button").addEventListener("click", () => requestMathThen(startNextRace));
+getElement("play-button").addEventListener("click", startRace);
+getElement("replay-button").addEventListener("click", startRace);
+getElement("next-track-button").addEventListener("click", startNextRace);
 getElement("pause-button").addEventListener("click", pauseRace);
-getElement("home-button").addEventListener("click", showGarage);
 getElement("resume-button").addEventListener("click", resumeRace);
 getElement("garage-button").addEventListener("click", showGarage);
 getElement("finish-garage-button").addEventListener("click", showGarage);
 getElement("change-car-button").addEventListener("click", chooseRecommendedCar);
 getElement("challenge-continue-button").addEventListener("click", continueChallenge);
-for (const button of document.querySelectorAll<HTMLButtonElement>(".math-answer")) {
-  button.addEventListener("click", () => submitMathAnswer(Number(button.dataset.answer)));
-}
 window.addEventListener("keydown", (event) => {
-  if (!mathScreen.hidden) {
-    const answer = event.code.startsWith("Digit") || event.code.startsWith("Numpad") ? Number(event.key) : Number.NaN;
-    if (Number.isInteger(answer)) submitMathAnswer(answer);
-    event.preventDefault();
-    event.stopImmediatePropagation();
-    return;
-  }
+  if (learningLocked) return;
   if (event.code === "Escape" && !hud.hidden) pauseRace();
 }, true);
 document.addEventListener("visibilitychange", () => {
@@ -207,7 +189,36 @@ if (hadServiceWorkerController) {
   navigator.serviceWorker.addEventListener("controllerchange", () => window.location.reload(), { once: true });
 }
 registerSW({ immediate: true });
-window.setInterval(checkTimedMathGate, 1000);
+const learningGate = window.LearningGate.mount({
+  gameId: "turbo-loop-legends",
+  onLock: () => {
+    learningLocked = true;
+    resumeRaceAfterGate = sceneAdded && game.scene.isActive("GameScene") && !game.scene.isPaused("GameScene");
+    if (resumeRaceAfterGate) game.scene.pause("GameScene");
+    input.releaseAll();
+    learningTimers.pause();
+    audio.setPaused(true);
+  },
+  onUnlock: () => {
+    learningLocked = false;
+    input.releaseAll();
+    audio.setPaused(false);
+    learningTimers.resume();
+    if (resumeRaceAfterGate && pauseScreen.hidden && challengeScreen.hidden) {
+      void audio.start();
+      game.scene.resume("GameScene");
+    }
+    resumeRaceAfterGate = false;
+  }
+});
+game.events.on(Phaser.Core.Events.PRE_STEP, () => {
+  learningGate.check();
+  // A scene can finish loading after the lock callback has already run.
+  if (learningLocked && sceneAdded && game.scene.isActive("GameScene")) {
+    resumeRaceAfterGate = true;
+    game.scene.pause("GameScene");
+  }
+});
 
 interface BeforeInstallPromptEvent extends Event {
   prompt(): Promise<void>;
@@ -243,77 +254,8 @@ function bindInstall(): void {
   });
 }
 
-function requestMathThen(action: () => void): void {
-  if (needsMathChallenge(mathSession, new Date())) {
-    openMathGate(action);
-    return;
-  }
-  action();
-}
-
-function checkTimedMathGate(): void {
-  if (mathSession.firstSolvedAt === undefined || !mathScreen.hidden) return;
-  if (needsMathChallenge(mathSession, new Date())) openMathGate();
-}
-
-function openMathGate(action?: () => void): void {
-  mathChallenge = createAdditionChallenge();
-  pendingMathAction = action;
-  resumeRaceAfterMath = sceneAdded && game.scene.isActive("GameScene") && !game.scene.isPaused("GameScene");
-  if (resumeRaceAfterMath) game.scene.pause("GameScene");
-  input.releaseAll();
-  audio.stop();
-  getElement("math-question").textContent = `${mathChallenge.left} + ${mathChallenge.right} = ?`;
-  const feedback = getElement("math-feedback");
-  feedback.textContent = "Elige el resultado correcto";
-  feedback.classList.remove("is-wrong");
-  mathScreen.hidden = false;
-}
-
-function submitMathAnswer(answer: number): void {
-  if (!mathChallenge || mathScreen.hidden) return;
-  if (answer !== mathChallenge.answer) {
-    const feedback = getElement("math-feedback");
-    feedback.textContent = "Casi. ¡Inténtalo otra vez!";
-    feedback.classList.remove("is-wrong");
-    void feedback.offsetWidth;
-    feedback.classList.add("is-wrong");
-    return;
-  }
-  mathSession = recordSolvedChallenge(mathSession, Date.now());
-  saveMathSession(mathSession);
-  mathScreen.hidden = true;
-  mathChallenge = undefined;
-  const action = pendingMathAction;
-  pendingMathAction = undefined;
-  if (action) {
-    resumeRaceAfterMath = false;
-    action();
-    return;
-  }
-  if (resumeRaceAfterMath) {
-    void audio.start();
-    game.scene.resume("GameScene");
-  }
-  resumeRaceAfterMath = false;
-}
-
-function loadMathSession(): MathGateSession {
-  try {
-    const stored = sessionStorage.getItem(MATH_SESSION_KEY);
-    if (!stored) return {};
-    const parsed = JSON.parse(stored) as MathGateSession;
-    return Number.isFinite(parsed.firstSolvedAt) && Number.isFinite(parsed.lastSolvedAt) ? parsed : {};
-  } catch {
-    return {};
-  }
-}
-
-function saveMathSession(session: MathGateSession): void {
-  sessionStorage.setItem(MATH_SESSION_KEY, JSON.stringify(session));
-}
-
 function startRace(): void {
+  if (learningLocked) return;
   void audio.start();
   garageScreen.hidden = true;
   pauseScreen.hidden = true;
@@ -359,10 +301,11 @@ function finishRace(): void {
     ? `¡Has desbloqueado el Titán! Siguiente reto: ${nextTrackName}.`
     : `¡Circuito superado! Siguiente reto: ${nextTrackName}.`;
   getElement("next-track-button").textContent = `SIGUIENTE: ${nextTrackName.toUpperCase()}`;
-  window.setTimeout(() => { finishScreen.hidden = false; }, save.settings.reducedMotion ? 0 : 700);
+  learningTimers.set(() => { finishScreen.hidden = false; }, save.settings.reducedMotion ? 0 : 700);
 }
 
 function startNextRace(): void {
+  if (learningLocked) return;
   selectedTrack = getNextTrackId(selectedTrack);
   save.selectedTrack = selectedTrack;
   saveGame(save);
@@ -378,6 +321,7 @@ function pauseRace(): void {
 }
 
 function resumeRace(): void {
+  if (learningLocked) return;
   void audio.start();
   pauseScreen.hidden = true;
   hud.hidden = false;
@@ -482,6 +426,7 @@ function chooseRecommendedCar(): void {
 }
 
 function continueChallenge(): void {
+  if (learningLocked) return;
   challengeScreen.hidden = true;
   hud.hidden = false;
   void audio.start();
@@ -527,8 +472,8 @@ function bindToggle(id: string, key: keyof typeof save.settings): void {
 function showToast(message: string): void {
   toast.textContent = message;
   toast.classList.add("show");
-  if (toastTimer) window.clearTimeout(toastTimer);
-  toastTimer = window.setTimeout(() => toast.classList.remove("show"), 1800);
+  if (toastTimer) learningTimers.clear(toastTimer);
+  toastTimer = learningTimers.set(() => toast.classList.remove("show"), 1800);
 }
 
 function getElement(id: string): HTMLElement {
