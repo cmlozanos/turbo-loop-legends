@@ -32,7 +32,7 @@ export const DEFAULT_SAVE: SaveData = {
     music: false,
     sound: false,
     reducedMotion: false,
-    lightMode: false
+    lightMode: true
   }
 };
 

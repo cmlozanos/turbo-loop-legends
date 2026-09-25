@@ -26,7 +26,7 @@ test("all quality controls stay clear of cars and play on short mobile screens",
 test("light profile reduces pixels, preserves camera and persists without resetting progress", async ({ page }, info) => {
   await openGame(page, "?test=1");
   const toggle = page.getByRole("checkbox", { name: "Modo ligero", exact: true });
-  await toggle.check();
+  await expect(toggle).toBeChecked();
   await page.locator("#play-button").click();
   await expect.poll(async () => (await read(page)).scene?.steps ?? 0).toBeGreaterThan(10);
   const data = await read(page);

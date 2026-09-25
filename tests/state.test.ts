@@ -7,6 +7,7 @@ describe("save data", () => {
     expect(result).toEqual(DEFAULT_SAVE);
     expect(result.settings.music).toBe(false);
     expect(result.settings.sound).toBe(false);
+    expect(result.settings.lightMode).toBe(true);
     expect(result).not.toBe(DEFAULT_SAVE);
     expect(result.settings).not.toBe(DEFAULT_SAVE.settings);
     expect(result.unlockedCars).not.toBe(DEFAULT_SAVE.unlockedCars);
@@ -18,6 +19,20 @@ describe("save data", () => {
     });
     expect(result.settings.music).toBe(true);
     expect(result.settings.sound).toBe(true);
+  });
+
+  it.each([true, false])("preserves an explicit light-mode preference (%s) and progress", (lightMode) => {
+    const saved = { ...DEFAULT_SAVE, selectedCar: "lynx", selectedTrack: "moon", finished: true,
+      unlockedCars: [...DEFAULT_SAVE.unlockedCars, "lynx"], settings: { ...DEFAULT_SAVE.settings, lightMode } };
+    expect(loadSave({ getItem: () => JSON.stringify(saved) })).toEqual(saved);
+  });
+
+  it("defaults an older save without a quality choice to light without resetting progress", () => {
+    const saved = { ...DEFAULT_SAVE, selectedTrack: "moon", finished: true,
+      settings: { assists: false, music: true, sound: false, reducedMotion: true } };
+    expect(loadSave({ getItem: () => JSON.stringify(saved) })).toEqual({
+      ...saved, settings: { ...saved.settings, lightMode: true }
+    });
   });
 
   it("adds the three tactical cars to an existing save", () => {

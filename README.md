@@ -21,7 +21,8 @@ En una instalación nueva, música y efectos de sonido comienzan desactivados y 
 El ajuste ⚡ **Modo ligero** del garaje reduce la resolución interna y desactiva
 polvo y algunos efectos decorativos. Conserva el tamaño de los controles, la
 cámara, las pistas, las colisiones y el progreso. Se guarda en cada dispositivo;
-la calidad normal sigue siendo el valor inicial.
+el modo ligero es el valor inicial cuando no existe una elección guardada.
+Una elección explícita de calidad normal o ligera se conserva, al igual que el progreso.
 
 La física avanza a pasos de 1/60 s independientemente del renderizado: las pruebas
 comparan trayectorias, aceleración, marcha atrás y recuperación entre 10 y 120 FPS.
