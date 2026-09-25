@@ -41,6 +41,10 @@ button { font: inherit; }
 
 .game-canvas canvas { display: block; }
 
+.light-mode .splash-art { display: none; }
+.light-mode .car-preview img, .light-mode .track-map polyline { filter: none; }
+.light-mode .turbo-control, .light-mode .turbo-control.is-active { box-shadow: none; }
+
 .screen {
   position: absolute;
   inset: 0;
@@ -395,7 +399,7 @@ h1 span { color: var(--orange); }
 
 @media (max-height: 520px) {
   .screen { padding-top: 8px; padding-bottom: 8px; }
-  .garage { gap: 5px; }
+  .garage { gap: 2px; }
   .brand-lockup { justify-items: start; gap: 0; padding-left: 4px; }
   .brand-kicker, .garage-subtitle { display: none; }
   h1 { margin: 0; font-size: clamp(1.8rem, 5.2vw, 2.5rem); line-height: .9; }
@@ -415,7 +419,7 @@ h1 span { color: var(--orange); }
   .track-advice { min-height: 24px; padding: 2px 8px; font-size: .62rem; }
   .visual-choice { gap: 9px; font-size: .92rem; }
   .visual-choice b, .visual-choice em { min-width: 28px; min-height: 20px; }
-  .settings-row { position: absolute; top: max(10px, env(safe-area-inset-top)); right: max(12px, env(safe-area-inset-right)); max-width: 45vw; justify-content: flex-end; }
+  .settings-row { position: relative; max-width: none; justify-content: center; gap: 5px; }
   .toggle { min-height: 30px; padding: 3px 7px; }
   .toggle input { width: 17px; height: 17px; }
   .toggle span { display: none; }

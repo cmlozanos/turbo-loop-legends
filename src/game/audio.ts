@@ -9,10 +9,10 @@ export class GameAudio {
   constructor(private musicEnabled: boolean, private soundEnabled: boolean) {}
 
   async start(): Promise<void> {
-    if (this.paused) return;
+    if (this.paused || (!this.musicEnabled && !this.soundEnabled)) return;
     this.context ??= new AudioContext();
     await this.context.resume();
-    if (this.paused) {
+    if (this.paused || (!this.musicEnabled && !this.soundEnabled)) {
       await this.context.suspend();
       return;
     }
@@ -28,7 +28,7 @@ export class GameAudio {
   }
 
   updateEngine(speed: number, throttle: boolean): void {
-    if (this.paused) return;
+    if (this.paused || !this.soundEnabled) return;
     if (!this.context || !this.engine || !this.engineGain) return;
     const now = this.context.currentTime;
     this.engine.frequency.setTargetAtTime(55 + Math.min(speed, 80) * 2.2, now, 0.04);
@@ -38,6 +38,8 @@ export class GameAudio {
   setEnabled(music: boolean, sound: boolean): void {
     this.musicEnabled = music;
     this.soundEnabled = sound;
+    if (!sound) this.engineGain?.gain.setTargetAtTime(0, this.context?.currentTime ?? 0, 0.04);
+    if (!music && !sound) void this.context?.suspend().catch(() => {});
     this.updateMusic();
   }
 
@@ -55,13 +57,13 @@ export class GameAudio {
     if (this.musicTimer) window.clearInterval(this.musicTimer);
     this.musicTimer = undefined;
     this.engineGain?.gain.setTargetAtTime(0, this.context?.currentTime ?? 0, 0.04);
+    void this.context?.suspend().catch(() => {});
   }
 
   setPaused(paused: boolean): void {
     this.paused = paused;
     if (paused) {
       this.stop();
-      void this.context?.suspend().catch(() => {});
     }
   }
 

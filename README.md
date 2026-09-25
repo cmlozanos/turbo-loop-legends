@@ -16,6 +16,26 @@ Videojuego 2D de coches para navegador, pensado primero para tablet y niños de 
 El juego guarda ajustes, coche, pista elegida y desbloqueos únicamente en el dispositivo. Después de la primera carga puede funcionar sin conexión.
 En una instalación nueva, música y efectos de sonido comienzan desactivados y pueden habilitarse desde el garaje.
 
+## Rendimiento en tablets antiguas
+
+El ajuste ⚡ **Modo ligero** del garaje reduce la resolución interna y desactiva
+polvo y algunos efectos decorativos. Conserva el tamaño de los controles, la
+cámara, las pistas, las colisiones y el progreso. Se guarda en cada dispositivo;
+la calidad normal sigue siendo el valor inicial.
+
+La física avanza a pasos de 1/60 s independientemente del renderizado: las pruebas
+comparan trayectorias, aceleración, marcha atrás y recuperación entre 10 y 120 FPS.
+La recuperación de un bloqueo prolongado está limitada a 250 ms por fotograma
+(15 pasos), sin simular el tiempo pasado en pausa. Las ruedas reutilizan texturas
+pequeñas y las piezas de pista fuera de cámara no se dibujan. El renderizado se
+detiene detrás del garaje, las pausas y los retos; con sonido desactivado no se
+crea el motor de audio.
+
+`make test-performance` ejecuta las regresiones de reloj, cámara, resolución,
+pausas y reutilización de texturas. La suite de navegador comprueba también
+rotaciones y reanudación desde la recomendación de vehículo. Sus contadores de
+render son mediciones de escritorio, no una certificación de FPS en Android 5.
+
 ## Instalar en una tablet
 
 - Android/Chrome: pulsa `⬇ INSTALAR` cuando aparezca en el garaje.
@@ -42,6 +62,7 @@ make typecheck
 make test
 make install-e2e
 make test-e2e
+make test-performance
 make build
 make check
 make verify-chrome95

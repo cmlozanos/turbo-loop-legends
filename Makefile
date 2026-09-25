@@ -1,4 +1,4 @@
-.PHONY: install install-e2e dev typecheck test test-e2e build preview check verify-cache verify-pwa verify-chrome95 verify-learning-gate physics-poc
+.PHONY: install install-e2e dev typecheck test test-e2e test-performance build preview check verify-cache verify-pwa verify-chrome95 verify-learning-gate physics-poc
 
 install:
 	npm ci
@@ -17,6 +17,10 @@ test:
 
 test-e2e:
 	npm run test:e2e
+
+test-performance:
+	npm test -- tests/frameClock.test.ts tests/sceneTiming.test.ts
+	npm run test:e2e -- tests/e2e/performance.spec.ts --workers=1
 
 build:
 	npm run build

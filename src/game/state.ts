@@ -9,6 +9,7 @@ export interface GameSettings {
   music: boolean;
   sound: boolean;
   reducedMotion: boolean;
+  lightMode: boolean;
 }
 
 export interface SaveData {
@@ -30,7 +31,8 @@ export const DEFAULT_SAVE: SaveData = {
     assists: true,
     music: false,
     sound: false,
-    reducedMotion: false
+    reducedMotion: false,
+    lightMode: false
   }
 };
 
@@ -51,7 +53,8 @@ export function loadSave(storage: Pick<Storage, "getItem"> = localStorage): Save
     return {
       ...createDefaultSave(),
       ...parsed,
-      settings: { ...DEFAULT_SAVE.settings, ...parsed.settings },
+      settings: { ...DEFAULT_SAVE.settings, ...parsed.settings,
+        lightMode: typeof parsed.settings?.lightMode === "boolean" ? parsed.settings.lightMode : DEFAULT_SAVE.settings.lightMode },
       selectedTrack: parsed.selectedTrack && isTrackId(parsed.selectedTrack) ? parsed.selectedTrack : DEFAULT_SAVE.selectedTrack,
       unlockedCars: [...new Set<CarId>([...(parsed.unlockedCars?.filter(isCarId) ?? []), ...ALWAYS_AVAILABLE_CARS])]
     };

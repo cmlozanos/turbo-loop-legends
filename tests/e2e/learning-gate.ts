@@ -27,7 +27,7 @@ export async function solveGate(page: Page): Promise<void> {
   await expect(gate).toHaveCount(0);
 }
 
-export async function openGame(page: Page): Promise<void> {
-  await page.goto('');
+export async function openGame(page: Page, path = ''): Promise<void> {
+  await page.goto(path);
   await solveGate(page);
 }

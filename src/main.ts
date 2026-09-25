@@ -4,6 +4,7 @@ import { assetUrl } from "./assets";
 import { GameAudio } from "./game/audio";
 import { CARS, getCar, type CarId } from "./game/cars";
 import { GameScene, type GameSceneData } from "./game/GameScene";
+import { renderScale } from "./game/frameClock";
 import { InputController } from "./game/input";
 import { loadSave, saveGame, unlockCar } from "./game/state";
 import { carCanCompleteTrack, getNextTrackId, getTrack, TRACKS, type TrackId, type TrackObstacle } from "./game/track";
@@ -80,6 +81,7 @@ app.innerHTML = `
           <label class="toggle" data-short="♫"><input id="music-toggle" type="checkbox"><span>Música</span></label>
           <label class="toggle" data-short="🔊"><input id="sound-toggle" type="checkbox"><span>Sonido</span></label>
           <label class="toggle" data-short="◉"><input id="motion-toggle" type="checkbox"><span>Movimiento suave</span></label>
+          <label class="toggle" data-short="⚡"><input id="light-toggle" type="checkbox" aria-label="Modo ligero"><span>Modo ligero</span></label>
           <button id="install-button" class="install-button" type="button" hidden>⬇ INSTALAR</button>
         </div>
       </div>
@@ -152,14 +154,37 @@ const game = new Phaser.Game({
   backgroundColor: "#8fd8f2",
   transparent: false,
   antialias: true,
+  fps: { smoothStep: false },
   scale: {
-    mode: Phaser.Scale.RESIZE,
-    autoCenter: Phaser.Scale.CENTER_BOTH,
+    mode: Phaser.Scale.NONE,
+    autoCenter: Phaser.Scale.NO_CENTER,
     width: "100%",
     height: "100%"
   },
   render: { powerPreference: "high-performance", antialias: true }
 });
+function resizeGame(): void {
+  if (!game.isBooted) return;
+  const factor = renderScale(innerWidth, innerHeight, save.settings.lightMode);
+  game.scale.resize(Math.round(innerWidth * factor), Math.round(innerHeight * factor));
+  game.canvas.style.width = innerWidth + "px";
+  game.canvas.style.height = innerHeight + "px";
+  game.scale.updateBounds();
+}
+game.events.once(Phaser.Core.Events.READY, resizeGame);
+window.addEventListener("resize", resizeGame);
+window.addEventListener("blur", () => { input.releaseAll(); if (!hud.hidden) pauseRace(); });
+game.events.on(Phaser.Core.Events.POST_RENDER, () => {
+  if (learningLocked || hud.hidden || document.hidden) game.loop.sleep();
+});
+if (new URLSearchParams(location.search).has("test")) {
+  Object.defineProperty(window, "__turboRead", { value: () => ({
+    running: game.loop.running, renderFrames: game.loop.frame, lightMode: save.settings.lightMode,
+    width: game.canvas?.width, height: game.canvas?.height,
+    textures: game.textures?.getTextureKeys().length,
+    scene: sceneAdded ? (game.scene.getScene("GameScene") as GameScene).diagnostics() : null
+  }) });
+}
 
 renderCars();
 renderTracks();
@@ -209,6 +234,7 @@ const learningGate = window.LearningGate.mount({
       game.scene.resume("GameScene");
     }
     resumeRaceAfterGate = false;
+    if (!hud.hidden) game.loop.wake();
   }
 });
 game.events.on(Phaser.Core.Events.PRE_STEP, () => {
@@ -262,14 +288,21 @@ function startRace(): void {
   finishScreen.hidden = true;
   challengeScreen.hidden = true;
   hud.hidden = false;
+  input.releaseAll();
+  resizeGame();
+  game.loop.wake();
   const data: GameSceneData = {
     car: getCar(selectedCar),
     track: getTrack(selectedTrack),
     assists: save.settings.assists,
     reducedMotion: save.settings.reducedMotion,
+    lightMode: save.settings.lightMode,
     input,
     audio,
-    onSpeed: (speed) => { speedLabel.textContent = String(Math.round(speed)); },
+    onSpeed: (speed) => {
+      const label = String(Math.round(speed));
+      if (speedLabel.textContent !== label) speedLabel.textContent = label;
+    },
     onCheckpoint: (id) => {
       audio.playCheckpoint();
       showToast("✓ Punto de control");
@@ -314,6 +347,7 @@ function startNextRace(): void {
 
 function pauseRace(): void {
   if (hud.hidden) return;
+  input.releaseAll();
   game.scene.pause("GameScene");
   audio.stop();
   hud.hidden = true;
@@ -326,6 +360,7 @@ function resumeRace(): void {
   pauseScreen.hidden = true;
   hud.hidden = false;
   game.scene.resume("GameScene");
+  game.loop.wake();
 }
 
 function showGarage(): void {
@@ -431,6 +466,7 @@ function continueChallenge(): void {
   hud.hidden = false;
   void audio.start();
   game.scene.resume("GameScene");
+  game.loop.wake();
 }
 
 function renderTrackMap(track: (typeof TRACKS)[number]): string {
@@ -456,6 +492,8 @@ function bindSettings(): void {
   bindToggle("music-toggle", "music");
   bindToggle("sound-toggle", "sound");
   bindToggle("motion-toggle", "reducedMotion");
+  bindToggle("light-toggle", "lightMode");
+  document.body.classList.toggle("light-mode", save.settings.lightMode);
 }
 
 function bindToggle(id: string, key: keyof typeof save.settings): void {
@@ -466,6 +504,10 @@ function bindToggle(id: string, key: keyof typeof save.settings): void {
     save.settings[key] = element.checked;
     saveGame(save);
     audio.setEnabled(save.settings.music, save.settings.sound);
+    if (key === "lightMode") {
+      document.body.classList.toggle("light-mode", save.settings.lightMode);
+      resizeGame();
+    }
   });
 }
 
