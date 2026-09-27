@@ -15,6 +15,7 @@ typecheck:
 test:
 	npm test
 
+# Includes touch.spec.ts and tools/touch-check.cjs (menus, editing, hold/release).
 test-e2e:
 	npm run test:e2e
 

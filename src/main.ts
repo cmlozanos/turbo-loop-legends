@@ -10,6 +10,17 @@ import { loadSave, saveGame, unlockCar } from "./game/state";
 import { carCanCompleteTrack, getNextTrackId, getTrack, TRACKS, type TrackId, type TrackObstacle } from "./game/track";
 import "./styles/main.css";
 
+// Keep native long-press menus off game UI without cancelling touch gestures.
+let lastGameTouch = -Infinity;
+document.addEventListener("touchstart", () => { lastGameTouch = Date.now(); }, { capture: true, passive: true });
+document.addEventListener("pointerdown", event => {
+  if (event.pointerType === "touch") lastGameTouch = Date.now();
+}, { capture: true, passive: true });
+document.addEventListener("contextmenu", event => {
+  if (event.target instanceof Element && event.target.closest('input,textarea,select,[contenteditable]:not([contenteditable="false"])')) return;
+  if (event.pointerType === "touch" || Date.now() - lastGameTouch < 2000) event.preventDefault();
+}, { capture: true });
+
 const app = document.querySelector<HTMLElement>("#app");
 if (!app) throw new Error("No se encontró el contenedor del juego");
 if (!window.LearningGate) {

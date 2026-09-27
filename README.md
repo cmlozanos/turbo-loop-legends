@@ -96,3 +96,11 @@ Cada push a `main` ejecuta los checks y publica `dist/` en GitHub Pages mediante
 ## Licencia
 
 MIT. Consulta [`LICENSE`](LICENSE).
+
+## Pulsación larga
+
+La UI del juego bloquea los menús táctiles, callouts y selección; los campos editables conservan selección y edición. La protección de contexto solo actúa con un evento táctil o durante los dos segundos posteriores, sin cancelar globalmente los gestos. Vite mantiene su versionado por hash.
+
+`make test-e2e` incluye `tests/e2e/touch.spec.ts` y `tools/touch-check.cjs`: teclado, edición y pulsación táctil de 800 ms con liberación en Chromium. Admite `CHROME95_PATH`. La emulación no sustituye comprobar el menú nativo en una tablet física.
+
+Se conserva el comportamiento previo del teclado: las flechas están reservadas globalmente por los controles del juego. La regresión de edición comprueba selección de rango, escritura y borrado sin redefinir esa política.
