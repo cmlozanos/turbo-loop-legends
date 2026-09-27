@@ -1,3 +1,16 @@
+# Bundle sync only writes this repository; provide the canonical data directory explicitly.
+.DEFAULT_GOAL := install
+LEARNING_SOURCE ?=
+.PHONY: sync-gates check-gates
+
+sync-gates:
+	node tools/sync-learning-gate.mjs --source "$(LEARNING_SOURCE)"
+
+check-gates:
+	node tools/sync-learning-gate.mjs --check $(if $(LEARNING_SOURCE),--source "$(LEARNING_SOURCE)")
+
+check: check-gates
+
 .PHONY: install install-e2e dev typecheck test test-e2e test-performance build preview check verify-cache verify-pwa verify-chrome95 verify-learning-gate physics-poc
 
 install:

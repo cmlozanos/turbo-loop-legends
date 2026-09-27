@@ -23,6 +23,9 @@ export default defineConfig({
       manifestFilename: `manifest-${buildVersion}.webmanifest`,
       includeAssets: [
         "learning-gate.js",
+        "READING_ASSETS.md",
+        "READING_WORDS.md",
+        "reading-images/manifest.json",
         "icons/icon.svg",
         "icons/icon-maskable.svg",
         "icons/icon-192.png",
