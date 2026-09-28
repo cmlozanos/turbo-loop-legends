@@ -11,7 +11,7 @@ Videojuego 2D de coches para navegador, pensado primero para tablet y niños de 
 - Al cruzar la meta puedes iniciar inmediatamente el siguiente circuito. Las rocas y pilas de neumáticos se saltan; las cajas y barreras se rompen con suficiente velocidad.
 - Cada circuito incluye un megasalto amarillo marcado `⚡ TURBO`: su precipicio está calculado para que la velocidad normal no alcance el otro lado.
 - Los loopings conservan el impulso real del coche: acelerador, gravedad y rozamiento modifican su velocidad, puede desprenderse si pierde contacto y puede volver a recorrerlos marcha atrás.
-- Cada apertura exige un reto aleatorio: suma, resta sin resultados negativos o trazo guiado de una letra. Los operandos y resultados son menores de 10. Se repite cada diez minutos desde la resolución, también de noche y contando el tiempo en otras aplicaciones. El coche, los temporizadores y el sonido se pausan; una pausa manual no se cancela al resolver el reto.
+- Cada apertura exige un reto de los tipos seleccionados en el perfil de la tablet desde Games: suma, resta sin resultados negativos, trazo guiado o lectura. Se puede elegir cualquier combinación, con al menos un tipo activo; sin perfil válido se mantienen los retos predeterminados. Los operandos y resultados son menores de 10. Se repite cada diez minutos desde la resolución, también de noche y contando el tiempo en otras aplicaciones. El coche, los temporizadores y el sonido se pausan; una pausa manual no se cancela al resolver el reto.
 
 El juego guarda ajustes, coche, pista elegida y desbloqueos únicamente en el dispositivo. Después de la primera carga puede funcionar sin conexión.
 En una instalación nueva, música y efectos de sonido comienzan desactivados y pueden habilitarse desde el garaje.
