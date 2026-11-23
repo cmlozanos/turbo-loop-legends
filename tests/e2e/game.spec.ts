@@ -66,7 +66,8 @@ test("home returns to the native garage without leaving the game", async ({ page
   await expect(page.locator("#garage-screen")).toBeVisible();
   expect(page.url()).toBe(url);
   await page.locator("#play-button").click();
-  await page.locator("#home-button").click();
+  await expect(page.locator("[data-family-home]:visible")).toHaveCount(0);
+  await page.getByRole("button", { name: "Inicio del juego", exact: true }).click();
   await expect(page.locator("#garage-screen")).toBeVisible();
   expect(page.url()).toBe(url);
 });

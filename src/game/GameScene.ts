@@ -1,6 +1,6 @@
 import Phaser from "phaser";
 import { nativeAppearance, type NativeTheme } from "./appearance";
-import { drivingFocus } from "./sceneView";
+import { drivingFocus, drivingSpan } from "./sceneView";
 import { paintScenery } from "./scenery";
 import { assetUrl } from "../assets";
 import { FrameClock, renderScale } from "./frameClock";
@@ -192,9 +192,9 @@ export class GameScene extends Phaser.Scene {
   private updateCameraFocus(deltaMs = 0): void {
     if (!this.cameraFocus) return;
     const point = physicsToScreen(drivingFocus(this.simulation.track, this.lastSnapshot), PIXELS_PER_METRE, ORIGIN);
-    this.cameraFocus.setPosition(point.x, point.y + (window.innerHeight < 520 ? 100 : 0));
+    this.cameraFocus.setPosition(point.x, point.y);
     const factor = renderScale(window.innerWidth, window.innerHeight, this.sceneData.lightMode);
-    const verticalSpan = Math.max(window.innerHeight < 520 ? 850 : 540, (this.lastSnapshot.chassis.position.y + 3) * PIXELS_PER_METRE + 200);
+    const verticalSpan = drivingSpan(this.simulation.track, this.lastSnapshot, window.innerHeight);
     const targetZoom = factor * Math.min(1, window.innerHeight / verticalSpan);
     // Widen immediately on takeoff; restore gradually on descent, so the landing
     // cannot outrun a still-high following camera when zoom snaps back in.

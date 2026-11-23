@@ -121,3 +121,16 @@ Final refreshed-label Mamut + garage smoke: **2/2 passed**, no retries. Mamut
 38.6 s, 349 samples, max height 13.90 m, zero respawns. Selected imagery retained
 (about 2.2 MiB, no traces/videos); the seven task-owned browser output directories
 were removed after selecting evidence. Pre-existing test-results and dist remain.
+
+## Additional explicit play-feel pass
+User23November2026 confirmed deeper Turbo quality/gameplay/professionalism and explicitly requested LOCAL validation, GitHub only web publication. No remote jobs are used as acceptance after this instruction.
+
+Sources newly searched/opened: Phaser Cameras concepts (follow smoothing/offset/deadzone), Phaser issue7352 (frame-dependent follow caveat), GDevelop Car2DPhysics MIT example (physics/parallax/button feedback). These are patterns, not borrowed code/art or a new engine. Existing delta-normalized camera lerp retained. Chosen measured refinement: dynamic framing uses actual nearby loop radius/airborne height, not constant850pxworld span on every short screen; normal-road vehicle larger while looping/landing stays in frame. Alternate permanent zoom-out retained as previous baseline, not selected because it made the car tiny. Local natural-input camera-bound tests decide acceptance.
+
+Input correctness: independent keyboard/key aliases and each pointer now aggregated; releasing one cannot cancel another held input. Blur/pagehide clear all and destroy removes native listeners.36unit regressions written RED(19failures)/GREEN plus browser mixed-source guard. No physics or extra buttons.
+
+Local-only delivery: removed browser-test installation/execution from GitHub Pages workflow; it now installs build dependencies, builds and publishes only. Home's separate remote test workflow removed under the same explicit user instruction; local Make/test commands remain intact. No guard removed from local checks.
+
+Further local acceptance:127unit tests pass, including36new input-source regressions.4native browser tests pass with final camera: Mamut/Titán both loops,flight,landing,7checkpoints,finish,0respawns; mixed touch+keyboard. Responsive controls/Home focused3/3 at320×640,740×360,1280×800,800×1280:single sharedHome, native duplicate removed; all visibleHUDbuttons within viewport and≥44px. Utility/drive controls sized from short edge (vmin), not width; flat shortscreen car larger, zoom widens only near actual loops/airtime. Loop circle framed between HUD/controls after local screenshot-based iteration. No physicalTab4 certification and no claim of no possiblebugs.
+
+Single Home follow-up explicitly requested: removed native garage/race house buttons; only common Home remains and returns to native garage. Shared kit suppresses marked duplicate buttons in other games while mounted (IDs/listeners preserved). Drive/utility/Turbo controls now sized from short edge with≥44pxhit area; four portrait/landscape dimensions checked. Final local navigation/controls tests repeated against propagated shared kit, not GitHub jobs. Existing pause dialog Garaje action remains contextual text, not another always-visibleHomeicon.

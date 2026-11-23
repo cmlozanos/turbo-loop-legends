@@ -1,0 +1,23 @@
+[WebServer] (node:64206) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] <script src="/turbo-loop-legends/learning-profile.js?v=local"> in "/index.html" can't be bundled without type="module" attribute
+[WebServer] <script src="/turbo-loop-legends/reading-words.js?v=local"> in "/index.html" can't be bundled without type="module" attribute
+[WebServer] <script src="/turbo-loop-legends/learning-gate.js?v=local"> in "/index.html" can't be bundled without type="module" attribute
+[WebServer] <script src="./family-v2/family.js?v=2.0.0"> in "/index.html" can't be bundled without type="module" attribute
+[WebServer]
+[WebServer] ./family-v2/family.css?v=2.0.0 doesn't exist at build time, it will remain unchanged to be resolved at runtime
+[WebServer]
+[WebServer] (!) Some chunks are larger than 500 kB after minification. Consider:
+[WebServer] - Using dynamic import() to code-split the application
+[WebServer] - Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+[WebServer] - Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+[WebServer] (node:64365) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 3 tests using 1 worker
+
+  ✓  1 [desktop] › tests/e2e/game.spec.ts:56:1 › home returns to the native garage without leaving the game (1.7s)
+  ✓  2 [desktop] › tests/e2e/refinement.spec.ts:115:1 › keyboard and touch throttle survive independent releases without sticky driving (1.2s)
+  ✓  3 [desktop] › tests/e2e/refinement.spec.ts:131:1 › one Home and proportionate reachable controls in portrait and landscape (1.7s)
+
+  3 passed (17.4s)

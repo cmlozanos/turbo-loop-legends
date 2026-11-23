@@ -27,9 +27,8 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
-      - run: npx playwright install --with-deps chromium
-      - run: make check
-      - run: npm run test:e2e -- --project=desktop
+      # Validation runs locally; this workflow only builds/publishes the website.
+      - run: npm run build
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

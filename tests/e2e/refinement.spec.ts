@@ -111,3 +111,35 @@ for (const car of ["mammoth", "titan"]) {
     await expect(page.locator("#toast")).toContainText("Otra oportunidad");
   });
 }
+
+test('keyboard and touch throttle survive independent releases without sticky driving',async({page})=>{
+  await openGame(page,'?test=1');await page.locator('#play-button').click();
+  await expect.poll(async()=> (await read(page)).scene?.steps??0).toBeGreaterThan(3);
+  const throttle=page.getByRole('button',{name:'Acelerar',exact:true});
+  await page.keyboard.down('ArrowRight');
+  await throttle.dispatchEvent('pointerdown',{pointerId:901,pointerType:'touch',button:0});
+  await throttle.dispatchEvent('pointerup',{pointerId:901,pointerType:'touch',button:0});
+  await expect.poll(async()=> (await read(page)).scene.snapshot.velocity.x).toBeGreaterThan(4);
+  await page.keyboard.down('KeyD');await page.keyboard.up('ArrowRight');
+  await expect.poll(async()=> (await read(page)).scene.snapshot.velocity.x).toBeGreaterThan(7);
+  await page.evaluate(()=>window.dispatchEvent(new Event('blur')));
+  await page.keyboard.up('KeyD');
+  await page.getByRole('button',{name:'Inicio del juego',exact:true}).click();
+  await expect(page.locator('#garage-screen')).toBeVisible();
+});
+
+test('one Home and proportionate reachable controls in portrait and landscape',async({page})=>{
+  await openGame(page,'?test=1');await page.locator('#play-button').click();
+  for(const size of [{width:320,height:640},{width:740,height:360},{width:1280,height:800},{width:800,height:1280}]){
+    await page.setViewportSize(size);
+    await expect(page.getByRole('button',{name:'Inicio del juego',exact:true})).toBeVisible();
+    await expect(page.locator('[data-family-home]:visible')).toHaveCount(0);
+    const buttons=page.locator('#hud button:visible');
+    for(const button of await buttons.all()){
+      const box=await button.boundingBox();expect(box).not.toBeNull();
+      expect(box!.width).toBeGreaterThanOrEqual(44);expect(box!.height).toBeGreaterThanOrEqual(44);
+      expect(box!.x).toBeGreaterThanOrEqual(0);expect(box!.y).toBeGreaterThanOrEqual(0);
+      expect(box!.x+box!.width).toBeLessThanOrEqual(size.width+1);expect(box!.y+box!.height).toBeLessThanOrEqual(size.height+1);
+    }
+  }
+});
