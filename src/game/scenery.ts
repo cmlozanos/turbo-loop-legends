@@ -11,6 +11,20 @@ export function paintScenery(layers: Phaser.GameObjects.Graphics[], theme: Track
     night ? 0x364969 : theme?.skyBottom ?? 0xeaf8f2, night ? 0x364969 : theme?.skyBottom ?? 0xeaf8f2, 1);
   sky.fillRect(-7000, -1000, 36000, 2800);
   const sunX = width * 0.73;
+  // Bloom and light shafts: a low sun that floods the scene instead of a flat disc.
+  const glow = night ? 0xb4d9ee : 0xffe2a8;
+  sky.fillStyle(glow, 0.035).fillCircle(sunX, 110, 330);
+  sky.fillStyle(glow, 0.05).fillCircle(sunX, 110, 220);
+  sky.fillStyle(glow, 0.06).fillCircle(sunX, 110, 160);
+  if (!night) {
+    for (let ray = 0; ray < 7; ray++) {
+      const angle = Math.PI * (0.18 + ray * 0.11);
+      const spread = 0.035 + (ray % 3) * 0.012;
+      sky.fillStyle(0xfff3cf, ray % 2 ? 0.05 : 0.08).fillTriangle(sunX, 110,
+        sunX + Math.cos(angle - spread) * 1500, 110 + Math.sin(angle - spread) * 1500,
+        sunX + Math.cos(angle + spread) * 1500, 110 + Math.sin(angle + spread) * 1500);
+    }
+  }
   sky.fillStyle(night ? 0xb4d9ee : 0xffd78a, 0.07).fillCircle(sunX, 110, 115);
   sky.fillStyle(night ? 0xb4d9ee : 0xffd78a, 0.13).fillCircle(sunX, 110, 82);
   sky.fillStyle(night ? 0xe3f2ff : 0xfff1c3, 1).fillCircle(sunX, 110, night ? 29 : 43);
@@ -45,4 +59,8 @@ export function paintScenery(layers: Phaser.GameObjects.Graphics[], theme: Track
       near.fillStyle(0xaad59a, night ? 0.06 : 0.2).fillTriangle(x + 5, y + 165, x + 85, y - 35, x + 60, y + 165);
     }
   }
+  // Aerial perspective: distant ridges dissolve into a horizon haze, near ground stays crisp.
+  const haze = night ? 0x24365a : theme?.skyBottom ?? 0xeaf8f2;
+  ridge.fillGradientStyle(haze, haze, haze, haze, 0, 0, night ? 0.75 : 0.82, night ? 0.75 : 0.82).fillRect(-1200, 250, 7200, 480);
+  near.fillGradientStyle(haze, haze, haze, haze, 0, 0, 0.32, 0.32).fillRect(-1200, 430, 7200, 300);
 }

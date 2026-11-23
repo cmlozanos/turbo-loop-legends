@@ -55,3 +55,22 @@ Measured with headless simulations of every compatible car on every circuit:
 WebKit/tablet/phone projects, a real Chromium 95, any physical tablet, frame rate on
 Android, and play by an actual child. Star positions follow nominal launch speeds, so a
 full-turbo run collects roughly 60–80 % of them; that share was not tuned with players.
+
+## Showroom pass (same day, on top of the above)
+
+Scope requested: a modern-engine look for cars and interface with no cost on old tablets.
+
+- New baked car art for all six cars (`public/cars`, generator in `tools/build-car-art.py`),
+  one canvas and `bodyScale` for every car; in-game wheels redrawn as alloy rims.
+- Garage hero stage with capability bars, relit cards, buttons, modals and race HUD
+  (`src/main.ts`, `src/styles/main.css`); scene bloom, haze, ground gradient, turbo flame
+  (`src/game/scenery.ts`, `src/game/GameScene.ts`).
+- Fixed: the shared toolbar overflowed its fixed 190 px slot and shifted the whole page
+  18 px sideways (dark strip on the right, clipped reset button). The game now reserves the
+  toolbar's real width. This also fixes the rotation alignment test reported above.
+
+Verification: `npm run check` green (170 unit tests, build, cache/PWA/Chrome 95 static/
+learning-gate verifiers). Playwright on the container's Chromium at 1024×768: 35 passed,
+1 skipped, 0 failed. Initial circuit 4,668 triangles and 6 draw calls per frame (guard
+9,000). Visual inspection of garage (light, dark, 750×342) and race screenshots only in
+that Chromium; not checked on WebKit, a real Chrome 95 or a physical tablet.

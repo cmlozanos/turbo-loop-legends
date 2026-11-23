@@ -513,3 +513,116 @@ html.family-v2 .speed-unit{font-size:11px;letter-spacing:0}
 @media (max-height: 520px) {
   .star-count { display: inline; margin: 0 0 0 6px; }
 }
+
+/* ───────── Showroom pass: studio lighting, depth and glass on the game's own surfaces.
+   The family toolbar, fonts and day/night tokens stay those of the shared kit. ───────── */
+html.family-v2 {
+  --tl-edge: rgba(35,62,97,.13);
+  --tl-card: linear-gradient(180deg, #ffffff 0%, #f1f5fc 100%);
+  --tl-shadow: 0 10px 22px rgba(28,48,84,.14), 0 2px 4px rgba(28,48,84,.10);
+  --tl-hud: linear-gradient(180deg, rgba(24,36,60,.94), rgba(7,12,22,.94));
+  --tl-muted: #5b7191;
+}
+html.family-v2[data-family-theme=dark] {
+  --tl-edge: rgba(255,255,255,.10);
+  --tl-card: linear-gradient(180deg, #2b3c5a 0%, #1a2538 100%);
+  --tl-shadow: 0 12px 26px rgba(0,0,0,.45), 0 2px 4px rgba(0,0,0,.4);
+  --tl-muted: #9fb3cf;
+}
+html.family-v2 .screen {
+  background:
+    radial-gradient(120% 70% at 50% -12%, rgba(110,165,255,.26), transparent 60%),
+    radial-gradient(90% 55% at 50% 118%, rgba(255,170,60,.22), transparent 62%),
+    var(--family-page);
+}
+
+/* The chosen car under the lights. */
+.car-hero { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(200px, .85fr); grid-template-rows: minmax(0, 1fr); gap: clamp(8px, 1.2vw, 14px); height: clamp(150px, 23vh, 230px); text-align: left; }
+.hero-stage {
+  position: relative; overflow: hidden; border-radius: 24px;
+  background:
+    radial-gradient(55% 80% at 50% 0%, rgba(255,255,255,.16), transparent 70%),
+    linear-gradient(180deg, #1b2740 0%, #0b111e 66%, #16223a 66%, #04070d 100%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.18), inset 0 0 0 1px rgba(255,255,255,.06), var(--tl-shadow);
+}
+.hero-beam { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(255,255,255,.22), rgba(255,255,255,0) 78%); clip-path: polygon(40% 0, 60% 0, 92% 100%, 8% 100%); }
+.hero-floor { position: absolute; left: 8%; right: 8%; bottom: 3%; height: 34%; border-radius: 50%; background: radial-gradient(closest-side, var(--car-color), transparent); opacity: .5; }
+.hero-floor::after { content: ""; position: absolute; left: 6%; right: 6%; top: 44%; height: 2px; border-radius: 2px; background: linear-gradient(90deg, transparent, var(--car-accent), transparent); }
+.hero-stage img { position: absolute; left: 50%; bottom: 9%; height: 82%; max-width: 92%; transform: translateX(-50%); object-fit: contain; filter: drop-shadow(0 10px 10px rgba(0,0,0,.55)); -webkit-box-reflect: below -14% linear-gradient(transparent 62%, rgba(255,255,255,.2)); }
+.hero-card { display: grid; align-content: center; gap: 0; min-height: 0; overflow: hidden; border-radius: 24px; padding: clamp(8px, 1.4vw, 16px) clamp(12px, 1.8vw, 20px); color: var(--family-ink); background: var(--tl-card); border: 1px solid var(--tl-edge); box-shadow: inset 0 1px 0 rgba(255,255,255,.5), var(--tl-shadow); }
+.hero-name { margin: 0; font-size: clamp(1.2rem, 2.6vw, 1.8rem); line-height: 1.4; }
+.hero-name::after { content: ""; display: block; width: 46px; height: 4px; border-radius: 4px; background: linear-gradient(90deg, var(--car-color), var(--car-accent)); }
+.hero-tagline { margin: 2px 0 3px; color: var(--tl-muted); font-size: clamp(.7rem, 1.3vw, .9rem); line-height: 1.4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hero-stats { display: grid; gap: clamp(1px, .45vh, 5px); margin: 0; padding: 0; list-style: none; }
+.hero-stats li { display: grid; grid-template-columns: 1.5em 1fr; align-items: center; gap: 8px; font-size: clamp(.68rem, 1.9vh, .92rem); line-height: 1.15; }
+.stat-pips { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
+.stat-pips i { height: clamp(6px, 1vh, 9px); border-radius: 3px; background: rgba(120,140,170,.24); transform: skewX(-18deg); }
+.stat-pips i.on { background: linear-gradient(180deg, var(--car-accent), var(--car-color)); box-shadow: 0 0 8px var(--car-color); }
+
+/* Selectors: lit cards with a real edge, and a glow in the colour of what is chosen. */
+html.family-v2 .car-card, html.family-v2 .track-card, html.family-v2 .track-advice {
+  background: var(--tl-card); border: 1px solid var(--tl-edge);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.55), var(--tl-shadow);
+}
+html.family-v2 .car-card { border-radius: 20px; padding: 6px 8px 8px; }
+html.family-v2 .car-preview { height: clamp(44px, 5.4vw, 62px); }
+html.family-v2 .car-preview::before { inset: 52% 6% -4%; border: 0; background: radial-gradient(closest-side, rgba(10,20,40,.34), transparent); }
+html.family-v2 .car-card[aria-pressed="true"] {
+  border-color: var(--car-color); background: var(--tl-card);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.55), 0 0 0 2px var(--car-color), 0 10px 26px -6px var(--car-color);
+  transform: translateY(-3px);
+}
+html.family-v2 .car-card[aria-pressed="true"]::after { left: 22%; right: 22%; bottom: 5px; height: 3px; }
+html.family-v2 .track-card { overflow: hidden; border-radius: 16px; }
+html.family-v2 .track-card::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 3px; background: var(--track-accent); opacity: .85; }
+html.family-v2 .track-card[aria-pressed="true"] { border-color: var(--track-accent); box-shadow: inset 0 1px 0 rgba(255,255,255,.55), 0 0 0 2px var(--track-accent), 0 10px 24px -8px var(--track-accent); }
+html.family-v2 .track-map polyline { stroke-width: 3; filter: none; }
+html.family-v2 .track-icon, html.family-v2 .role-icon { box-shadow: inset 0 1px 0 rgba(255,255,255,.4); }
+
+/* Buttons with weight: a lit top edge, a dark lip and a coloured cast. */
+html.family-v2 .primary-button {
+  color: #2a1700;
+  background: linear-gradient(180deg, #ffe895 0%, #ffc437 46%, #f6a013 54%, #e58406 100%);
+  box-shadow: inset 0 2px 0 rgba(255,255,255,.7), inset 0 -4px 0 rgba(120,58,0,.32), 0 10px 22px -4px rgba(232,133,10,.6);
+  text-shadow: 0 1px 0 rgba(255,255,255,.45);
+}
+html.family-v2 .primary-button:active { transform: translateY(2px); box-shadow: inset 0 2px 0 rgba(255,255,255,.5), inset 0 -2px 0 rgba(120,58,0,.32), 0 4px 10px -4px rgba(232,133,10,.6); }
+html.family-v2 .secondary-button { color: var(--family-ink); background: var(--family-button); box-shadow: inset 0 1px 0 rgba(255,255,255,.5), inset 0 -3px 0 rgba(20,40,80,.14); }
+html.family-v2 .modal { border: 1px solid var(--tl-edge); background: var(--tl-card); box-shadow: inset 0 1px 0 rgba(255,255,255,.55), 0 30px 70px rgba(5,12,28,.5); }
+html.family-v2 #finish-screen, html.family-v2 #pause-screen, html.family-v2 #challenge-screen { background: radial-gradient(70% 60% at 50% 40%, rgba(10,18,36,.45), rgba(4,8,18,.82)); }
+html.family-v2 #finish-screen .modal h2 { color: #f0a019; text-shadow: 0 2px 0 rgba(120,58,0,.25); }
+html.family-v2 #finish-message { font-size: clamp(1rem, 2.4vw, 1.3rem); }
+
+/* Race HUD: dark instrument glass over the scene. */
+html.family-v2 .speedometer { color: #fff; background: var(--tl-hud); border: 1px solid rgba(255,255,255,.16); border-radius: 16px; overflow: hidden; box-shadow: inset 0 1px 0 rgba(255,255,255,.22), 0 8px 20px rgba(0,0,0,.35); padding-bottom: 8px; }
+html.family-v2 .speedometer::before { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 4px; background: rgba(255,255,255,.12); }
+html.family-v2 .speedometer::after { content: ""; position: absolute; left: 0; bottom: 0; height: 4px; width: 100%; transform-origin: left; transform: scaleX(var(--speed, 0)); background: linear-gradient(90deg, #39e0ff, #7c6bff 55%, #ff3bd4); }
+html.family-v2 .hud .icon-button { color: #fff; background: var(--tl-hud); box-shadow: inset 0 1px 0 rgba(255,255,255,.22), inset 0 0 0 1px rgba(255,255,255,.1), 0 6px 14px rgba(0,0,0,.3); }
+html.family-v2 .drive-control {
+  color: #fff;
+  background: radial-gradient(120% 120% at 28% 16%, rgba(255,255,255,.3), transparent 46%), linear-gradient(180deg, #2b3d5e, #0a111f);
+  box-shadow: inset 0 0 0 2px rgba(255,255,255,.2), inset 0 -6px 12px rgba(0,0,0,.45), 0 10px 22px rgba(0,0,0,.4);
+  text-shadow: 0 2px 6px rgba(0,0,0,.5);
+}
+html.family-v2 .throttle-control { background: radial-gradient(120% 120% at 28% 16%, rgba(255,255,255,.38), transparent 46%), linear-gradient(180deg, #ff6a4d, #b3141d); box-shadow: inset 0 0 0 2px rgba(255,255,255,.28), inset 0 -6px 12px rgba(90,0,10,.5), 0 10px 24px -2px rgba(229,38,43,.6); }
+html.family-v2 .drive-control:active { transform: scale(.94); filter: brightness(1.2); }
+html.family-v2 .turbo-control { color: #2a1700; background: radial-gradient(120% 140% at 30% 0%, rgba(255,255,255,.6), transparent 50%), linear-gradient(180deg, #fff27a, #ff9f1c); box-shadow: inset 0 0 0 2px rgba(255,255,255,.4), inset 0 -5px 10px rgba(150,70,0,.35), 0 0 24px rgba(255,177,31,.55), 0 10px 22px rgba(0,0,0,.35); }
+html.family-v2 .turbo-control:active, html.family-v2 .turbo-control.is-active { color: #fff; background: radial-gradient(120% 140% at 30% 0%, rgba(255,255,255,.5), transparent 50%), linear-gradient(180deg, #ff5c35, #d719ff); box-shadow: inset 0 0 0 2px rgba(255,255,255,.45), 0 0 34px rgba(240,40,255,.85), 0 10px 22px rgba(0,0,0,.35); }
+html.family-v2 .toast { color: #fff; background: var(--tl-hud); border: 1px solid rgba(255,255,255,.18); box-shadow: inset 0 1px 0 rgba(255,255,255,.2), 0 8px 20px rgba(0,0,0,.35); font-weight: 400; }
+/* A lens vignette pulls the eye to the car. */
+.game-canvas::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(120% 95% at 50% 46%, transparent 58%, rgba(4,8,18,.42) 100%); }
+/* Light mode keeps the same materials without glows or overlays over the moving canvas. */
+.light-mode .game-canvas::after { display: none; }
+html.family-v2 .light-mode .drive-control, html.family-v2 .light-mode .hud .icon-button, html.family-v2 .light-mode .speedometer, html.family-v2 .light-mode .toast,
+html.family-v2 .light-mode .turbo-control, html.family-v2 .light-mode .turbo-control.is-active { box-shadow: inset 0 0 0 2px rgba(255,255,255,.22); }
+
+@media (max-height: 700px) { .hero-tagline { display: none; } }
+@media (max-height: 520px) { .car-hero { display: none; } html.family-v2 .car-card[aria-pressed="true"] { transform: none; } }
+@media (max-width: 700px) { .car-hero { grid-template-columns: 1fr; } .hero-card { display: none; } }
+
+/* The shared toolbar sizes its own controls; the game reserves that width instead of a fixed
+   190 px box, which the larger controls overflowed, pushing the whole page sideways. */
+html.family-v2 { --tl-toolbar: calc(clamp(44px, min(calc(var(--family-width, 100vw) * .07), calc(var(--family-height, 100vh) * .12)), 56px) * 3 + 62px); }
+.family-toolbar { width: auto; max-width: calc(100% - 16px); display: flex; justify-content: flex-end; }
+html.family-v2 .garage-header { padding-right: calc(var(--tl-toolbar) + 12px); padding-left: calc(var(--tl-toolbar) + 12px); }
+html.family-v2 .pause-button { right: calc(var(--tl-toolbar) + 18px); }

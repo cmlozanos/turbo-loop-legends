@@ -250,7 +250,10 @@ export class GameScene extends Phaser.Scene {
     const sceneryLeft = physicsToScreen({ x: minimumX - 20, y: 0 }, PIXELS_PER_METRE, ORIGIN).x;
     const sceneryRight = physicsToScreen({ x: this.finishX + 35, y: 0 }, PIXELS_PER_METRE, ORIGIN).x;
     const scenery = this.add.graphics().setDepth(-7);
-    scenery.fillStyle(theme?.ground ?? 0x4f8e52, 1).fillRect(sceneryLeft, ORIGIN.y + 10, sceneryRight - sceneryLeft, 350);
+    const groundTop = shade(theme?.ground ?? 0x4f8e52, 1.12);
+    const groundDeep = shade(theme?.ground ?? 0x4f8e52, 0.5);
+    scenery.fillGradientStyle(groundTop, groundTop, groundDeep, groundDeep, 1).fillRect(sceneryLeft, ORIGIN.y + 10, sceneryRight - sceneryLeft, 520);
+    scenery.fillStyle(0xffffff, 0.16).fillRect(sceneryLeft, ORIGIN.y + 10, sceneryRight - sceneryLeft, 4);
     // Cut-earth strata and scattered aggregate give the platform a material,
     // without textures, shaders, particles or per-frame scenery allocation.
     for (let band = 0; band < 3; band++) {
@@ -711,22 +714,33 @@ export class GameScene extends Phaser.Scene {
     if (this.textures.exists(key)) return this.add.image(0, 0, key).setDepth(6);
     const wheel = this.make.graphics({}, false);
     wheel.translateCanvas(radius + 3, radius + 3);
-    wheel.fillStyle(0x060910).fillCircle(0, 0, radius);
-    wheel.lineStyle(4, 0x273243).strokeCircle(0, 0, radius - 3);
-    wheel.fillStyle(0x253247).fillCircle(0, 0, radius - 9);
-    wheel.lineStyle(3, this.sceneData.car.accent, 0.9).strokeCircle(0, 0, radius - 11);
-    wheel.lineStyle(3, 0xdcecff, 0.8);
-    const spoke = radius - 12;
-    wheel.lineBetween(-spoke, 0, spoke, 0).lineBetween(0, -spoke, 0, spoke);
-    wheel.lineBetween(-spoke * 0.7, -spoke * 0.7, spoke * 0.7, spoke * 0.7);
-    wheel.lineBetween(spoke * 0.7, -spoke * 0.7, -spoke * 0.7, spoke * 0.7);
-    wheel.lineStyle(2, 0x647486, 0.8);
-    for (let i = 0; i < 12; i++) {
-      const a = i * Math.PI / 6;
-      wheel.lineBetween(Math.cos(a) * (radius - 2), Math.sin(a) * (radius - 2), Math.cos(a + 0.09) * (radius - 6), Math.sin(a + 0.09) * (radius - 6));
+    // Tyre: tread blocks, a lit sidewall and a deep-dish alloy with brake and caliper.
+    wheel.fillStyle(0x090b0f).fillCircle(0, 0, radius);
+    wheel.lineStyle(2.4, 0x1c2129, 1);
+    for (let i = 0; i < 24; i++) {
+      const a = i * Math.PI / 12;
+      wheel.lineBetween(Math.cos(a) * radius, Math.sin(a) * radius, Math.cos(a) * (radius - 3), Math.sin(a) * (radius - 3));
     }
-    wheel.lineStyle(1, 0xe9f4ff, 0.8).strokeCircle(0, 0, radius - 8);
-    wheel.fillStyle(0xe8f3fb).fillCircle(0, 0, 4);
+    wheel.fillStyle(0x232931).fillCircle(0, 0, radius * 0.88);
+    wheel.lineStyle(1.5, 0x3a424d, 0.9).strokeCircle(0, 0, radius * 0.8);
+    wheel.fillStyle(0x0d1014).fillCircle(0, 0, radius * 0.66);
+    wheel.fillStyle(0x3a424d).fillCircle(0, 0, radius * 0.62);
+    wheel.fillStyle(0x20262e).fillCircle(0, 0, radius * 0.58);
+    wheel.fillStyle(0x8a949f).fillCircle(0, 0, radius * 0.4);
+    wheel.fillStyle(0x5c6570).fillCircle(0, 0, radius * 0.35);
+    wheel.fillStyle(this.sceneData.car.accent).slice(0, 0, radius * 0.5, -1.25, -0.35, false).fillPath();
+    wheel.fillStyle(0x5c6570).fillCircle(0, 0, radius * 0.3);
+    for (let i = 0; i < 5; i++) {
+      const a = -Math.PI / 2 + i * (Math.PI * 2 / 5);
+      const along = { x: Math.cos(a), y: Math.sin(a) }, across = { x: -Math.sin(a), y: Math.cos(a) };
+      const corner = (distance: number, half: number): Point => ({ x: along.x * radius * distance + across.x * radius * half, y: along.y * radius * distance + across.y * radius * half });
+      fillPolygon(wheel.fillStyle(0x6c7682), [corner(0.14, -0.11), corner(0.61, -0.17), corner(0.61, 0.17), corner(0.14, 0.11)]);
+      fillPolygon(wheel.fillStyle(0xd3dbe3), [corner(0.14, -0.11), corner(0.61, -0.17), corner(0.61, 0.03), corner(0.14, 0.02)]);
+    }
+    wheel.lineStyle(Math.max(2, radius * 0.08), 0xc6cfd8, 1).strokeCircle(0, 0, radius * 0.62);
+    wheel.fillStyle(0xe6edf3).fillCircle(0, 0, radius * 0.17);
+    wheel.fillStyle(this.sceneData.car.accent).fillCircle(0, 0, radius * 0.07);
+    wheel.lineStyle(1.6, 0xffffff, 0.35).beginPath().arc(0, 0, radius * 0.84, Math.PI * 1.08, Math.PI * 1.42).strokePath();
     wheel.generateTexture(key, (radius + 3) * 2, (radius + 3) * 2);
     wheel.destroy();
     return this.add.image(0, 0, key).setDepth(6);
@@ -784,8 +798,21 @@ export class GameScene extends Phaser.Scene {
       const normal = { x: -backward.y, y: backward.x };
       const flicker = this.motionAllowed() ? 0.82 + Math.random() * 0.36 : 1;
       const length = (30 + Math.min(speed * 2.2, 32)) * flicker;
-      this.drawFlame(anchor, backward, normal, length, 0xff3bd4, 10);
-      this.drawFlame(anchor, backward, normal, length * 0.62, 0x76f7ff, 5);
+      this.turboFlame.fillStyle(0xff3bd4, 0.16).fillCircle(anchor.x + backward.x * 10, anchor.y + backward.y * 10, 24);
+      this.drawFlame(anchor, backward, normal, length * 1.25, 0x8a2bff, 12, 0.45);
+      this.drawFlame(anchor, backward, normal, length, 0xff3bd4, 9);
+      this.drawFlame(anchor, backward, normal, length * 0.66, 0x76f7ff, 5.5);
+      this.drawFlame(anchor, backward, normal, length * 0.36, 0xffffff, 3);
+      if (this.motionAllowed() && !this.sceneData.lightMode) {
+        // Speed streaks peel off behind the car while the turbo burns.
+        this.turboFlame.lineStyle(2, 0xffffff, 0.35);
+        for (let streak = 0; streak < 4; streak++) {
+          const offset = (streak - 1.5) * 15 + Math.random() * 6;
+          const start = 46 + Math.random() * 50;
+          const from = { x: anchor.x + backward.x * start + normal.x * offset, y: anchor.y + backward.y * start + normal.y * offset - 18 };
+          this.turboFlame.lineBetween(from.x, from.y, from.x + backward.x * (40 + speed * 3), from.y + backward.y * (40 + speed * 3));
+        }
+      }
     }
     this.placeObject(this.chassis, snapshot.chassis.position, snapshot.chassis.angle);
     const bodyScale = this.sceneData.car.bodyScale;
@@ -820,8 +847,8 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
-  private drawFlame(anchor: Point, backward: Point, normal: Point, length: number, color: number, width: number): void {
-    this.turboFlame.fillStyle(color, 0.95).beginPath();
+  private drawFlame(anchor: Point, backward: Point, normal: Point, length: number, color: number, width: number, alpha = 0.95): void {
+    this.turboFlame.fillStyle(color, alpha).beginPath();
     this.turboFlame.moveTo(anchor.x + normal.x * width, anchor.y + normal.y * width);
     this.turboFlame.lineTo(anchor.x + backward.x * length, anchor.y + backward.y * length);
     this.turboFlame.lineTo(anchor.x - normal.x * width, anchor.y - normal.y * width);

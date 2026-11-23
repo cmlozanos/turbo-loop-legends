@@ -67,6 +67,14 @@ const CAR_ROLES: Record<CarId, { icon: string; label: string }> = {
   mammoth: { icon: "💪", label: "Fuerza gigante" },
 };
 
+const CAR_STATS: readonly { key: "acceleration" | "braking" | "grip" | "jump" | "power"; icon: string; label: string }[] = [
+  { key: "acceleration", icon: "⚡", label: "Aceleración" },
+  { key: "braking", icon: "🛑", label: "Frenada" },
+  { key: "grip", icon: "🛞", label: "Agarre" },
+  { key: "jump", icon: "↗️", label: "Salto" },
+  { key: "power", icon: "💪", label: "Fuerza" },
+];
+
 const TRACK_ICONS: Record<TrackId, string> = {
   forest: "🌲",
   canyon: "🏜️",
@@ -97,6 +105,7 @@ app.innerHTML = `
           <h1>Turbo <span>Loop</span> Legends</h1>
           <p class="garage-subtitle">Elige un coche y una pista</p>
         </div></header>
+        <div id="car-hero" class="car-hero"></div>
         <div id="car-grid" class="car-grid" role="group" aria-label="Elige un coche"></div>
         <div class="track-picker">
           <p class="picker-label">Elige pista</p>
@@ -117,7 +126,7 @@ app.innerHTML = `
       </div>
     </section>
     <section id="hud" class="hud" aria-label="Controles de carrera" hidden>
-      <div class="speedometer" aria-live="off"><strong id="speed" class="speed-value">0</strong><span class="speed-unit">km/h</span><span class="star-count" aria-label="Estrellas recogidas"><span aria-hidden="true">⭐</span> <b id="stars">0</b></span></div>
+      <div class="speedometer" id="speedometer" aria-live="off"><strong id="speed" class="speed-value">0</strong><span class="speed-unit">km/h</span><span class="star-count" aria-label="Estrellas recogidas"><span aria-hidden="true">⭐</span> <b id="stars">0</b></span></div>
       <button class="icon-button reset-button" data-control="reset" aria-label="Volver al último punto de control">↻</button>
       <button id="pause-button" class="icon-button pause-button" aria-label="Pausa">Ⅱ</button>
       <button class="drive-control brake-control" data-control="brake" aria-label="Frenar y marcha atrás">◀</button>
@@ -169,8 +178,10 @@ const finishScreen = getElement("finish-screen");
 const challengeScreen = getElement("challenge-screen");
 const speedLabel = getElement("speed");
 const toast = getElement("toast");
+const speedometer = getElement("speedometer");
 const starsLabel = getElement("stars");
 const carGrid = getElement("car-grid");
+const carHero = getElement("car-hero");
 const trackGrid = getElement("track-grid");
 const installButton = getElement("install-button");
 const audio = new GameAudio(save.settings.music, save.settings.sound);
@@ -367,7 +378,9 @@ async function startRace(): Promise<void> {
     audio,
     onSpeed: (speed) => {
       const label = String(Math.round(speed));
-      if (speedLabel.textContent !== label) speedLabel.textContent = label;
+      if (speedLabel.textContent === label) return;
+      speedLabel.textContent = label;
+      speedometer.style.setProperty("--speed", String(Math.min(1, speed / 220)));
     },
     onCheckpoint: (id) => {
       audio.playCheckpoint();
@@ -459,7 +472,22 @@ function showGarage(): void {
   renderGarageAdvice();
 }
 
+/** The showroom stage: the chosen car under the lights, with what it is good at. */
+function renderHero(): void {
+  const car = getCar(selectedCar);
+  carHero.style.setProperty("--car-color", `#${car.color.toString(16).padStart(6, "0")}`);
+  carHero.style.setProperty("--car-accent", `#${car.accent.toString(16).padStart(6, "0")}`);
+  const stats = CAR_STATS.map((stat) => {
+    const value = car.capabilities[stat.key];
+    const pips = Array.from({ length: 5 }, (_, index) => `<i class="${index < value ? "on" : ""}"></i>`).join("");
+    return `<li><span aria-hidden="true">${stat.icon}</span><span class="sr-only">${stat.label}: ${value} de 5</span><span class="stat-pips" aria-hidden="true">${pips}</span></li>`;
+  }).join("");
+  carHero.innerHTML = `<div class="hero-stage" aria-hidden="true"><span class="hero-beam"></span><span class="hero-floor"></span><img src="${assetUrl(car.asset)}" alt="" draggable="false"></div>
+    <div class="hero-card"><p class="hero-name">${car.name}</p><p class="hero-tagline">${car.tagline}</p><ul class="hero-stats">${stats}</ul></div>`;
+}
+
 function renderCars(): void {
+  renderHero();
   carGrid.replaceChildren(...CARS.map((car) => {
     const unlocked = save.unlockedCars.includes(car.id);
     const button = document.createElement("button");
