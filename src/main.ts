@@ -1,3 +1,4 @@
+import {visibleViewport,updateViewportVariables} from "./game/viewport";
 import { bindGallery, galleryOffset } from "./game/gallery";
 import Phaser from "phaser";
 import { registerSW } from "virtual:pwa-register";
@@ -206,15 +207,20 @@ const game = new Phaser.Game({
   render: { powerPreference: "high-performance", antialias: true }
 });
 function resizeGame(): void {
+  updateViewportVariables();
   if (!game.isBooted) return;
-  const factor = renderScale(innerWidth, innerHeight, save.settings.lightMode);
-  game.scale.resize(Math.round(innerWidth * factor), Math.round(innerHeight * factor));
-  game.canvas.style.width = innerWidth + "px";
-  game.canvas.style.height = innerHeight + "px";
+  const {width,height} = visibleViewport();
+  const factor = renderScale(width, height, save.settings.lightMode);
+  game.scale.resize(Math.round(width * factor), Math.round(height * factor));
+  game.canvas.style.width = width + "px";
+  game.canvas.style.height = height + "px";
   game.scale.updateBounds();
 }
 game.events.once(Phaser.Core.Events.READY, resizeGame);
 window.addEventListener("resize", resizeGame);
+window.visualViewport?.addEventListener("resize", resizeGame);
+window.addEventListener("orientationchange", resizeGame);
+updateViewportVariables();
 window.addEventListener("blur", () => { input.releaseAll(); if (!hud.hidden) pauseRace(); });
 game.events.on(Phaser.Core.Events.POST_RENDER, () => {
   if (learningLocked || familyPaused || hud.hidden || document.hidden) game.loop.sleep();

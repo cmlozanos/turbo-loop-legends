@@ -1,3 +1,4 @@
+import {visibleViewport} from "./viewport";
 import Phaser from "phaser";
 import { roadEffectsPlan, type RoadEffectEmission } from "./roadEffects";
 import { nativeAppearance, type NativeTheme } from "./appearance";
@@ -208,7 +209,7 @@ export class GameScene extends Phaser.Scene {
 
   private applyAppearance = (): void => {
     this.appearance = nativeAppearance(this.sceneData.reducedMotion).theme;
-    paintScenery(this.backdrop, this.simulation.track.theme, this.simulation.track.id, this.appearance, window.innerWidth);
+    paintScenery(this.backdrop, this.simulation.track.theme, this.simulation.track.id, this.appearance, visibleViewport().width);
     if (!this.motionAllowed()) {
       this.dust.killAll(); this.exhaust.killAll(); this.brakeSmoke.killAll();
       this.effectCredit = { dust: 0, exhaust: 0, brakeSmoke: 0 };
@@ -226,21 +227,21 @@ export class GameScene extends Phaser.Scene {
     if (!this.cameraFocus) return;
     const point = physicsToScreen(drivingFocus(this.simulation.track, this.lastSnapshot), PIXELS_PER_METRE, ORIGIN);
     this.cameraFocus.setPosition(point.x, point.y);
-    const factor = renderScale(window.innerWidth, window.innerHeight, this.sceneData.lightMode);
-    const verticalSpan = drivingSpan(this.simulation.track, this.lastSnapshot, window.innerHeight);
-    const targetZoom = factor * Math.min(1, window.innerHeight / verticalSpan);
+    const factor = renderScale(visibleViewport().width, visibleViewport().height, this.sceneData.lightMode);
+    const verticalSpan = drivingSpan(this.simulation.track, this.lastSnapshot, visibleViewport().height);
+    const targetZoom = factor * Math.min(1, visibleViewport().height / verticalSpan);
     // Bound both zoom directions; loop anticipation opens the view ahead of entry.
     const zoom = this.cameras.main.zoom;
     this.cameras.main.setZoom(smoothZoom(zoom, targetZoom, deltaMs));
   }
 
   private configureCamera(): void {
-    const factor = renderScale(window.innerWidth, window.innerHeight, this.sceneData.lightMode);
+    const factor = renderScale(visibleViewport().width, visibleViewport().height, this.sceneData.lightMode);
     // A short screen needs a wider world view, not a cropped loop or hidden landing.
-    const span = drivingSpan(this.simulation.track, this.lastSnapshot, window.innerHeight);
-    this.cameras.main.setZoom(factor * Math.min(1, window.innerHeight / span));
+    const span = drivingSpan(this.simulation.track, this.lastSnapshot, visibleViewport().height);
+    this.cameras.main.setZoom(factor * Math.min(1, visibleViewport().height / span));
     this.cameras.main.startFollow(this.cameraFocus, true, this.motionAllowed() ? 0.085 : 1, this.motionAllowed() ? 0.085 : 1);
-    if (this.backdrop.length) paintScenery(this.backdrop, this.simulation.track.theme, this.simulation.track.id, this.appearance, window.innerWidth);
+    if (this.backdrop.length) paintScenery(this.backdrop, this.simulation.track.theme, this.simulation.track.id, this.appearance, visibleViewport().width);
   }
 
   private drawSky(): void {

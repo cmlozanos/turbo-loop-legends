@@ -723,3 +723,25 @@ html.family-v2 .selection-gallery .track-card[aria-pressed="true"],html.family-v
 html.family-v2 .selection-gallery .track-card strong{display:block;min-height:1.7em;line-height:1.7;padding-block:2px}
 /* The selected gallery card is the showroom; avoid a duplicate miniature hero. */
 html.family-v2 .garage > .car-hero{display:none}
+
+/* Browser URL/system bars and standalone PWA share the measured visible budget. */
+html,body,#app{width:var(--game-width,100%);height:var(--game-height,100%)}
+.app-shell{min-height:0;height:var(--game-height,100%);width:var(--game-width,100%)}
+html.family-v2 .garage{width:min(1220px,100%)}
+html.family-v2 .hud{--drive-size:clamp(64px,calc(var(--game-vmin,1vmin) * 19),108px);--utility-size:clamp(44px,calc(var(--game-vmin,1vmin) * 8),56px)}
+html.family-v2 .turbo-control{min-width:clamp(86px,calc(var(--game-vmin,1vmin) * 24),132px);min-height:clamp(58px,calc(var(--game-vmin,1vmin) * 16),80px)}
+html.family-v2 .selection-gallery .car-preview{height:clamp(35px,calc(var(--game-vh,1vh) * 11),100px)}
+html.family-v2.game-short .garage{gap:3px}
+html.family-v2.game-short .garage-header{min-height:44px;padding-left:0}
+html.family-v2.game-short .garage-header h1{font-size:1.15rem;line-height:1.5}
+html.family-v2.game-short .screen{padding:6px 12px}
+html.family-v2.game-short .selection-gallery .car-preview{height:28px}
+html.family-v2.game-short .selection-gallery .car-card{padding:2px 5px}
+html.family-v2.game-short .selection-gallery .role-icon{display:none}
+html.family-v2.game-short .selection-gallery .track-card{min-height:44px;padding:2px 5px}
+html.family-v2.game-short .selection-gallery .track-map{height:14px}
+html.family-v2.game-short .selection-gallery .track-icon{display:none}
+html.family-v2.game-short .track-picker{gap:0}
+html.family-v2.game-short .picker-label{margin:0;font-size:.75rem;line-height:1.3}
+html.family-v2.game-short .track-advice{min-height:22px;padding:0 4px}
+html.family-v2.game-short .primary-button{min-height:44px;padding:2px 16px;font-size:1rem}

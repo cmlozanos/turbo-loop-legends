@@ -1,0 +1,40 @@
+[WebServer] (node:29013) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] <script src="/turbo-loop-legends/learning-profile.js?v=local"> in "/index.html" can't be bundled without type="module" attribute
+[WebServer] <script src="/turbo-loop-legends/reading-words.js?v=local"> in "/index.html" can't be bundled without type="module" attribute
+[WebServer] <script src="/turbo-loop-legends/learning-gate.js?v=local"> in "/index.html" can't be bundled without type="module" attribute
+[WebServer] <script src="./family-v2/family.js?v=2.0.0"> in "/index.html" can't be bundled without type="module" attribute
+[WebServer]
+[WebServer] ./family-v2/family.css?v=2.0.0 doesn't exist at build time, it will remain unchanged to be resolved at runtime
+[WebServer]
+[WebServer] (!) Some chunks are larger than 500 kB after minification. Consider:
+[WebServer] - Using dynamic import() to code-split the application
+[WebServer] - Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+[WebServer] - Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+[WebServer] (node:29137) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 14 tests using 1 worker
+
+  ✓   1 [tablet] › tests/e2e/performance.spec.ts:9:1 › adult settings and play fit short mobile screens (1.4s)
+  ✓   2 [tablet] › tests/e2e/performance.spec.ts:22:1 › light profile reduces pixels, preserves camera and persists without resetting progress (2.1s)
+  ✓   3 [tablet] › tests/e2e/performance.spec.ts:45:1 › canvas stays aligned to the viewport after rotation in both quality modes (1.3s)
+  ✓   4 [tablet] › tests/e2e/performance.spec.ts:63:1 › render and physics sleep behind garage, pause and educational gate (1.5s)
+  ✓   5 [tablet] › tests/e2e/performance.spec.ts:81:1 › continue trying wakes the paused renderer behind the vehicle recommendation (1.2s)
+Turbo initial circuit render workload: {"frames":61,"callsPerFrame":7,"trianglesPerFrame":6163}
+(node:29141) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   6 [tablet] › tests/e2e/performance.spec.ts:98:1 › initial circuit submits only visible geometry and reuses wheel textures (2.9s)
+  ✓   7 [tablet] › tests/e2e/visible-viewport.spec.ts:4:1 › URL bars resize garage and canvas without a layout-window resize (780ms)
+  ✓   8 [desktop] › tests/e2e/performance.spec.ts:9:1 › adult settings and play fit short mobile screens (2.0s)
+  ✓   9 [desktop] › tests/e2e/performance.spec.ts:22:1 › light profile reduces pixels, preserves camera and persists without resetting progress (2.2s)
+  ✓  10 [desktop] › tests/e2e/performance.spec.ts:45:1 › canvas stays aligned to the viewport after rotation in both quality modes (3.8s)
+  ✓  11 [desktop] › tests/e2e/performance.spec.ts:63:1 › render and physics sleep behind garage, pause and educational gate (1.3s)
+  ✓  12 [desktop] › tests/e2e/performance.spec.ts:81:1 › continue trying wakes the paused renderer behind the vehicle recommendation (936ms)
+Turbo initial circuit render workload: {"frames":69,"callsPerFrame":6,"trianglesPerFrame":6163}
+(node:29216) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  13 [desktop] › tests/e2e/performance.spec.ts:98:1 › initial circuit submits only visible geometry and reuses wheel textures (2.7s)
+  ✓  14 [desktop] › tests/e2e/visible-viewport.spec.ts:4:1 › URL bars resize garage and canvas without a layout-window resize (945ms)
+
+  14 passed (36.5s)

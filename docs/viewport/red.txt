@@ -1,0 +1,44 @@
+[WebServer] (node:28291) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] <script src="/turbo-loop-legends/learning-profile.js?v=local"> in "/index.html" can't be bundled without type="module" attribute
+[WebServer] <script src="/turbo-loop-legends/reading-words.js?v=local"> in "/index.html" can't be bundled without type="module" attribute
+[WebServer] <script src="/turbo-loop-legends/learning-gate.js?v=local"> in "/index.html" can't be bundled without type="module" attribute
+[WebServer] <script src="./family-v2/family.js?v=2.0.0"> in "/index.html" can't be bundled without type="module" attribute
+[WebServer]
+[WebServer] ./family-v2/family.css?v=2.0.0 doesn't exist at build time, it will remain unchanged to be resolved at runtime
+[WebServer]
+[WebServer] (!) Some chunks are larger than 500 kB after minification. Consider:
+[WebServer] - Using dynamic import() to code-split the application
+[WebServer] - Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+[WebServer] - Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+[WebServer] (node:28405) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 1 test using 1 worker
+
+  ✘  1 [desktop] › tests/e2e/visible-viewport.spec.ts:4:1 › URL bars resize garage and canvas without a layout-window resize (6.5s)
+
+
+  1) [desktop] › tests/e2e/visible-viewport.spec.ts:4:1 › URL bars resize garage and canvas without a layout-window resize
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: 300
+    Received: 440
+
+    Call Log:
+    - Timeout 5000ms exceeded while waiting on the predicate
+
+      23 |  for(const height of [300,400,342]){
+      24 |   await page.evaluate(height=>(window as any).setVisibleHeight(height),height);
+    > 25 |   await expect.poll(async()=>Math.round((await page.locator('canvas').first().boundingBox())!.height)).toBe(height);
+         |                                                                                                        ^
+      26 |   for(const button of await page.locator('#hud button').all()){
+      27 |    const box=await button.boundingBox();expect(box!.y+box!.height).toBeLessThanOrEqual(height+1);
+      28 |   }
+        at /Users/carlos.lozanosoto/personal/repositories/turbo-loop-legends/tests/e2e/visible-viewport.spec.ts:25:104
+
+    Error Context: test-results/visible-red/visible-viewport-URL-bars--986d0-hout-a-layout-window-resize-desktop/error-context.md
+
+  1 failed
+    [desktop] › tests/e2e/visible-viewport.spec.ts:4:1 › URL bars resize garage and canvas without a layout-window resize

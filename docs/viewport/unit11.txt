@@ -1,0 +1,15 @@
+
+> turbo-loop-legends@2.0.0 test
+> vitest run tests/viewport.test.ts tests/sceneView.test.ts tests/sceneTiming.test.ts
+
+
+ RUN  v3.2.7 /Users/carlos.lozanosoto/personal/repositories/turbo-loop-legends
+
+ ✓ tests/sceneView.test.ts (5 tests) 42ms
+ ✓ tests/viewport.test.ts (2 tests) 2ms
+ ✓ tests/sceneTiming.test.ts (4 tests) 212ms
+
+ Test Files  3 passed (3)
+      Tests  11 passed (11)
+   Start at  00:57:02
+   Duration  860ms (transform 253ms, setup 0ms, collect 566ms, tests 256ms, environment 0ms, prepare 271ms)
