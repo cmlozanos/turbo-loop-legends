@@ -49,3 +49,65 @@ También se evita que escribir la respuesta adulta active aceleración, turbo o 
 Resultados locales del 23-11-2026: 82 tests focales de modelo verdes; `make check` obligatorio: 86 tests verdes (incluye referencia histórica); PoC de conducción 34/34 compatibles, incluidas las 272 salidas/recuperaciones de regresión. En Chromium desktop: controles teclado/touch sostenido, colisión/rotura, reset, meta real, replay, siguiente pista, guardas educativas tardías y fail-closed, menú nativo misma URL, settings, audio OFF tras recarga, tema y puntos, offline y rendimiento. Carga geométrica observada: 2.452 triángulos/frame y 5 draw calls/frame en el circuito inicial, no FPS de tablet. Inspección visual del garaje desktop y controles adultos en 640×360/750×342; rotaciones canvas 1024×768, 768×1024 y 1920×1080.
 
 Validación responsive adicional: 22/22 pruebas focales verdes en los perfiles WebKit tablet y phone (shell, pausas, ajustes, rotación, calidad, render y edición táctil). El helper de touch usa un Event cancelable para verificar el listener, pues WebKit rechaza construir TouchEvent; el hold/release real por CDP se verifica por separado en Chromium. No equivale a un dispositivo iOS físico. Un intento inicial de phone rotación no encontró el gate (causa no establecida); la ejecución aislada posterior pasó sin reintento. El diálogo adulto corto permite desplazamiento interno para llegar a reiniciar puntos.
+
+
+## Seguimiento de entrega del shell canónico (23-11-2026)
+
+Autorización de este seguimiento: entregar en `origin/main` personal únicamente
+`public/family-v2/family.js`, `public/family-v2/family.css` y esta ampliación de
+evidencia; sin tag, release ni despliegue manual. Base nativa: `60372e9`.
+El estado inicial contenía exactamente los dos archivos públicos modificados,
+sin cambios staged ni archivos nuevos. No se modificaron motor, física, tests,
+configuración ni herramientas; se preservan sus guardas existentes.
+
+La copia canónica incorpora cierre del diálogo adulto al bloquear el reto
+educativo, aislamiento de keydown/keyup del shadow root, autoridad de cookies
+tras fallo de escritura local por cuota, actividad de teclado y arrastre con
+botón pulsado (escrituras limitadas a una por segundo) y fuente compartida del
+reto educativo. Los cuatro assets del kit se compararon byte a byte contra
+`home/family-v2` y contra `dist/family-v2`; TTF y OFL no cambiaron.
+
+| Asset | SHA-256 | Revisión precache generada |
+| --- | --- | --- |
+| `family.js` | `132e25722a47d5e25873ca797ed1da1863844dcc4c534707ab29637894597979` | `a0f042db45194ab2845111f1548852b3` |
+| `family.css` | `009a33513729b92e8794d2fdbc00f46d8831099bf985226b714f89ff83d8e308` | `7f84e5f46620871ed5b0f20aef1716d5` |
+| `playwrite-es.ttf` | `512476f9454e976560fe7bde2896d7541a0ff3e1ea0a5fa97a543009f7e38921` | `17163819cb80b53d17694b8e1ddb438c` |
+| `OFL.txt` | `0370f5946020846b0ca65e44950d11411ea3bd3c4c0d755916470f9f96cd8cb8` | `c52d90e0197917866883195a349a376f` |
+
+Validación local de este seguimiento, todos los comandos con salida 0:
+
+- `make check-gates`: perfil, gate, 100 palabras/imágenes, procedencia SHA-256
+  y presupuesto de imágenes (935.825 bytes), sin sincronizar ni sobrescribir.
+- `npm run typecheck` y `npm run build`: correctos; 146 entradas precache.
+- `npm run verify:cache`, `npm run verify:pwa`, `npm run verify:chrome95` y
+  `npm run verify:learning-gate`: correctos. Se mantienen procedencia PNG,
+  carga educativa local/ordenada, copias exactas y precache sin duplicados.
+- Comprobación adicional con Node/assert: cada asset familiar tiene exactamente
+  una entrada precache cuya revisión coincide con el MD5 de sus bytes. Las
+  revisiones JS/CSS cambiaron respecto a `60372e9` automáticamente; TTF/OFL
+  conservaron revisión. No se cambió la configuración PWA.
+- `npm run test:e2e -- tests/e2e/family-v2.spec.ts --project=desktop --project=tablet --project=phone --project=chrome95 --workers=1 --retries=0`:
+  **16/16 pasados**, sin omitidos ni reintentos (42,3 s). Cubre fuente cargada,
+  seis coches/ocho pistas, settings trasladados, audio OFF tras recarga, pausa
+  familiar/manual/educativa, deduplicación/caducidad de puntos, tema nativo y
+  teclado adulto sin acelerador atascado. Tablet/phone usan WebKit.
+- `npm run test:e2e -- tests/e2e/game.spec.ts --grep 'reopens after the network is disconnected' --project=chrome95 --workers=1 --retries=0`:
+  **1/1 pasado**, sin reintentos (16,8 s); recarga offline y resolución real del
+  reto desde el artefacto de producción.
+
+Para ambos comandos con `chrome95`, se usó `CHROME95_PATH` apuntando al binario
+existente indicado para la tarea. `browser.version()` confirmó
+**95.0.4630.0** antes de ejecutar la integración mediante el proyecto condicional
+ya existente; no se descargaron navegadores ni dependencias.
+
+Límites: esta evidencia amplía la validación estática anterior con integración
+nativa real en Chromium 95 de escritorio, no en Android físico. No se repitió la
+matriz de física: fuentes, entradas y tests nativos permanecen en `60372e9`.
+Las pruebas del shell canónico comunicadas en el relevo (10 modernas/WebKit y
+5 en 95) no se cuentan como ejecutadas aquí; esta suite tampoco constituye una
+prueba focal nueva de todos los escenarios de cuota/actividad continua.
+No se certifica inspección visual humana nueva, instalación en tablet, FPS ni
+aceptación humana. Vite emitió avisos por scripts clásicos, CSS público resuelto
+en runtime y tamaño de chunk; copias y guardas del build pasaron. El push a main
+activa el workflow Pages ya existente; su despliegue no queda certificado por
+estos checks locales. La coordinación de tag/release queda fuera del seguimiento.
