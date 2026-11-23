@@ -1,7 +1,7 @@
 :root {
   color: #f8fbff;
   background: #081526;
-  font-family: ui-rounded, "Arial Rounded MT Bold", system-ui, sans-serif;
+  font-family: var(--turbo-font, "Family School", cursive);
   font-synthesis: none;
   --navy: #10233f;
   --blue: #25a8e0;
@@ -103,7 +103,7 @@ button { font: inherit; }
 }
 
 h1, h2, .speed-value {
-  font-family: ui-rounded, "Arial Rounded MT Bold", system-ui, sans-serif;
+  font-family: var(--turbo-font, "Family School", cursive);
 }
 
 h1 {
@@ -169,7 +169,7 @@ h1 span { color: var(--orange); }
   user-select: none;
 }
 
-.car-card strong { display: block; font: 800 clamp(1rem, 2vw, 1.3rem) ui-rounded, "Arial Rounded MT Bold", sans-serif; }
+.car-card strong { display: block; font: 800 clamp(1rem, 2vw, 1.3rem) var(--turbo-font, "Family School", cursive); }
 .role-icon { display: grid; place-items: center; width: 34px; height: 28px; margin: 2px auto 0; border-radius: 999px; background: rgba(3,15,28,.52); font-size: 1rem; }
 .lock-badge { position: absolute; top: 10px; right: 10px; display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; background: rgba(5,16,30,.78); box-shadow: 0 5px 14px rgba(0,0,0,.35); font-size: 1rem; }
 
@@ -216,7 +216,7 @@ h1 span { color: var(--orange); }
   min-height: 58px;
   border-radius: 999px;
   padding: 10px 34px;
-  font: 800 clamp(1.2rem, 3vw, 1.65rem) ui-rounded, "Arial Rounded MT Bold", sans-serif;
+  font: 800 clamp(1.2rem, 3vw, 1.65rem) var(--turbo-font, "Family School", cursive);
   background: linear-gradient(#ffd868, var(--orange));
   box-shadow: 0 7px 0 #a85a12, 0 12px 24px rgba(0,0,0,.26);
 }
@@ -454,7 +454,7 @@ h1 span { color: var(--orange); }
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }
 
-/* V2 shell stays visible in the garage and during races; canvas art is unchanged. */
+/* V2 shell stays visible in the garage and during races. */
 html.family-v2 body, html.family-v2 #app { height: var(--family-height, 100%); }
 html.family-v2 .app-shell { min-height: 0; background: var(--family-page); }
 .family-toolbar { position: absolute; top: 8px; right: 8px; width: 190px; z-index: 110; }
@@ -482,3 +482,13 @@ html.family-v2 .screen { overflow-y: auto; }
   html.family-v2 .garage-header h1 { font-size: clamp(1rem, 3vw, 1.7rem); }
 }
 html.family-v2 .track-card strong { line-height: 1.9; }
+
+/* Native showroom materials: no additional imagery or runtime filters. */
+html.family-v2 .car-preview::before { content: ""; position: absolute; inset: 8% 2% -2%; border-radius: 50%; background: radial-gradient(ellipse at 50% 75%, #14233735, transparent 64%), linear-gradient(170deg, #ffffff20, #708da520); border-bottom: 2px solid #94a8bd55; }
+html.family-v2 .car-card[aria-pressed="true"] { background: linear-gradient(155deg, #edbc4930, transparent 75%), var(--family-panel); }
+html[data-turbo-motion="false"] .app-shell *, html[data-turbo-motion="false"] .app-shell *::before, html[data-turbo-motion="false"] .app-shell *::after { animation: none !important; transition: none !important; }
+html[data-turbo-motion="false"] .car-card:hover, html[data-turbo-motion="false"] .track-card:hover { transform: none; }
+/* Keep checkpoint feedback off the looping and landing in short landscape. */
+@media (max-height: 520px) {
+  .toast, .toast.show { top: 102px; left: 12px; max-width: 230px; transform: none; }
+}

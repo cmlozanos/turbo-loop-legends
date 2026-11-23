@@ -1,0 +1,85 @@
+
+> turbo-loop-legends@2.0.0 check
+> npm run typecheck && npm test && npm run build && npm run verify:cache && npm run verify:pwa && npm run verify:chrome95 && npm run verify:learning-gate
+
+
+> turbo-loop-legends@2.0.0 typecheck
+> tsc --noEmit
+
+
+> turbo-loop-legends@2.0.0 test
+> vitest run
+
+
+ RUN  v3.2.7 /Users/carlos.lozanosoto/personal/repositories/turbo-loop-legends
+
+ ✓ tests/frameClock.test.ts (9 tests) 259ms
+ ✓ tests/sceneView.test.ts (2 tests) 4ms
+ ✓ tests/mathGate.test.ts (4 tests) 12ms
+ ✓ tests/physics.test.ts (24 tests) 640ms
+ ✓ tests/state.test.ts (9 tests) 3ms
+ ✓ tests/audioGate.test.ts (4 tests) 2ms
+ ✓ tests/sceneTiming.test.ts (4 tests) 175ms
+ ✓ tests/driving.test.ts (34 tests) 2314ms
+   ✓ 'comet' completes 'forest' with actual driving input and recovers from every checkpoint  352ms
+
+ Test Files  8 passed (8)
+      Tests  90 passed (90)
+   Start at  20:04:45
+   Duration  2.77s (transform 250ms, setup 0ms, collect 1.19s, tests 3.41s, environment 1ms, prepare 1.24s)
+
+
+> turbo-loop-legends@2.0.0 build
+> tsc --noEmit && vite build
+
+vite v7.3.6 building client environment for production...
+<script src="/turbo-loop-legends/learning-profile.js?v=local"> in "/index.html" can't be bundled without type="module" attribute
+<script src="/turbo-loop-legends/reading-words.js?v=local"> in "/index.html" can't be bundled without type="module" attribute
+<script src="/turbo-loop-legends/learning-gate.js?v=local"> in "/index.html" can't be bundled without type="module" attribute
+<script src="./family-v2/family.js?v=2.0.0"> in "/index.html" can't be bundled without type="module" attribute
+
+./family-v2/family.css?v=2.0.0 doesn't exist at build time, it will remain unchanged to be resolved at runtime
+transforming...
+✓ 21 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/manifest-local.webmanifest                            0.70 kB
+dist/index.html                                            1.41 kB │ gzip:   0.54 kB
+dist/assets/index-local-Dh9fa-_5.css                      18.27 kB │ gzip:   4.98 kB
+dist/assets/workbox-window.prod.es5-local-BBnX5xw4.js      5.82 kB │ gzip:   2.41 kB │ map:     13.53 kB
+dist/assets/index-local-ChltcpxZ.js                    1,667.23 kB │ gzip: 438.05 kB │ map: 12,185.84 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 3.56s
+
+PWA v1.0.2
+mode      generateSW
+precache  146 entries (3250.45 KiB)
+files generated
+  dist/sw.js.map
+  dist/sw.js
+  dist/workbox-9c191d2f.js.map
+  dist/workbox-9c191d2f.js
+
+> turbo-loop-legends@2.0.0 verify:cache
+> node tools/verify-cache-busting.mjs
+
+Cache busting verificado para local
+
+> turbo-loop-legends@2.0.0 verify:pwa
+> node tools/verify-pwa.mjs
+
+PWA instalable verificada para Android e iPad
+
+> turbo-loop-legends@2.0.0 verify:chrome95
+> node tools/verify-chrome95.mjs
+
+Chrome 95 compatibility verified in 6 runtime assets
+
+> turbo-loop-legends@2.0.0 verify:learning-gate
+> node --check public/learning-gate.js && node tools/verify-learning-gate.mjs
+
+Learning bundle: arithmetic, 54 letters, ten minutes, profile, 100 local reading images and exact offline deployment verified.

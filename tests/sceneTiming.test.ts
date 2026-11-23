@@ -39,3 +39,29 @@ it("keeps track pieces at both visible edges when light mode zooms the camera", 
   scene.update(0, 0);
   expect(scene.decorations.map((item: any) => item.graphics.visible)).toEqual([true, true, false, false]);
 });
+
+it("does not treat an inverted slow guided loop as a stuck car, but still recovers a real stall", () => {
+  const scene = new GameScene() as any;
+  scene.init({ assists: true });
+  scene.lastSnapshot = { chassis: { angle: Math.PI }, velocity: { x: 0 }, activeLoopId: "full-loop" };
+  scene.respawn = vi.fn();
+  for (let i = 0; i < 180; i++) scene.checkRecovery(1 / 60, true);
+  expect(scene.respawn).not.toHaveBeenCalled();
+  scene.lastSnapshot.activeLoopId = undefined;
+  for (let i = 0; i < 140; i++) scene.checkRecovery(1 / 60, true);
+  expect(scene.respawn).toHaveBeenCalled();
+});
+
+it("reports physical fall recovery once without changing the physics step or input", () => {
+  const scene = new GameScene() as any;
+  const recovered = vi.fn();
+  scene.init({ car: getCar("comet"), assists: false, reducedMotion: true,
+    input: { state: {}, consumeReset: () => false }, onSpeed() {}, onRespawn: recovered, audio: { updateEngine() {} } });
+  scene.lastSnapshot = { chassis: { angle: 0 }, velocity: { x: 0 }, respawnCount: 0, springboardActivations: 0 };
+  scene.simulation = { setInput() {}, step: () => ({ ...scene.lastSnapshot, respawnCount: 1 }) };
+  scene.scene = { isActive: () => true };
+  scene.cameras = { main: { width: 900, zoom: 1, scrollX: 0, setLerp() {} } };
+  scene.syncVehicle = () => {}; scene.emitDust = () => {}; scene.checkProgress = () => {};
+  scene.update(0, 1000 / 60); scene.update(0, 1000 / 60);
+  expect(recovered).toHaveBeenCalledTimes(1);
+});

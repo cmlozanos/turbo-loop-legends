@@ -4,6 +4,8 @@ declare global {
   interface Window {
     FamilyV2?: {
       version: string;
+      theme?(): "light" | "dark";
+      motionAllowed?(): boolean;
       fontFamily: string;
       fontReady: Promise<unknown>;
       register(callbacks: { pause(): void; resume(): void; home(): void }): void;

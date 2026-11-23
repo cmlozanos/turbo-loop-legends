@@ -137,7 +137,7 @@ test("opens the garage and starts a race", async ({ page }) => {
   await expect(page.locator("canvas")).toBeVisible();
   await expect(page.getByLabel("Acelerar")).toBeVisible();
   await expect(page.getByLabel("Activar turbo")).toBeVisible();
-  await expect(page.getByText("KM/H")).toBeVisible();
+  await expect(page.getByText("km/h")).toBeVisible();
   expect(errors).toEqual([]);
 });
 

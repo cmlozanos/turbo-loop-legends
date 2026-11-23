@@ -1,4 +1,7 @@
 import Phaser from "phaser";
+import { nativeAppearance, type NativeTheme } from "./appearance";
+import { drivingFocus } from "./sceneView";
+import { paintScenery } from "./scenery";
 import { assetUrl } from "../assets";
 import { FrameClock, renderScale } from "./frameClock";
 import type { GameAudio } from "./audio";
@@ -29,6 +32,11 @@ export interface GameSceneData {
 export class GameScene extends Phaser.Scene {
   private sceneData!: GameSceneData;
   private simulation!: PhysicsWorld;
+  private backdrop: Phaser.GameObjects.Graphics[] = [];
+  private appearance: NativeTheme = "light";
+  private cameraFocus!: Phaser.GameObjects.Zone;
+  private vehicleLights!: Phaser.GameObjects.Graphics;
+  private readonly fragments = new Set<Phaser.GameObjects.Rectangle>();
   private chassis!: Phaser.GameObjects.Image;
   private rearWheel!: Phaser.GameObjects.Image;
   private frontWheel!: Phaser.GameObjects.Image;
@@ -58,6 +66,8 @@ export class GameScene extends Phaser.Scene {
     this.clock.reset();
     this.simulationSteps = 0;
     this.decorations.length = 0;
+    this.backdrop = [];
+    this.fragments.clear();
     this.checkpointIndex = 0;
     this.stuckSeconds = 0;
     this.finished = false;
@@ -86,16 +96,21 @@ export class GameScene extends Phaser.Scene {
     const minimumX = Math.min(...this.simulation.track.segments.flatMap((segment) => segment.points.map((point) => point.x)));
     const leftBound = physicsToScreen({ x: minimumX - 15, y: 0 }, PIXELS_PER_METRE, ORIGIN).x;
     const rightBound = physicsToScreen({ x: this.finishX + 28, y: 0 }, PIXELS_PER_METRE, ORIGIN).x;
-    this.cameras.main.setBounds(leftBound, 0, rightBound - leftBound, 900);
+    this.cameras.main.setBounds(leftBound, -1200, rightBound - leftBound, 2100);
+    this.cameraFocus = this.add.zone(0, 0, 1, 1);
+    this.updateCameraFocus();
     this.configureCamera();
+    this.applyAppearance();
+    window.addEventListener("familyv2:appearance", this.applyAppearance);
     this.scale.on(Phaser.Scale.Events.RESIZE, this.configureCamera, this);
     this.events.on(Phaser.Scenes.Events.RESUME, this.clock.reset, this.clock);
     this.events.once(Phaser.Scenes.Events.SHUTDOWN, () => {
       this.scale.off(Phaser.Scale.Events.RESIZE, this.configureCamera, this);
       this.events.off(Phaser.Scenes.Events.RESUME, this.clock.reset, this.clock);
+      window.removeEventListener("familyv2:appearance", this.applyAppearance);
       this.decorations.length = 0;
     });
-    this.cameras.main.setBackgroundColor("#8ed8ef");
+
     this.syncVehicle(this.lastSnapshot);
   }
 
@@ -115,7 +130,12 @@ export class GameScene extends Phaser.Scene {
         lean,
         turbo: this.sceneData.input.state.turbo
       });
+      const previousRespawns = this.lastSnapshot.respawnCount;
       this.lastSnapshot = this.simulation.step(delta);
+      if (this.lastSnapshot.respawnCount > previousRespawns) {
+        this.stuckSeconds = 0;
+        this.sceneData.onRespawn();
+      }
       this.simulationSteps++;
       this.checkProgress();
       this.checkRecovery(delta, throttle);
@@ -123,14 +143,15 @@ export class GameScene extends Phaser.Scene {
     });
     if (this.lastSnapshot.springboardActivations > this.springboardActivations) {
       this.springboardActivations = this.lastSnapshot.springboardActivations;
-      if (!this.sceneData.reducedMotion) this.cameras.main.shake(130, 0.007);
+      if (this.motionAllowed()) this.cameras.main.shake(130, 0.007);
     }
 
     this.syncVehicle(this.lastSnapshot);
+    this.updateCameraFocus(deltaMs);
     const camera = this.cameras.main;
     const viewLeft = camera.scrollX + camera.width / 2 - camera.width / (2 * camera.zoom);
     for (const item of this.decorations) item.graphics.visible = item.right >= viewLeft - 180 && item.left <= viewLeft + camera.width / camera.zoom + 180;
-    const lerp = this.sceneData.reducedMotion ? 1 : 1 - Math.pow(1 - 0.085, Math.min(deltaMs, 250) / (1000 / 60));
+    const lerp = !this.motionAllowed() ? 1 : 1 - Math.pow(1 - 0.085, Math.min(deltaMs, 250) / (1000 / 60));
     camera.setLerp(lerp, lerp);
 
     const speed = Math.abs(this.lastSnapshot.velocity.x) * 9;
@@ -142,37 +163,59 @@ export class GameScene extends Phaser.Scene {
   diagnostics(): object {
     return JSON.parse(JSON.stringify({ steps: this.simulationSteps, snapshot: this.lastSnapshot,
       decorations: this.decorations.length, visibleDecorations: this.decorations.filter(item => item.graphics.visible).length,
-      zoom: this.cameras.main.zoom, scrollX: this.cameras.main.scrollX }));
+      zoom: this.cameras.main.zoom, scrollX: this.cameras.main.scrollX,
+      theme: this.appearance, decorativeMotion: this.motionAllowed(), dustAlive: (this.dust?.getAliveParticleCount() ?? 0),
+      nativeText: this.children.list.filter((item): item is Phaser.GameObjects.Text => item instanceof Phaser.GameObjects.Text).map(item => ({ text: item.text, font: item.style.fontFamily })),
+      fragments: this.fragments.size, cameraFocus: this.cameraFocus ? { x: this.cameraFocus.x, y: this.cameraFocus.y } : null,
+      view: { x: this.cameras.main.worldView.x, y: this.cameras.main.worldView.y, width: this.cameras.main.worldView.width, height: this.cameras.main.worldView.height } }));
+  }
+
+  private motionAllowed(): boolean {
+    return nativeAppearance(this.sceneData.reducedMotion).motion;
+  }
+
+  private applyAppearance = (): void => {
+    this.appearance = nativeAppearance(this.sceneData.reducedMotion).theme;
+    paintScenery(this.backdrop, this.simulation.track.theme, this.simulation.track.id, this.appearance, window.innerWidth);
+    if (!this.motionAllowed()) {
+      this.dust.killAll();
+      for (const fragment of this.fragments) {
+        this.tweens.killTweensOf(fragment);
+        fragment.destroy();
+      }
+      this.fragments.clear();
+      this.cameras.main.resetFX();
+    }
+    this.syncVehicle(this.lastSnapshot);
+  };
+
+  private updateCameraFocus(deltaMs = 0): void {
+    if (!this.cameraFocus) return;
+    const point = physicsToScreen(drivingFocus(this.simulation.track, this.lastSnapshot), PIXELS_PER_METRE, ORIGIN);
+    this.cameraFocus.setPosition(point.x, point.y + (window.innerHeight < 520 ? 100 : 0));
+    const factor = renderScale(window.innerWidth, window.innerHeight, this.sceneData.lightMode);
+    const verticalSpan = Math.max(window.innerHeight < 520 ? 850 : 540, (this.lastSnapshot.chassis.position.y + 3) * PIXELS_PER_METRE + 200);
+    const targetZoom = factor * Math.min(1, window.innerHeight / verticalSpan);
+    // Widen immediately on takeoff; restore gradually on descent, so the landing
+    // cannot outrun a still-high following camera when zoom snaps back in.
+    const zoom = this.cameras.main.zoom;
+    this.cameras.main.setZoom(targetZoom < zoom || !this.motionAllowed() ? targetZoom : Math.min(targetZoom, zoom + deltaMs * 0.00008));
   }
 
   private configureCamera(): void {
     const factor = renderScale(window.innerWidth, window.innerHeight, this.sceneData.lightMode);
-    this.cameras.main.setZoom(factor);
-    this.cameras.main.startFollow(this.chassis, true, this.sceneData.reducedMotion ? 1 : 0.085, this.sceneData.reducedMotion ? 1 : 0.085, -window.innerWidth * 0.15, 70);
+    // A short screen needs a wider world view, not a cropped loop or hidden landing.
+    this.cameras.main.setZoom(factor * Math.min(1, window.innerHeight / 540));
+    this.cameras.main.startFollow(this.cameraFocus, true, this.motionAllowed() ? 0.085 : 1, this.motionAllowed() ? 0.085 : 1);
+    if (this.backdrop.length) paintScenery(this.backdrop, this.simulation.track.theme, this.simulation.track.id, this.appearance, window.innerWidth);
   }
 
   private drawSky(): void {
-    const theme = this.simulation.track.theme;
-    const sky = this.add.graphics().setScrollFactor(0.08).setDepth(-20);
-    sky.fillGradientStyle(theme?.skyTop ?? 0x79ccec, theme?.skyTop ?? 0x79ccec, theme?.skyBottom ?? 0xeaf8f2, theme?.skyBottom ?? 0xeaf8f2, 1);
-    sky.fillRect(-7000, -100, 36000, 1000);
-    sky.fillStyle(0xffe4a3, 0.85).fillCircle(this.scale.width * 0.78, 130, 72);
-
-    const far = this.add.graphics().setScrollFactor(0.28).setDepth(-18);
-    far.fillStyle(theme?.scenery ?? 0x8cb8b1, 1);
-    far.fillTriangle(-300, 630, 80, 230, 450, 630);
-    far.fillTriangle(180, 630, 620, 180, 1100, 630);
-    far.fillTriangle(850, 630, 1280, 270, 1760, 630);
-    far.fillStyle(0x6b9b83, 1);
-    far.fillTriangle(-180, 650, 250, 370, 700, 650);
-    far.fillTriangle(520, 650, 980, 310, 1450, 650);
-
-    const clouds = this.add.graphics().setScrollFactor(0.16).setDepth(-17);
-    clouds.fillStyle(0xffffff, 0.74);
-    for (const [x, y, scale] of [[120, 120, 1], [720, 190, 0.7], [1380, 105, 1.2]] as const) {
-      clouds.fillCircle(x, y, 33 * scale).fillCircle(x + 42 * scale, y - 8, 46 * scale).fillCircle(x + 86 * scale, y, 30 * scale);
-      clouds.fillRoundedRect(x - 10, y, 116 * scale, 34 * scale, 17 * scale);
-    }
+    this.backdrop = [
+      this.add.graphics().setScrollFactor(0.08).setDepth(-20),
+      this.add.graphics().setScrollFactor(0.28).setDepth(-18),
+      this.add.graphics().setScrollFactor(0.48).setDepth(-17),
+    ];
   }
 
   private drawTrack(): void {
@@ -182,6 +225,15 @@ export class GameScene extends Phaser.Scene {
     const sceneryRight = physicsToScreen({ x: this.finishX + 35, y: 0 }, PIXELS_PER_METRE, ORIGIN).x;
     const scenery = this.add.graphics().setDepth(-7);
     scenery.fillStyle(theme?.ground ?? 0x4f8e52, 1).fillRect(sceneryLeft, ORIGIN.y + 10, sceneryRight - sceneryLeft, 350);
+    // Cut-earth strata and scattered aggregate give the platform a material,
+    // without textures, shaders, particles or per-frame scenery allocation.
+    for (let band = 0; band < 3; band++) {
+      scenery.fillStyle(0x162c35, 0.08 + band * 0.025).fillRect(sceneryLeft, ORIGIN.y + 60 + band * 74, sceneryRight - sceneryLeft, 18 + band * 7);
+    }
+    scenery.fillStyle(0xe1cba0, 0.22);
+    for (let x = sceneryLeft; x < sceneryRight; x += 105) {
+      scenery.fillTriangle(x, ORIGIN.y + 45, x + 17, ORIGIN.y + 40, x + 25, ORIGIN.y + 49);
+    }
     scenery.fillStyle(theme?.scenery ?? 0x376b42, 1);
     for (let x = sceneryLeft; x < sceneryRight; x += 140) {
       scenery.fillTriangle(x, ORIGIN.y + 28, x + 65, ORIGIN.y - 70 - (x % 3) * 15, x + 130, ORIGIN.y + 28);
@@ -204,7 +256,7 @@ export class GameScene extends Phaser.Scene {
           x: hazard.startX - 4,
           y: trackSurfaceYAt(this.simulation.track.segments, hazard.startX - 4) + 2.2,
         }, PIXELS_PER_METRE, ORIGIN);
-        this.add.text(signPosition.x, signPosition.y, "⚡ TURBO", {
+        this.add.text(signPosition.x, signPosition.y, "⚡ Turbo", {
           color: "#251300",
           backgroundColor: "#ffd33d",
           fontFamily: window.FamilyV2?.fontFamily ?? "Family School, cursive",
@@ -219,6 +271,16 @@ export class GameScene extends Phaser.Scene {
       const track = this.add.graphics().setDepth(-2);
       const screen = points.map((point) => physicsToScreen(point, PIXELS_PER_METRE, ORIGIN));
       this.decorations.push({ graphics: track, left: Math.min(...screen.map(p => p.x)) - 30, right: Math.max(...screen.map(p => p.x)) + 30 });
+      // Cast extrusion and steel understructure stay behind the collision surface.
+      for (let index = 0; index < screen.length; index += 6) {
+        const point = screen[index];
+        if (point.y > ORIGIN.y - 35) continue;
+        track.lineStyle(9, 0x253441, 0.65).lineBetween(point.x + 6, point.y + 18, point.x + 6, ORIGIN.y + 30);
+        track.lineStyle(3, 0xd3c2a1, 0.65).lineBetween(point.x + 3, point.y + 18, point.x + 3, ORIGIN.y + 30);
+      }
+      track.lineStyle(36, 0x122333, 0.6).beginPath().moveTo(screen[0].x + 5, screen[0].y + 14);
+      for (const point of screen.slice(1)) track.lineTo(point.x + 5, point.y + 14);
+      track.strokePath();
       track.lineStyle(30, 0x4a2817, 0.48).beginPath().moveTo(screen[0].x, screen[0].y + 8);
       for (const point of screen.slice(1)) track.lineTo(point.x, point.y + 8);
       track.strokePath();
@@ -229,6 +291,9 @@ export class GameScene extends Phaser.Scene {
       for (const point of screen.slice(1)) track.lineTo(point.x, point.y - 4);
       track.strokePath();
 
+      track.lineStyle(2, 0xfff1d6, 0.8).beginPath().moveTo(screen[0].x, screen[0].y - 9);
+      for (const point of screen.slice(1)) track.lineTo(point.x, point.y - 9);
+      track.strokePath();
       for (let index = 0; index < screen.length - 1; index += 2) {
         const current = screen[index];
         const next = screen[index + 1];
@@ -240,6 +305,13 @@ export class GameScene extends Phaser.Scene {
     }
 
     const track = this.add.graphics().setDepth(-2);
+    for (const gap of this.simulation.track.hazards) {
+      for (let i = 0; i < 5; i++) {
+        const x = gap.endX + 0.5 + i * 0.7;
+        const point = physicsToScreen({ x, y: trackSurfaceYAt(this.simulation.track.segments, x) }, PIXELS_PER_METRE, ORIGIN);
+        track.lineStyle(4, i % 2 ? 0x223644 : 0xe7fff0, 0.95).lineBetween(point.x, point.y - 7, point.x + 17, point.y - 7);
+      }
+    }
     for (const board of this.simulation.track.springboards) {
       const point = physicsToScreen(board.position, PIXELS_PER_METRE, ORIGIN);
       const width = board.width * PIXELS_PER_METRE;
@@ -337,12 +409,13 @@ export class GameScene extends Phaser.Scene {
     const size = 22;
     for (let row = 0; row < 3; row += 1) {
       for (let column = 0; column < 7; column += 1) {
-        finish.fillStyle((row + column) % 2 === 0 ? 0x101a29 : 0xf7f3e9).fillRect(point.x, point.y - 170 + row * size, size, size);
+        finish.fillStyle((row + column) % 2 === 0 ? 0x101a29 : 0xf7f3e9).fillRect(point.x + column * size, point.y - 170 + row * size, size, size);
       }
     }
   }
 
   private createVehicle(): void {
+    this.vehicleLights = this.add.graphics().setDepth(4);
     this.vehicleShadow = this.add.graphics().setDepth(2);
     this.suspension = this.add.graphics().setDepth(4);
     this.turboFlame = this.add.graphics().setDepth(4);
@@ -366,6 +439,12 @@ export class GameScene extends Phaser.Scene {
     wheel.lineBetween(-spoke, 0, spoke, 0).lineBetween(0, -spoke, 0, spoke);
     wheel.lineBetween(-spoke * 0.7, -spoke * 0.7, spoke * 0.7, spoke * 0.7);
     wheel.lineBetween(spoke * 0.7, -spoke * 0.7, -spoke * 0.7, spoke * 0.7);
+    wheel.lineStyle(2, 0x647486, 0.8);
+    for (let i = 0; i < 12; i++) {
+      const a = i * Math.PI / 6;
+      wheel.lineBetween(Math.cos(a) * (radius - 2), Math.sin(a) * (radius - 2), Math.cos(a + 0.09) * (radius - 6), Math.sin(a + 0.09) * (radius - 6));
+    }
+    wheel.lineStyle(1, 0xe9f4ff, 0.8).strokeCircle(0, 0, radius - 8);
     wheel.fillStyle(0xe8f3fb).fillCircle(0, 0, 4);
     wheel.generateTexture(key, (radius + 3) * 2, (radius + 3) * 2);
     wheel.destroy();
@@ -394,11 +473,25 @@ export class GameScene extends Phaser.Scene {
     const rearMount = physicsToScreen(this.localToWorld(snapshot.chassis.position, snapshot.chassis.angle, { x: -0.72, y: -0.12 }), PIXELS_PER_METRE, ORIGIN);
     const frontMount = physicsToScreen(this.localToWorld(snapshot.chassis.position, snapshot.chassis.angle, { x: 0.72, y: -0.12 }), PIXELS_PER_METRE, ORIGIN);
     const speed = Math.abs(snapshot.velocity.x);
-    const height = Math.max(0, snapshot.chassis.position.y - 1.1);
+    const surface = trackSurfaceYAt(this.simulation.track.segments, snapshot.chassis.position.x);
+    const height = Math.max(0, snapshot.chassis.position.y - surface - 1.1);
     this.vehicleShadow.clear().fillStyle(0x07101c, Math.max(0.08, 0.3 - height * 0.018));
-    this.vehicleShadow.fillEllipse(chassisPoint.x, chassisPoint.y + 42 + Math.min(height * 8, 80), Math.max(34, 115 - height * 5), 18);
+    if (!snapshot.activeLoopId) this.vehicleShadow.fillEllipse(chassisPoint.x + 9, ORIGIN.y - surface * PIXELS_PER_METRE + 7, Math.max(34, 115 - height * 5), 15);
+    this.vehicleLights.clear().setPosition(chassisPoint.x, chassisPoint.y).setRotation(-snapshot.chassis.angle);
+    if (this.appearance === "dark") {
+      this.vehicleLights.fillStyle(0xffedb5, 0.1).fillTriangle(48, 0, 210, -24, 210, 34);
+      this.vehicleLights.fillStyle(0xffedb5, 0.85).fillEllipse(52, 1, 9, 7);
+      this.vehicleLights.fillStyle(0xff5147, 0.8).fillEllipse(-54, 0, 6, 7);
+    }
     this.suspension.clear().lineStyle(7, 0x152033, 0.92).lineBetween(rearMount.x, rearMount.y, rearPoint.x, rearPoint.y);
     this.suspension.lineBetween(frontMount.x, frontMount.y, frontPoint.x, frontPoint.y);
+    this.suspension.lineStyle(2, 0xddeafa, 0.9);
+    for (const [mount, wheel] of [[rearMount, rearPoint], [frontMount, frontPoint]]) {
+      for (let i = 1; i < 5; i++) {
+        const t = i / 5, x = mount.x + (wheel.x - mount.x) * t, y = mount.y + (wheel.y - mount.y) * t;
+        this.suspension.lineBetween(x - 4, y - 2, x + 4, y + 2);
+      }
+    }
     this.suspension.lineStyle(3, this.sceneData.car.accent, 1).lineBetween(rearMount.x, rearMount.y, rearPoint.x, rearPoint.y);
     this.suspension.lineBetween(frontMount.x, frontMount.y, frontPoint.x, frontPoint.y);
     this.turboFlame.clear();
@@ -425,8 +518,9 @@ export class GameScene extends Phaser.Scene {
       const visual = this.obstacleVisuals.get(id);
       if (!visual) continue;
       visual.setVisible(false);
-      for (let index = 0; index < 8; index += 1) {
+      for (let index = 0; this.motionAllowed() && !this.sceneData.lightMode && index < 8; index += 1) {
         const fragment = this.add.rectangle(visual.x, visual.y - 35, 13, 9, index % 2 ? 0xf5c44d : 0xa95727).setDepth(7);
+        this.fragments.add(fragment);
         this.tweens.add({
           targets: fragment,
           x: visual.x + (index - 3.5) * 22,
@@ -435,10 +529,10 @@ export class GameScene extends Phaser.Scene {
           alpha: 0,
           duration: 520,
           ease: "Quad.easeOut",
-          onComplete: () => fragment.destroy(),
+          onComplete: () => { this.fragments.delete(fragment); fragment.destroy(); },
         });
       }
-      if (!this.sceneData.reducedMotion) this.cameras.main.shake(120, 0.005);
+      if (this.motionAllowed()) this.cameras.main.shake(120, 0.005);
     }
   }
 
@@ -479,7 +573,7 @@ export class GameScene extends Phaser.Scene {
     const angle = Math.abs(normalizeAngle(this.lastSnapshot.chassis.angle));
     const slow = Math.abs(this.lastSnapshot.velocity.x) < 0.25;
     const blocked = this.lastSnapshot.blockedObstacleId;
-    if (blocked || (this.sceneData.assists && (angle > 1.9 || (slow && throttle)))) this.stuckSeconds += delta;
+    if (blocked || (this.sceneData.assists && !this.lastSnapshot.activeLoopId && (angle > 1.9 || (slow && throttle)))) this.stuckSeconds += delta;
     else this.stuckSeconds = 0;
     if (this.stuckSeconds > 2.3) {
       if (blocked) {
@@ -496,11 +590,11 @@ export class GameScene extends Phaser.Scene {
     this.lastSnapshot = this.simulation.respawn();
     this.stuckSeconds = 0;
     this.sceneData.onRespawn();
-    if (!this.sceneData.reducedMotion) this.cameras.main.flash(160, 255, 244, 190, false);
+    if (this.motionAllowed()) this.cameras.main.flash(160, 255, 244, 190, false);
   }
 
   private emitDust(speed: number, throttle: boolean): void {
-    if (!throttle || speed < 4 || this.sceneData.reducedMotion || this.sceneData.lightMode) return;
+    if (!throttle || speed < 4 || !this.motionAllowed() || this.sceneData.lightMode) return;
     const point = physicsToScreen(this.lastSnapshot.rearWheel.position, PIXELS_PER_METRE, ORIGIN);
     this.dust.setPosition(point.x, point.y + 18).emitParticle(1);
   }

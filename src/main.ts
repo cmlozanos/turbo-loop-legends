@@ -1,5 +1,6 @@
 import Phaser from "phaser";
 import { registerSW } from "virtual:pwa-register";
+import { nativeAppearance } from "./game/appearance";
 import { assetUrl } from "./assets";
 import { GameAudio } from "./game/audio";
 import { CARS, getCar, type CarId } from "./game/cars";
@@ -28,6 +29,11 @@ if (!window.LearningGate) {
   throw new Error("Falta el reto educativo");
 }
 
+document.documentElement.style.setProperty("--turbo-font", window.FamilyV2?.fontFamily ?? '"Family School", cursive');
+function syncNativeAppearance(): void {
+  document.documentElement.dataset.turboMotion = String(nativeAppearance(save.settings.reducedMotion).motion);
+}
+window.addEventListener("familyv2:appearance", syncNativeAppearance);
 const learningTimers = window.LearningGate.createTimers();
 let learningLocked = true;
 let resumeRaceAfterGate = false;
@@ -36,6 +42,7 @@ let resumeRaceAfterFamily = false;
 let raceId = "";
 let raceSequence = 0;
 const save = loadSave();
+syncNativeAppearance();
 let selectedCar: CarId = save.unlockedCars.includes(save.selectedCar) ? save.selectedCar : "comet";
 let selectedTrack: TrackId = save.selectedTrack;
 let toastTimer: number | undefined;
@@ -84,7 +91,7 @@ app.innerHTML = `
         </div></header>
         <div id="car-grid" class="car-grid" role="group" aria-label="Elige un coche"></div>
         <div class="track-picker">
-          <p class="picker-label">ELIGE PISTA</p>
+          <p class="picker-label">Elige pista</p>
           <div id="track-grid" class="track-grid" role="group" aria-label="Elige una pista"></div>
         </div>
         <div id="track-advice" class="track-advice" aria-live="polite"></div>
@@ -103,12 +110,12 @@ app.innerHTML = `
       </div>
     </section>
     <section id="hud" class="hud" aria-label="Controles de carrera" hidden>
-      <div class="speedometer" aria-live="off"><strong id="speed" class="speed-value">0</strong><span class="speed-unit">KM/H</span></div>
+      <div class="speedometer" aria-live="off"><strong id="speed" class="speed-value">0</strong><span class="speed-unit">km/h</span></div>
       <button class="icon-button reset-button" data-control="reset" aria-label="Volver al último punto de control">↻</button>
       <button id="home-button" class="icon-button home-button" data-family-home aria-label="Volver al menú">⌂</button>
       <button id="pause-button" class="icon-button pause-button" aria-label="Pausa">Ⅱ</button>
       <button class="drive-control brake-control" data-control="brake" aria-label="Frenar y marcha atrás">◀</button>
-      <button class="turbo-control" data-control="turbo" aria-label="Activar turbo" aria-pressed="false"><span>⚡</span>TURBO</button>
+      <button class="turbo-control" data-control="turbo" aria-label="Activar turbo" aria-pressed="false"><span>⚡</span>Turbo</button>
       <button class="drive-control throttle-control" data-control="throttle" aria-label="Acelerar">▶</button>
       <div id="toast" class="toast" role="status" aria-live="polite"></div>
     </section>
@@ -551,6 +558,7 @@ function bindToggle(id: string, key: keyof typeof save.settings): void {
   element.addEventListener("change", () => {
     save.settings[key] = element.checked;
     saveGame(save);
+    syncNativeAppearance();
     audio.setEnabled(save.settings.music, save.settings.sound);
     if (key === "lightMode") {
       document.body.classList.toggle("light-mode", save.settings.lightMode);
