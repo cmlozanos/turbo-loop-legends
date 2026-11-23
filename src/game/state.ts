@@ -18,6 +18,8 @@ export interface SaveData {
   selectedTrack: TrackId;
   unlockedCars: CarId[];
   finished: boolean;
+  /** Most bonus stars collected in one run of each circuit. */
+  bestStars: Partial<Record<TrackId, number>>;
   settings: GameSettings;
 }
 
@@ -27,6 +29,7 @@ export const DEFAULT_SAVE: SaveData = {
   selectedTrack: "canyon",
   unlockedCars: CARS.map(car => car.id),
   finished: false,
+  bestStars: {},
   settings: {
     assists: true,
     music: false,
@@ -40,6 +43,7 @@ function createDefaultSave(): SaveData {
   return {
     ...DEFAULT_SAVE,
     unlockedCars: [...DEFAULT_SAVE.unlockedCars],
+    bestStars: {},
     settings: { ...DEFAULT_SAVE.settings },
   };
 }
@@ -55,6 +59,7 @@ export function loadSave(storage: Pick<Storage, "getItem"> = localStorage): Save
       ...parsed,
       settings: { ...DEFAULT_SAVE.settings, ...parsed.settings, music: false, sound: false,
         lightMode: typeof parsed.settings?.lightMode === "boolean" ? parsed.settings.lightMode : DEFAULT_SAVE.settings.lightMode },
+      bestStars: Object.fromEntries(Object.entries(parsed.bestStars ?? {}).filter(([id, stars]) => isTrackId(id) && typeof stars === "number" && Number.isFinite(stars) && stars >= 0)),
       selectedTrack: parsed.selectedTrack && isTrackId(parsed.selectedTrack) ? parsed.selectedTrack : DEFAULT_SAVE.selectedTrack,
       unlockedCars: [...new Set<CarId>([...(parsed.unlockedCars?.filter(isCarId) ?? []), ...ALWAYS_AVAILABLE_CARS])]
     };

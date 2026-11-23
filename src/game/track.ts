@@ -27,6 +27,8 @@ export interface Springboard {
   width: number;
   verticalBoost: number;
   forwardBoost: number;
+  /** Designed flight distance: when set, every car lands on the same safe spot. */
+  range?: number;
 }
 
 export interface HazardGap {
@@ -89,6 +91,26 @@ export interface LoopGuide {
   entryX: number;
 }
 
+/** A smooth rise (or shallow dip, when negative) added to a flat stretch. */
+export interface ReliefBump {
+  x: number;
+  width: number;
+  height: number;
+}
+
+/** Dash arrows on a ramp: they guarantee the launch speed its gap was designed for. */
+export interface BoostPad {
+  id: string;
+  startX: number;
+  endX: number;
+  minSpeed: number;
+}
+
+export interface TrackStar {
+  id: number;
+  position: Point;
+}
+
 export interface TrackDefinition {
   id?: TrackId;
   name?: string;
@@ -104,6 +126,9 @@ export interface TrackDefinition {
   obstacles?: readonly TrackObstacle[];
   requirements?: readonly ObstacleRequirement[];
   hazards: readonly HazardGap[];
+  relief?: readonly ReliefBump[];
+  boostPads?: readonly BoostPad[];
+  stars?: readonly TrackStar[];
   killY: number;
 }
 
@@ -138,6 +163,7 @@ interface TrackProfile {
   };
   springboards: readonly Springboard[];
   obstacles: readonly TrackObstacle[];
+  relief: readonly ReliefBump[];
 }
 
 type RampStyle = "smooth" | "kicker" | "wave" | "stepped";
@@ -181,6 +207,7 @@ const PROFILES: readonly TrackProfile[] = [
       { id: "forest-crates", behavior: "breakable", style: "crates", position: { x: 55, y: 0 }, width: 1.1, height: 1.15, breakSpeed: 7 },
       { id: "forest-tires", behavior: "avoid", style: "tires", position: { x: 492, y: 0 }, width: 1.15, height: 0.8 },
     ],
+    relief: [{ x: 11.2, width: 16, height: 1.5 }, { x: 27.2, width: 14, height: 1.1 }, { x: 135, width: 12, height: 1.3 }, { x: 216, width: 12, height: 1.2 }, { x: 300, width: 16, height: 1.6 }, { x: 318, width: 10, height: 0.9 }, { x: 471, width: 10, height: 0.9 }, { x: 566, width: 14, height: 1.3 }],
   },
   {
     id: "canyon", name: "Cañón Salvaje", tagline: "Gargantas profundas y grandes vuelos", difficulty: 2,
@@ -201,6 +228,7 @@ const PROFILES: readonly TrackProfile[] = [
       { id: "canyon-roadblock", behavior: "breakable", style: "roadblock", position: { x: 492, y: 0 }, width: 1.3, height: 1.1, breakSpeed: 8.5 },
       { id: "canyon-tires", behavior: "avoid", style: "tires", position: { x: 322, y: 0 }, width: 1.2, height: 0.85 },
     ],
+    relief: [{ x: 9.6, width: 12, height: 1.9 }, { x: 20.8, width: 10, height: -0.6 }, { x: 32, width: 12, height: 2.2 }, { x: 143, width: 14, height: 1.7 }, { x: 296, width: 12, height: 2 }, { x: 476, width: 14, height: 1.8 }, { x: 568, width: 12, height: 1.4 }],
   },
   {
     id: "neon", name: "Ciudad Neón", tagline: "Velocidad, rebotes y luces eléctricas", difficulty: 3,
@@ -216,6 +244,7 @@ const PROFILES: readonly TrackProfile[] = [
       { id: "neon-roadblock", behavior: "breakable", style: "roadblock", position: { x: 55, y: 0 }, width: 1.25, height: 1.1, breakSpeed: 8 },
       { id: "neon-crates", behavior: "breakable", style: "crates", position: { x: 405, y: 0 }, width: 1.1, height: 1.2, breakSpeed: 8 },
     ],
+    relief: [{ x: 6.4, width: 5, height: 0.5 }, { x: 11.2, width: 5, height: 0.5 }, { x: 16, width: 5, height: 0.5 }, { x: 28.8, width: 14, height: 1.8 }, { x: 146, width: 10, height: 1.2 }, { x: 160, width: 5, height: 0.5 }, { x: 290, width: 5, height: 0.5 }, { x: 314, width: 14, height: 1.7 }, { x: 474, width: 5, height: 0.5 }, { x: 480, width: 5, height: 0.5 }, { x: 562, width: 12, height: 1.5 }],
   },
   {
     id: "volcano", name: "Volcán Furia", tagline: "La pista más agresiva de la Tierra", difficulty: 4,
@@ -232,6 +261,7 @@ const PROFILES: readonly TrackProfile[] = [
       { id: "volcano-rock-two", behavior: "avoid", style: "rock", position: { x: 422, y: 0 }, width: 1.3, height: 0.9 },
       { id: "volcano-crates", behavior: "breakable", style: "crates", position: { x: 495, y: 0 }, width: 1.25, height: 1.3, breakSpeed: 9 },
     ],
+    relief: [{ x: 9.6, width: 14, height: 2.4 }, { x: 24, width: 14, height: -0.7 }, { x: 35.2, width: 8, height: 1.2 }, { x: 140, width: 16, height: 2.5 }, { x: 228, width: 12, height: 1.6 }, { x: 300, width: 14, height: 2.2 }, { x: 340, width: 10, height: 1.2 }, { x: 476, width: 12, height: 1.8 }, { x: 568, width: 14, height: 2 }],
   },
   {
     id: "moon", name: "Base Lunar", tagline: "Gravedad baja y saltos gigantes", difficulty: 5,
@@ -248,6 +278,7 @@ const PROFILES: readonly TrackProfile[] = [
       { id: "moon-roadblock", behavior: "breakable", style: "roadblock", position: { x: 494, y: 0 }, width: 1.35, height: 1.2, breakSpeed: 6 },
       { id: "moon-tires", behavior: "avoid", style: "tires", position: { x: 354, y: 0 }, width: 1.2, height: 0.85 },
     ],
+    relief: [{ x: 8, width: 12, height: -0.7 }, { x: 22.4, width: 18, height: 2.2 }, { x: 36.8, width: 8, height: -0.5 }, { x: 150, width: 18, height: 2.4 }, { x: 298, width: 16, height: -0.7 }, { x: 322, width: 16, height: 2 }, { x: 480, width: 16, height: 1.8 }, { x: 568, width: 14, height: -0.6 }],
   },
   {
     id: "jungle", name: "Jungla Secreta", tagline: "Túneles bajos y vuelos entre lianas", difficulty: 3,
@@ -263,6 +294,7 @@ const PROFILES: readonly TrackProfile[] = [
       { id: "jungle-wall", behavior: "challenge", style: "highWall", position: { x: 315, y: 0 }, width: 1.3, height: 1.5, requirement: { stat: "jump", minimum: 4, label: "Salto 4", hint: "Pasa por encima", recommendedCarIds: ["spark", "lynx"] } },
       { id: "jungle-crates", behavior: "breakable", style: "crates", position: { x: 55, y: 0 }, width: 1.15, height: 1.2, breakSpeed: 7.5 },
     ],
+    relief: [{ x: 6.4, width: 6, height: 0.7 }, { x: 12.8, width: 8, height: 1.3 }, { x: 22.4, width: 10, height: 1.8 }, { x: 33.6, width: 8, height: 1 }, { x: 140, width: 12, height: 1.5 }, { x: 154, width: 8, height: 0.8 }, { x: 296, width: 14, height: 1.9 }, { x: 334, width: 10, height: 1.1 }, { x: 472, width: 10, height: 1.3 }, { x: 566, width: 10, height: 1.2 }],
   },
   {
     id: "glacier", name: "Glaciar Cristal", tagline: "Hielo veloz y frenadas de precisión", difficulty: 4,
@@ -278,6 +310,7 @@ const PROFILES: readonly TrackProfile[] = [
       { id: "glacier-brake", behavior: "challenge", style: "brakeGate", position: { x: 304, y: 0 }, width: 1.4, height: 1.4, requirement: { stat: "braking", minimum: 5, label: "Frenada 5", hint: "Frena con precisión", recommendedCarIds: ["gecko"] } },
       { id: "glacier-roadblock", behavior: "breakable", style: "roadblock", position: { x: 55, y: 0 }, width: 1.2, height: 1.15, breakSpeed: 7 },
     ],
+    relief: [{ x: 15, width: 28, height: 2 }, { x: 33.6, width: 10, height: -0.5 }, { x: 142, width: 20, height: 1.8 }, { x: 322, width: 22, height: 2.1 }, { x: 476, width: 16, height: 1.4 }, { x: 568, width: 18, height: 1.6 }],
   },
   {
     id: "factory", name: "Fábrica Colosal", tagline: "Muros altos y compuertas pesadas", difficulty: 5,
@@ -293,8 +326,35 @@ const PROFILES: readonly TrackProfile[] = [
       { id: "factory-gate", behavior: "challenge", style: "heavyGate", position: { x: 322, y: 0 }, width: 1.5, height: 1.8, requirement: { stat: "power", minimum: 5, label: "Fuerza 5", hint: "Empuja la compuerta", recommendedCarIds: ["mammoth", "titan"] } },
       { id: "factory-crates", behavior: "breakable", style: "crates", position: { x: 55, y: 0 }, width: 1.3, height: 1.3, breakSpeed: 8 },
     ],
+    relief: [{ x: 6.4, width: 4, height: 0.45 }, { x: 10.4, width: 4, height: 0.45 }, { x: 15, width: 4, height: 0.45 }, { x: 18.4, width: 4, height: 0.45 }, { x: 30.4, width: 14, height: 2 }, { x: 150, width: 14, height: 1.8 }, { x: 296, width: 4, height: 0.45 }, { x: 301, width: 4, height: 0.45 }, { x: 306, width: 4, height: 0.45 }, { x: 334, width: 12, height: 1.5 }, { x: 478, width: 12, height: 1.6 }, { x: 566, width: 12, height: 1.7 }],
   },
 ] as const;
+
+function reliefHeight(relief: readonly ReliefBump[], x: number): number {
+  let height = 0;
+  for (const bump of relief) {
+    const distance = Math.abs(x - bump.x);
+    if (distance >= bump.width / 2) continue;
+    height += bump.height * (0.5 + 0.5 * Math.cos((Math.PI * distance) / (bump.width / 2)));
+  }
+  return height;
+}
+
+const RELIEF_STEP = 1.25;
+
+/** Intermediate points that sculpt the bumps lying wholly inside a flat stretch. */
+function contour(relief: readonly ReliefBump[], used: Set<ReliefBump>, startX: number, endX: number): Point[] {
+  const inside = relief.filter((bump) => bump.x - bump.width / 2 >= startX + 0.5 && bump.x + bump.width / 2 <= endX - 0.5);
+  if (inside.length === 0) return [];
+  for (const bump of inside) used.add(bump);
+  const xs = new Set<number>();
+  for (const bump of inside) {
+    const left = bump.x - bump.width / 2;
+    const count = Math.max(4, Math.ceil(bump.width / RELIEF_STEP));
+    for (let index = 0; index <= count; index += 1) xs.add(Math.round((left + (bump.width * index) / count) * 1000) / 1000);
+  }
+  return [...xs].sort((first, second) => first - second).map((x) => ({ x, y: reliefHeight(inside, x) }));
+}
 
 function buildTrack(profile: TrackProfile): TrackDefinition {
   const [gap1, gap2, gap3, gap4] = profile.gapWidths;
@@ -310,29 +370,60 @@ function buildTrack(profile: TrackProfile): TrackDefinition {
   const incompleteLoop = arc({ id: "incomplete-loop", center: brokenCenter, radius: brokenRadius, startAngle: -Math.PI / 2, endAngle: brokenEndAngle, samples: 44 });
   const brokenExit = incompleteLoop.points[incompleteLoop.points.length - 1] ?? { x: brokenCenterX, y: 3 };
   const brokenLandingX = Math.min(brokenExit.x + brokenGap, 414);
+  const usedRelief = new Set<ReliefBump>();
+  const hills = (startX: number, endX: number): Point[] => contour(profile.relief, usedRelief, startX, endX);
 
   const segments: TrackSegment[] = [
-      line("reverse-runway", { x: -140, y: 0 }, { x: 76, y: 0 }),
+      // The run-up before each ramp stays flat so every designed jump keeps its launch speed.
+      line("reverse-runway", { x: -140, y: 0 }, { x: 0, y: 0 }, ...hills(0, 52), { x: 52, y: 0 }, { x: 76, y: 0 }),
       ramp("first-ramp", 76, 96, ramp1, profile.rampStyles[0]),
-      line("first-landing", { x: landing1, y: 1.2 }, { x: landing1 + 13, y: 0 }, { x: fullCenterX - 22, y: 0 }, { x: fullCenterX - 12, y: 1.6 }, { x: fullCenterX - 4, y: 3 }, { x: fullCenterX, y: 3 }),
+      line("first-landing", { x: landing1, y: 1.2 }, { x: landing1 + 13, y: 0 }, ...hills(landing1 + 13, fullCenterX - 22), { x: fullCenterX - 22, y: 0 }, { x: fullCenterX - 12, y: 1.6 }, { x: fullCenterX - 4, y: 3 }, { x: fullCenterX, y: 3 }),
       fullLoop,
-      line("between-loops", { x: fullCenterX, y: 3 }, { x: fullCenterX + 22, y: 3 }, { x: fullCenterX + 38, y: 0 }, { x: 242, y: 0 }),
+      line("between-loops", { x: fullCenterX, y: 3 }, { x: fullCenterX + 22, y: 3 }, { x: fullCenterX + 38, y: 0 }, ...hills(fullCenterX + 38, 236), { x: 236, y: 0 }, { x: 242, y: 0 }),
       ramp("cliff-ramp", 242, 264, ramp2, profile.rampStyles[1]),
-      line("cliff-landing", { x: landing2, y: 0.8 }, { x: landing2 + 14, y: 0 }, { x: brokenCenterX - 36, y: 1.2 }, { x: brokenCenterX - 28, y: 0 }, { x: brokenCenterX - 16, y: 2 }, { x: brokenCenterX - 4, y: 3 }, { x: brokenCenterX, y: 3 }),
+      line("cliff-landing", { x: landing2, y: 0.8 }, { x: landing2 + 14, y: 0 }, ...hills(landing2 + 14, brokenCenterX - 40), { x: brokenCenterX - 40, y: 0 }, { x: brokenCenterX - 36, y: 1.2 }, { x: brokenCenterX - 28, y: 0 }, { x: brokenCenterX - 16, y: 2 }, { x: brokenCenterX - 4, y: 3 }, { x: brokenCenterX, y: 3 }),
       incompleteLoop,
       line("broken-loop-landing", { x: brokenLandingX, y: 1.7 }, { x: Math.min(brokenLandingX + 9, 418), y: 0 }, { x: 420, y: 0 }),
       ramp("canyon-ramp", 420, 442, ramp3, profile.rampStyles[2]),
-      line("canyon-landing", { x: landing3, y: 0.8 }, { x: landing3 + 14, y: 0 }, { x: 510, y: 0 }),
+      line("canyon-landing", { x: landing3, y: 0.8 }, { x: landing3 + 14, y: 0 }, ...hills(landing3 + 14, 500), { x: 500, y: 0 }, { x: 510, y: 0 }),
       ramp("final-ramp", 510, 532, ramp4, profile.rampStyles[3]),
-      line("finish-road", { x: landing4, y: 0.6 }, { x: landing4 + 13, y: 0 }, { x: 588, y: 0 }),
+      line("finish-road", { x: landing4, y: 0.6 }, { x: landing4 + 13, y: 0 }, ...hills(landing4 + 13, 580), { x: 580, y: 0 }, { x: 588, y: 0 }),
   ];
+  const unused = profile.relief.filter((bump) => !usedRelief.has(bump));
+  if (unused.length > 0) throw new Error(`${profile.id}: relief outside a flat stretch at x=${unused.map((bump) => bump.x).join(", ")}`);
+  const hazards: HazardGap[] = [
+    { id: "first-gorge", startX: 96, endX: landing1, depth: 8, requiresTurbo: true },
+    { id: "middle-gorge", startX: 264, endX: landing2, depth: 10 },
+    { id: "deep-canyon", startX: 442, endX: landing3, depth: 12 },
+    { id: "final-chasm", startX: 532, endX: landing4, depth: 11 },
+  ];
+  const loopGuides: LoopGuide[] = [
+    { id: "full-loop", kind: "full", center: fullCenter, pathRadius: Math.max(2.4, fullRadius - 0.8), startAngle: -Math.PI / 2, endAngle: (3 * Math.PI) / 2, entryX: fullCenterX - Math.max(2.4, fullRadius - 0.8) },
+    { id: "incomplete-loop", kind: "incomplete", center: brokenCenter, pathRadius: Math.max(2.3, brokenRadius - 0.8), startAngle: -Math.PI / 2, endAngle: brokenEndAngle, entryX: brokenCenterX - Math.max(2.3, brokenRadius - 0.8) },
+  ];
+  // Each springboard throws the car along a designed arc: a hop when there is room to
+  // land before the next feature, otherwise a leap right over the following gorge.
+  const flightLimits = [
+    { until: 242, limit: 242, beyond: landing2 + 16 },
+    { until: brokenCenterX - 40, limit: brokenCenterX - 40, beyond: brokenCenterX - 40 },
+    { until: 420, limit: 420, beyond: landing3 + 16 },
+    { until: 510, limit: 510, beyond: landing4 + 15 },
+  ];
+  const springboards = profile.springboards.map((board) => {
+    const zone = flightLimits.find((candidate) => board.position.x < candidate.until) ?? flightLimits[flightLimits.length - 1];
+    // Keep the top of every flight on screen, below the speedometer.
+    // Low gravity is exempt: giant floating jumps are what the Moon is for.
+    const gravity = Math.abs(profile.physics.gravity);
+    const verticalBoost = gravity < 8 ? board.verticalBoost : Math.min(board.verticalBoost, Math.sqrt(2 * gravity * MAX_FLIGHT_HEIGHT));
+    const airtime = (2 * verticalBoost) / Math.abs(profile.physics.gravity);
+    const room = zone.limit - 10 - board.position.x;
+    const range = room >= 14 ? Math.min(NORMAL_LAUNCH_SPEED * airtime, room) : zone.beyond - board.position.x;
+    return { ...board, verticalBoost, range, position: { ...board.position, y: trackSurfaceYAt(segments, board.position.x) } };
+  });
   return {
     ...profile,
     segments,
-    loopGuides: [
-      { id: "full-loop", kind: "full", center: fullCenter, pathRadius: Math.max(2.4, fullRadius - 0.8), startAngle: -Math.PI / 2, endAngle: (3 * Math.PI) / 2, entryX: fullCenterX - Math.max(2.4, fullRadius - 0.8) },
-      { id: "incomplete-loop", kind: "incomplete", center: brokenCenter, pathRadius: Math.max(2.3, brokenRadius - 0.8), startAngle: -Math.PI / 2, endAngle: brokenEndAngle, entryX: brokenCenterX - Math.max(2.3, brokenRadius - 0.8) },
-    ],
+    loopGuides,
     checkpoints: [
       { id: "start", position: { x: -12, y: 1.1 }, angle: 0, radius: 2 },
       { id: "first-landing", position: { x: landing1 + 5, y: 2.2 }, angle: -0.08, radius: 5 },
@@ -343,23 +434,65 @@ function buildTrack(profile: TrackProfile): TrackDefinition {
       { id: "canyon-landing", position: { x: landing3 + 6, y: 2 }, angle: -0.08, radius: 6 },
       { id: "final-landing", position: { x: landing4 + 6, y: 1.8 }, angle: -0.05, radius: 6 },
     ],
-    springboards: profile.springboards.map((board) => ({
-      ...board,
-      position: { ...board.position, y: trackSurfaceYAt(segments, board.position.x) },
-    })),
+    springboards,
     obstacles: profile.obstacles.map((obstacle) => ({
       ...obstacle,
       position: { ...obstacle.position, y: trackSurfaceYAt(segments, obstacle.position.x) },
     })),
     requirements: profile.obstacles.flatMap((obstacle) => obstacle.requirement ? [obstacle.requirement] : []),
-    hazards: [
-      { id: "first-gorge", startX: 96, endX: landing1, depth: 8, requiresTurbo: true },
-      { id: "middle-gorge", startX: 264, endX: landing2, depth: 10 },
-      { id: "deep-canyon", startX: 442, endX: landing3, depth: 12 },
-      { id: "final-chasm", startX: 532, endX: landing4, depth: 11 },
-    ],
+    hazards,
+    boostPads: hazards.filter((hazard) => !hazard.requiresTurbo).map((hazard) => boostPadFor(hazard, segments, Math.abs(profile.physics.gravity))),
+    stars: placeStars(profile, segments, hazards, loopGuides, springboards),
     killY: -12,
   };
+}
+
+/** Speed that carries a car from the lip of a ramp safely onto the far side of its gap. */
+function boostPadFor(hazard: HazardGap, segments: readonly TrackSegment[], gravity: number): BoostPad {
+  const lipY = trackSurfaceYAt(segments, hazard.startX);
+  const slope = (lipY - trackSurfaceYAt(segments, hazard.startX - 1.5)) / 1.5;
+  const reach = hazard.endX - hazard.startX + 3.5;
+  const drop = lipY - trackSurfaceYAt(segments, hazard.startX + reach);
+  const cosineSquared = 1 / (1 + slope * slope);
+  const speed = Math.sqrt((gravity * reach * reach) / (2 * cosineSquared * Math.max(0.5, reach * slope + drop)));
+  return { id: `${hazard.id}-boost`, startX: hazard.startX - 8, endX: hazard.startX - 0.4, minSpeed: Math.min(15.5, Math.max(9, speed * 1.12)) };
+}
+
+const NORMAL_LAUNCH_SPEED = 12.5;
+const MAX_FLIGHT_HEIGHT = 8;
+const TURBO_LAUNCH_SPEED = 17.5;
+
+/** Bonus stars trace the fun line: hill crests, jump arcs, loop tops and springboard flights. */
+function placeStars(profile: TrackProfile, segments: readonly TrackSegment[], hazards: readonly HazardGap[], guides: readonly LoopGuide[], springboards: readonly Springboard[]): TrackStar[] {
+  const gravity = Math.abs(profile.physics.gravity);
+  const positions: Point[] = [];
+  const blocked = (x: number): boolean => profile.obstacles.some((obstacle) => Math.abs(obstacle.position.x - x) < 2.5)
+    || springboards.some((board) => Math.abs(board.position.x - x) < 3);
+  for (const bump of profile.relief) {
+    if (bump.height < 1 || blocked(bump.x)) continue;
+    positions.push({ x: bump.x, y: trackSurfaceYAt(segments, bump.x) + 1.5 });
+  }
+  for (const hazard of hazards) {
+    const lipY = trackSurfaceYAt(segments, hazard.startX);
+    const slope = (lipY - trackSurfaceYAt(segments, hazard.startX - 1.5)) / 1.5;
+    const speed = hazard.requiresTurbo ? TURBO_LAUNCH_SPEED : NORMAL_LAUNCH_SPEED;
+    const horizontal = speed / Math.hypot(1, slope);
+    const width = hazard.endX - hazard.startX;
+    for (const progress of [0.25, 0.5, 0.75]) {
+      const dx = width * progress;
+      const time = dx / horizontal;
+      positions.push({ x: hazard.startX + dx, y: lipY + 1 + slope * horizontal * time - 0.5 * gravity * time * time });
+    }
+  }
+  for (const guide of guides) positions.push({ x: guide.center.x, y: guide.center.y + guide.pathRadius });
+  for (const board of springboards) {
+    const airtime = (2 * board.verticalBoost) / gravity;
+    for (const progress of board.range && board.range > 30 ? [0.2, 0.5, 0.8] : [0.5]) {
+      const time = airtime * progress;
+      positions.push({ x: board.position.x + (board.range ?? 8) * progress, y: board.position.y + 1 + board.verticalBoost * time - 0.5 * gravity * time * time });
+    }
+  }
+  return positions.sort((first, second) => first.x - second.x).map((position, id) => ({ id, position }));
 }
 
 function ramp(id: string, startX: number, endX: number, height: number, style: RampStyle): TrackSegment {
@@ -371,7 +504,12 @@ function ramp(id: string, startX: number, endX: number, height: number, style: R
 }
 
 export function trackSurfaceYAt(segments: readonly TrackSegment[], x: number): number {
-  const candidates: number[] = [];
+  return surfaceAt(segments, x) ?? 0;
+}
+
+/** Height of the drivable surface at x, or undefined over a gap. */
+export function surfaceAt(segments: readonly TrackSegment[], x: number): number | undefined {
+  let highest: number | undefined;
   for (const segment of segments) {
     if (segment.kind !== "line") continue;
     for (let index = 0; index < segment.points.length - 1; index += 1) {
@@ -382,10 +520,11 @@ export function trackSurfaceYAt(segments: readonly TrackSegment[], x: number): n
       if (x < minimum || x > maximum) continue;
       const width = end.x - start.x;
       const progress = Math.abs(width) < 0.0001 ? 0 : (x - start.x) / width;
-      candidates.push(start.y + (end.y - start.y) * progress);
+      const y = start.y + (end.y - start.y) * progress;
+      if (highest === undefined || y > highest) highest = y;
     }
   }
-  return candidates.length > 0 ? Math.max(...candidates) : 0;
+  return highest;
 }
 
 export const TRACKS: readonly TrackDefinition[] = PROFILES.map(buildTrack);

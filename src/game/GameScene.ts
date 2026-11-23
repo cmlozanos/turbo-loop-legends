@@ -27,7 +27,11 @@ export interface GameSceneData {
   onObstacleBreak: () => void;
   onRespawn: () => void;
   onChallengeFailure: (obstacle: TrackObstacle, attempts: number) => void;
+  onStars?: (collected: number, total: number) => void;
+  onStunt?: (stunt: Stunt) => void;
 }
+
+export type Stunt = "jump" | "loop" | "broken-loop";
 
 export class GameScene extends Phaser.Scene {
   private sceneData!: GameSceneData;
@@ -56,6 +60,14 @@ export class GameScene extends Phaser.Scene {
   private finishX = 0;
   private springboardActivations = 0;
   private readonly challengeAttempts = new Map<string, number>();
+  private readonly starSprites = new Map<number, Phaser.GameObjects.Image>();
+  private starsCollected = 0;
+  private feedbackReady = false;
+  private airborneSeconds = 0;
+  private fallSpeed = 0;
+  private squash = 0;
+  private activeLoopId?: string;
+  private elapsedSeconds = 0;
 
   constructor() {
     super({ key: "GameScene", active: false });
@@ -75,6 +87,14 @@ export class GameScene extends Phaser.Scene {
     this.obstacleVisuals.clear();
     this.shatteredObstacles.clear();
     this.challengeAttempts.clear();
+    this.starSprites.clear();
+    this.starsCollected = 0;
+    this.feedbackReady = false;
+    this.airborneSeconds = 0;
+    this.fallSpeed = 0;
+    this.squash = 0;
+    this.activeLoopId = undefined;
+    this.elapsedSeconds = 0;
   }
 
   preload(): void {
@@ -90,8 +110,11 @@ export class GameScene extends Phaser.Scene {
     this.drawObstacles();
     this.drawCheckpoints();
     this.drawFinish();
+    this.createStars();
     this.createVehicle();
     this.createDust();
+    this.feedbackReady = true;
+    this.sceneData.onStars?.(0, this.simulation.track.stars?.length ?? 0);
 
     const minimumX = Math.min(...this.simulation.track.segments.flatMap((segment) => segment.points.map((point) => point.x)));
     const leftBound = physicsToScreen({ x: minimumX - 15, y: 0 }, PIXELS_PER_METRE, ORIGIN).x;
@@ -146,6 +169,7 @@ export class GameScene extends Phaser.Scene {
       if (this.motionAllowed()) this.cameras.main.shake(130, 0.007);
     }
 
+    this.updateFeedback(deltaMs);
     this.syncVehicle(this.lastSnapshot);
     this.updateCameraFocus(deltaMs);
     const camera = this.cameras.main;
@@ -154,7 +178,8 @@ export class GameScene extends Phaser.Scene {
     const lerp = !this.motionAllowed() ? 1 : 1 - Math.pow(1 - 0.085, Math.min(deltaMs, 250) / (1000 / 60));
     camera.setLerp(lerp, lerp);
 
-    const speed = Math.abs(this.lastSnapshot.velocity.x) * 9;
+    // Inside a loop the car is as fast going up as going along.
+    const speed = (this.lastSnapshot.activeLoopId ? Math.hypot(this.lastSnapshot.velocity.x, this.lastSnapshot.velocity.y) : Math.abs(this.lastSnapshot.velocity.x)) * 9;
     this.sceneData.onSpeed(speed);
     this.sceneData.audio.updateEngine(speed, throttle);
     this.emitDust(speed, throttle);
@@ -163,6 +188,7 @@ export class GameScene extends Phaser.Scene {
   diagnostics(): object {
     return JSON.parse(JSON.stringify({ steps: this.simulationSteps, snapshot: this.lastSnapshot,
       decorations: this.decorations.length, visibleDecorations: this.decorations.filter(item => item.graphics.visible).length,
+      stars: { collected: this.starsCollected, total: this.simulation?.track.stars?.length ?? 0, sprites: this.starSprites.size },
       zoom: this.cameras.main.zoom, scrollX: this.cameras.main.scrollX,
       theme: this.appearance, decorativeMotion: this.motionAllowed(), dustAlive: (this.dust?.getAliveParticleCount() ?? 0),
       nativeText: this.children.list.filter((item): item is Phaser.GameObjects.Text => item instanceof Phaser.GameObjects.Text).map(item => ({ text: item.text, font: item.style.fontFamily })),
@@ -234,10 +260,7 @@ export class GameScene extends Phaser.Scene {
     for (let x = sceneryLeft; x < sceneryRight; x += 105) {
       scenery.fillTriangle(x, ORIGIN.y + 45, x + 17, ORIGIN.y + 40, x + 25, ORIGIN.y + 49);
     }
-    scenery.fillStyle(theme?.scenery ?? 0x376b42, 1);
-    for (let x = sceneryLeft; x < sceneryRight; x += 140) {
-      scenery.fillTriangle(x, ORIGIN.y + 28, x + 65, ORIGIN.y - 70 - (x % 3) * 15, x + 130, ORIGIN.y + 28);
-    }
+    this.drawProps(sceneryLeft, sceneryRight);
 
     const hazards = this.add.graphics().setDepth(-6);
     for (const hazard of this.simulation.track.hazards) {
@@ -247,6 +270,9 @@ export class GameScene extends Phaser.Scene {
       hazards.fillStyle(theme?.abyss ?? 0x111522, 0.96).beginPath().moveTo(left, ORIGIN.y - 5);
       hazards.lineTo(left + 28, ORIGIN.y + 70).lineTo((left + right) / 2, bottom);
       hazards.lineTo(right - 28, ORIGIN.y + 70).lineTo(right, ORIGIN.y - 5).closePath().fillPath();
+      // A glow from the depths: lava, ice water or neon, in the colour of each circuit.
+      hazards.fillStyle(theme?.accent ?? 0xffcf3f, 0.16).fillTriangle((left + right) / 2, bottom, left + (right - left) * 0.22, ORIGIN.y + 150, right - (right - left) * 0.22, ORIGIN.y + 150);
+      hazards.fillStyle(theme?.accent ?? 0xffcf3f, 0.3).fillTriangle((left + right) / 2, bottom, left + (right - left) * 0.36, ORIGIN.y + 250, right - (right - left) * 0.36, ORIGIN.y + 250);
       hazards.lineStyle(7, 0x6b301f, 0.9).lineBetween(left, ORIGIN.y, left + 24, ORIGIN.y + 65);
       hazards.lineBetween(right, ORIGIN.y, right - 24, ORIGIN.y + 65);
       if (hazard.requiresTurbo) {
@@ -267,14 +293,28 @@ export class GameScene extends Phaser.Scene {
       }
     }
 
-    for (const points of renderPolylines(this.simulation.track)) {
+    const earth = shade(theme?.ground ?? 0x4f8e52, 0.72);
+    const earthLight = shade(theme?.ground ?? 0x4f8e52, 0.9);
+    for (const [segmentIndex, points] of renderPolylines(this.simulation.track).entries()) {
       const track = this.add.graphics().setDepth(-2);
       const screen = points.map((point) => physicsToScreen(point, PIXELS_PER_METRE, ORIGIN));
       this.decorations.push({ graphics: track, left: Math.min(...screen.map(p => p.x)) - 30, right: Math.max(...screen.map(p => p.x)) + 30 });
+      const solid = this.simulation.track.segments[segmentIndex].kind === "line";
+      if (solid) {
+        // Hills, ramps and plateaus are earthworks: packed soil from the road down to the plain.
+        const base = ORIGIN.y + 12;
+        for (let index = 0; index < screen.length - 1; index += 1) {
+          const current = screen[index];
+          const next = screen[index + 1];
+          if (current.y >= base - 14 && next.y >= base - 14) continue;
+          fillPolygon(track.fillStyle(earth, 1), [current, next, { x: next.x, y: base }, { x: current.x, y: base }]);
+          fillPolygon(track.fillStyle(earthLight, 1), [current, next, { x: next.x, y: Math.min(base, next.y + 26) }, { x: current.x, y: Math.min(base, current.y + 26) }]);
+        }
+      }
       // Cast extrusion and steel understructure stay behind the collision surface.
       for (let index = 0; index < screen.length; index += 6) {
         const point = screen[index];
-        if (point.y > ORIGIN.y - 35) continue;
+        if (solid || point.y > ORIGIN.y - 35) continue;
         track.lineStyle(9, 0x253441, 0.65).lineBetween(point.x + 6, point.y + 18, point.x + 6, ORIGIN.y + 30);
         track.lineStyle(3, 0xd3c2a1, 0.65).lineBetween(point.x + 3, point.y + 18, point.x + 3, ORIGIN.y + 30);
       }
@@ -312,6 +352,17 @@ export class GameScene extends Phaser.Scene {
         track.lineStyle(4, i % 2 ? 0x223644 : 0xe7fff0, 0.95).lineBetween(point.x, point.y - 7, point.x + 17, point.y - 7);
       }
     }
+    for (const pad of this.simulation.track.boostPads ?? []) {
+      for (let x = pad.startX + 0.8; x < pad.endX - 0.6; x += 1.5) {
+        const y = trackSurfaceYAt(this.simulation.track.segments, x);
+        const ahead = trackSurfaceYAt(this.simulation.track.segments, x + 0.6);
+        const point = physicsToScreen({ x, y }, PIXELS_PER_METRE, ORIGIN);
+        const tip = physicsToScreen({ x: x + 0.6, y: ahead }, PIXELS_PER_METRE, ORIGIN);
+        const angle = Math.atan2(tip.y - point.y, tip.x - point.x);
+        const nx = Math.sin(angle) * 8, ny = -Math.cos(angle) * 8;
+        track.lineStyle(5, 0xfff36b, 1).beginPath().moveTo(point.x + nx, point.y + ny - 2).lineTo(tip.x, tip.y - 2).lineTo(point.x - nx, point.y - ny - 2).strokePath();
+      }
+    }
     for (const board of this.simulation.track.springboards) {
       const point = physicsToScreen(board.position, PIXELS_PER_METRE, ORIGIN);
       const width = board.width * PIXELS_PER_METRE;
@@ -322,6 +373,127 @@ export class GameScene extends Phaser.Scene {
         track.beginPath().moveTo(x, point.y + 12).lineTo(x + 7, point.y + 23).lineTo(x + 14, point.y + 12).strokePath();
       }
       track.fillStyle(0xffffff, 0.95).fillTriangle(point.x - 8, point.y - 28, point.x + 9, point.y - 28, point.x, point.y - 45);
+    }
+  }
+
+  /**
+   * Roadside props give each circuit its own world. They are static vector shapes
+   * grouped in chunks, so only the ones near the camera are ever submitted.
+   */
+  private drawProps(left: number, right: number): void {
+    const track = this.simulation.track;
+    const theme = track.theme;
+    const dark = shade(theme?.scenery ?? 0x376b42, 0.82);
+    const mid = theme?.scenery ?? 0x376b42;
+    const accent = theme?.accent ?? 0xffcf3f;
+    const base = ORIGIN.y + 16;
+    const gaps = track.hazards.map((hazard) => ({
+      left: physicsToScreen({ x: hazard.startX, y: 0 }, PIXELS_PER_METRE, ORIGIN).x - 70,
+      right: physicsToScreen({ x: hazard.endX, y: 0 }, PIXELS_PER_METRE, ORIGIN).x + 70,
+    }));
+    const chunk = 1500;
+    for (let start = left; start < right; start += chunk) {
+      const g = this.add.graphics().setDepth(-7);
+      this.decorations.push({ graphics: g, left: start - 120, right: start + chunk + 120 });
+      for (let index = 0, x = start + 90; x < Math.min(right, start + chunk); index += 1, x += 250 + ((Math.floor(x) * 37) % 170)) {
+        if (gaps.some((gap) => x > gap.left && x < gap.right)) continue;
+        const seed = Math.abs(Math.floor(x * 7.3)) % 100;
+        const size = 0.8 + (seed % 40) / 100;
+        const variant = seed % 3 === 0;
+        switch (track.id) {
+          case "canyon":
+            if (variant) {
+              fillPolygon(g.fillStyle(dark, 1), [{ x: x - 70 * size, y: base }, { x: x - 48 * size, y: base - 95 * size }, { x: x + 50 * size, y: base - 95 * size }, { x: x + 74 * size, y: base }]);
+              g.fillStyle(0xffd9a0, 0.22).fillRect(x - 52 * size, base - 78 * size, 106 * size, 7).fillRect(x - 60 * size, base - 46 * size, 122 * size, 6);
+            } else {
+              g.fillStyle(0x3f7d4a, 1).fillRoundedRect(x - 9 * size, base - 105 * size, 18 * size, 105 * size, 8 * size);
+              g.fillRoundedRect(x - 36 * size, base - 74 * size, 13 * size, 40 * size, 6 * size).fillRect(x - 36 * size, base - 44 * size, 30 * size, 11 * size);
+              g.fillRoundedRect(x + 23 * size, base - 88 * size, 13 * size, 44 * size, 6 * size).fillRect(x + 6 * size, base - 55 * size, 30 * size, 11 * size);
+              g.fillStyle(0x8fd08a, 0.35).fillRect(x - 5 * size, base - 98 * size, 4 * size, 90 * size);
+            }
+            break;
+          case "neon":
+            if (variant) {
+              g.fillStyle(0x10122e, 1).fillRect(x - 4, base - 150 * size, 8, 150 * size).fillRect(x - 60 * size, base - 190 * size, 120 * size, 62 * size);
+              g.lineStyle(4, accent, 0.95).strokeRect(x - 54 * size, base - 184 * size, 108 * size, 50 * size);
+              g.lineStyle(5, theme?.roadEdge ?? 0x26f7ff, 0.95).lineBetween(x - 36 * size, base - 148 * size, x - 6 * size, base - 172 * size).lineBetween(x - 6 * size, base - 172 * size, x + 8 * size, base - 150 * size).lineBetween(x + 8 * size, base - 150 * size, x + 36 * size, base - 172 * size);
+            } else {
+              g.fillStyle(0x10122e, 1).fillRect(x - 3, base - 135 * size, 6, 135 * size).fillRect(x - 3, base - 135 * size, 34 * size, 6);
+              g.fillStyle(accent, 0.16).fillCircle(x + 32 * size, base - 126 * size, 30 * size);
+              g.fillStyle(0xfff0ff, 0.95).fillCircle(x + 32 * size, base - 126 * size, 8 * size);
+            }
+            break;
+          case "volcano":
+            if (variant) {
+              g.fillStyle(0xff7a1a, 0.28).fillEllipse(x, base + 6, 150 * size, 26 * size);
+              g.fillStyle(0xffc23d, 0.9).fillEllipse(x, base + 6, 96 * size, 12 * size);
+            } else {
+              fillPolygon(g.fillStyle(0x1c1012, 1), [{ x: x - 52 * size, y: base }, { x: x - 30 * size, y: base - 62 * size }, { x: x + 4 * size, y: base - 96 * size }, { x: x + 36 * size, y: base - 54 * size }, { x: x + 56 * size, y: base }]);
+              g.lineStyle(4, 0xff6a1f, 0.9).lineBetween(x + 2 * size, base - 90 * size, x - 8 * size, base - 52 * size).lineBetween(x - 8 * size, base - 52 * size, x + 12 * size, base - 26 * size).lineBetween(x + 12 * size, base - 26 * size, x + 2 * size, base);
+            }
+            break;
+          case "moon":
+            if (variant) {
+              g.fillStyle(0xd9e6f5, 1).fillRect(x - 3, base - 96 * size, 6, 96 * size);
+              g.slice(x, base - 96 * size, 30 * size, Math.PI * 0.15, Math.PI * 1.15, false).fillPath();
+              g.fillStyle(accent, 0.9).fillCircle(x + 14 * size, base - 118 * size, 5);
+              g.fillStyle(0xaab4d4, 1).slice(x - 70 * size, base, 44 * size, Math.PI, 0, false).fillPath();
+              g.fillStyle(0x1a2140, 0.5).fillRect(x - 92 * size, base - 14 * size, 44 * size, 6);
+            } else {
+              g.fillStyle(0x3c4160, 0.55).fillEllipse(x, base + 8, 150 * size, 26 * size);
+              g.fillStyle(0x9da3bd, 0.7).fillEllipse(x, base + 3, 150 * size, 14 * size);
+              g.fillStyle(0x3c4160, 0.6).fillEllipse(x, base + 6, 112 * size, 10 * size);
+            }
+            break;
+          case "jungle":
+            if (variant) {
+              g.fillStyle(0x2f8f52, 1).fillEllipse(x - 26 * size, base - 14 * size, 70 * size, 44 * size).fillEllipse(x + 22 * size, base - 20 * size, 80 * size, 56 * size);
+              g.fillStyle(0xff5f8a, 1).fillCircle(x + 20 * size, base - 40 * size, 7).fillCircle(x - 30 * size, base - 24 * size, 6);
+              g.fillStyle(0xffe27a, 1).fillCircle(x + 20 * size, base - 40 * size, 3);
+            } else {
+              const top = { x: x + 26 * size, y: base - 150 * size };
+              g.lineStyle(13 * size, 0x6b4a2b, 1).beginPath().moveTo(x, base).lineTo(x + 12 * size, base - 80 * size).lineTo(top.x, top.y).strokePath();
+              g.fillStyle(0x1f7a45, 1);
+              for (const [dx, dy] of [[-88, 6], [-58, -44], [0, -62], [62, -40], [90, 12]]) {
+                g.fillTriangle(top.x, top.y - 9, top.x + dx * size, top.y + dy * size, top.x + dx * 0.5 * size, top.y + (dy + 28) * size);
+              }
+              g.fillStyle(0x8a5a2b, 1).fillCircle(top.x - 6, top.y + 6, 7 * size).fillCircle(top.x + 8, top.y + 8, 7 * size);
+            }
+            break;
+          case "glacier":
+            if (variant) {
+              g.fillStyle(0xffffff, 0.95).fillEllipse(x, base, 170 * size, 54 * size);
+              g.fillStyle(0xb7e6f5, 0.6).fillEllipse(x + 18 * size, base + 6, 120 * size, 26 * size);
+            } else {
+              g.fillStyle(0x9fe9ff, 0.95).fillTriangle(x - 44 * size, base, x - 20 * size, base - 96 * size, x + 2 * size, base);
+              g.fillTriangle(x - 12 * size, base, x + 16 * size, base - 132 * size, x + 42 * size, base).fillTriangle(x + 26 * size, base, x + 50 * size, base - 70 * size, x + 68 * size, base);
+              g.fillStyle(0xffffff, 0.7).fillTriangle(x + 16 * size, base - 132 * size, x + 22 * size, base, x + 4 * size, base).fillTriangle(x - 20 * size, base - 96 * size, x - 14 * size, base, x - 28 * size, base);
+            }
+            break;
+          case "factory":
+            if (variant) {
+              g.fillStyle(0x4d5661, 1).fillRoundedRect(x - 46 * size, base - 80 * size, 92 * size, 80 * size, 16 * size);
+              g.fillStyle(0x2a3038, 1).fillRect(x - 46 * size, base - 52 * size, 92 * size, 7).fillRect(x - 46 * size, base - 26 * size, 92 * size, 7);
+              g.fillStyle(accent, 1).fillRect(x - 30 * size, base - 74 * size, 20 * size, 12 * size);
+            } else {
+              g.fillStyle(0x5a3a32, 1).fillRect(x - 16 * size, base - 170 * size, 32 * size, 170 * size);
+              g.fillStyle(0xf2f2ee, 1).fillRect(x - 16 * size, base - 150 * size, 32 * size, 14 * size).fillRect(x - 16 * size, base - 112 * size, 32 * size, 14 * size);
+              g.fillStyle(0xdfe4ea, 0.5).fillCircle(x + 6 * size, base - 190 * size, 20 * size).fillCircle(x + 34 * size, base - 216 * size, 27 * size).fillCircle(x + 74 * size, base - 236 * size, 34 * size);
+            }
+            break;
+          default:
+            if (variant) {
+              g.fillStyle(0x3f8a50, 1).fillEllipse(x - 20 * size, base - 10 * size, 64 * size, 40 * size).fillEllipse(x + 22 * size, base - 16 * size, 76 * size, 52 * size);
+              g.fillStyle(0xd94b4b, 1).fillCircle(x + 30 * size, base - 28 * size, 5).fillCircle(x + 8 * size, base - 14 * size, 5).fillCircle(x - 24 * size, base - 18 * size, 5);
+            } else {
+              g.fillStyle(0x5b3d26, 1).fillRect(x - 7 * size, base - 46 * size, 14 * size, 46 * size);
+              g.fillStyle(dark, 1).fillTriangle(x - 52 * size, base - 36 * size, x, base - 112 * size, x + 52 * size, base - 36 * size);
+              g.fillStyle(mid, 1).fillTriangle(x - 42 * size, base - 76 * size, x, base - 142 * size, x + 42 * size, base - 76 * size);
+              g.fillStyle(shade(mid, 1.18), 1).fillTriangle(x - 30 * size, base - 112 * size, x, base - 168 * size, x + 30 * size, base - 112 * size);
+              g.fillStyle(0xffffff, 0.14).fillTriangle(x, base - 168 * size, x - 30 * size, base - 112 * size, x - 12 * size, base - 112 * size);
+            }
+        }
+      }
     }
   }
 
@@ -414,6 +586,115 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
+  private createStars(): void {
+    const stars = this.simulation.track.stars ?? [];
+    if (stars.length === 0) return;
+    if (!this.textures.exists("star")) {
+      const star = this.make.graphics({}, false);
+      const outline: Point[] = [];
+      const core: Point[] = [];
+      for (let index = 0; index < 10; index += 1) {
+        const angle = -Math.PI / 2 + (index * Math.PI) / 5;
+        const radius = index % 2 === 0 ? 1 : 0.46;
+        outline.push({ x: 24 + Math.cos(angle) * 22 * radius, y: 24 + Math.sin(angle) * 22 * radius });
+        core.push({ x: 24 + Math.cos(angle) * 16 * radius, y: 24 + Math.sin(angle) * 16 * radius });
+      }
+      fillPolygon(star.fillStyle(0xb65a00, 1), outline);
+      fillPolygon(star.fillStyle(0xffd23d, 1), core);
+      star.fillStyle(0xfff6c4, 1).fillCircle(20, 19, 4);
+      star.generateTexture("star", 48, 48);
+      star.destroy();
+    }
+    for (const star of stars) {
+      const point = physicsToScreen(star.position, PIXELS_PER_METRE, ORIGIN);
+      this.starSprites.set(star.id, this.add.image(point.x, point.y, "star").setDepth(3).setScale(0.8));
+    }
+  }
+
+  /** Stars, landings and stunts: everything the player feels beyond the raw simulation. */
+  private updateFeedback(deltaMs: number): void {
+    if (!this.feedbackReady) return;
+    const snapshot = this.lastSnapshot;
+    const seconds = Math.min(deltaMs, 250) / 1000;
+    this.elapsedSeconds += seconds;
+    const motion = this.motionAllowed();
+
+    if (snapshot.collectedStarIds.length > this.starsCollected) {
+      for (const id of snapshot.collectedStarIds) {
+        const sprite = this.starSprites.get(id);
+        if (!sprite) continue;
+        this.starSprites.delete(id);
+        if (motion) {
+          this.tweens.add({ targets: sprite, y: sprite.y - 70, scale: 1.7, alpha: 0, angle: 180, duration: 380, ease: "Quad.easeOut", onComplete: () => sprite.destroy() });
+        } else {
+          sprite.destroy();
+        }
+      }
+      this.starsCollected = snapshot.collectedStarIds.length;
+      this.sceneData.audio.playStar?.();
+      this.sceneData.onStars?.(this.starsCollected, this.simulation.track.stars?.length ?? 0);
+    }
+    if (motion) {
+      const view = this.cameras.main.worldView;
+      for (const [id, sprite] of this.starSprites) {
+        if (sprite.x < view.x - 60 || sprite.x > view.right + 60) continue;
+        const phase = this.elapsedSeconds * 3 + id;
+        sprite.setScale(0.8 + Math.sin(phase) * 0.07).setRotation(Math.sin(phase * 0.7) * 0.18);
+      }
+    }
+
+    if (this.activeLoopId && !snapshot.activeLoopId && snapshot.velocity.x > 3) {
+      this.sceneData.onStunt?.(this.activeLoopId === "full-loop" ? "loop" : "broken-loop");
+    }
+    this.activeLoopId = snapshot.activeLoopId;
+
+    if (!snapshot.grounded) {
+      this.airborneSeconds += seconds;
+      this.fallSpeed = Math.max(0, -snapshot.velocity.y);
+    } else if (this.airborneSeconds > 0) {
+      if (this.airborneSeconds > 0.3 && !snapshot.activeLoopId) this.land(this.fallSpeed, this.airborneSeconds);
+      this.airborneSeconds = 0;
+      this.fallSpeed = 0;
+    }
+    this.squash = Math.max(0, this.squash - seconds * 1.4);
+  }
+
+  private land(fallSpeed: number, airtime: number): void {
+    const motion = this.motionAllowed();
+    if (airtime > 1.8) this.sceneData.onStunt?.("jump");
+    if (fallSpeed < 4) return;
+    this.sceneData.audio.playLanding?.(Math.min(1, fallSpeed / 14));
+    if (!motion) return;
+    this.squash = Math.min(0.2, fallSpeed * 0.014);
+    if (fallSpeed > 9) this.cameras.main.shake(90, Math.min(0.006, fallSpeed * 0.0004));
+    if (this.sceneData.lightMode) return;
+    for (const wheel of [this.lastSnapshot.rearWheel, this.lastSnapshot.frontWheel]) {
+      const point = physicsToScreen(wheel.position, PIXELS_PER_METRE, ORIGIN);
+      this.dust.setPosition(point.x, point.y + 16).emitParticle(Math.min(7, 2 + Math.floor(fallSpeed / 3)));
+    }
+  }
+
+  private celebrate(): void {
+    if (!this.motionAllowed() || this.sceneData.lightMode) return;
+    const point = physicsToScreen(this.lastSnapshot.chassis.position, PIXELS_PER_METRE, ORIGIN);
+    const colours = [0xffd23d, 0xff5b6e, 0x4fd3ff, 0x7bea7b, 0xffffff, this.sceneData.car.accent];
+    for (let index = 0; index < 28; index += 1) {
+      const piece = this.add.rectangle(point.x, point.y - 30, 12, 8, colours[index % colours.length]).setDepth(8);
+      this.fragments.add(piece);
+      const spread = (index / 27 - 0.5) * 2;
+      this.tweens.add({
+        targets: piece,
+        x: point.x + spread * 330 + 80,
+        y: { value: point.y + 60, ease: "Quad.easeIn" },
+        angle: 360 + index * 47,
+        alpha: { value: 0, delay: 650, duration: 350 },
+        duration: 1000,
+        onStart: () => { piece.y = point.y - 150 - (index % 5) * 28; },
+        onComplete: () => { this.fragments.delete(piece); piece.destroy(); },
+      });
+    }
+  }
+
   private createVehicle(): void {
     this.vehicleLights = this.add.graphics().setDepth(4);
     this.vehicleShadow = this.add.graphics().setDepth(2);
@@ -501,11 +782,14 @@ export class GameScene extends Phaser.Scene {
       const anchor = physicsToScreen(anchorWorld, PIXELS_PER_METRE, ORIGIN);
       const backward = { x: -Math.cos(snapshot.chassis.angle), y: Math.sin(snapshot.chassis.angle) };
       const normal = { x: -backward.y, y: backward.x };
-      const length = 30 + Math.min(speed * 2.2, 32);
+      const flicker = this.motionAllowed() ? 0.82 + Math.random() * 0.36 : 1;
+      const length = (30 + Math.min(speed * 2.2, 32)) * flicker;
       this.drawFlame(anchor, backward, normal, length, 0xff3bd4, 10);
       this.drawFlame(anchor, backward, normal, length * 0.62, 0x76f7ff, 5);
     }
     this.placeObject(this.chassis, snapshot.chassis.position, snapshot.chassis.angle);
+    const bodyScale = this.sceneData.car.bodyScale;
+    this.chassis.setScale(bodyScale * (1 + this.squash * 0.45), bodyScale * (1 - this.squash));
     this.placeObject(this.rearWheel, snapshot.rearWheel.position, snapshot.rearWheel.angle);
     this.placeObject(this.frontWheel, snapshot.frontWheel.position, snapshot.frontWheel.angle);
   }
@@ -565,6 +849,7 @@ export class GameScene extends Phaser.Scene {
     }
     if (this.lastSnapshot.chassis.position.x >= this.finishX && !this.finished) {
       this.finished = true;
+      if (this.feedbackReady) this.celebrate();
       this.sceneData.onFinish();
     }
   }
@@ -598,6 +883,19 @@ export class GameScene extends Phaser.Scene {
     const point = physicsToScreen(this.lastSnapshot.rearWheel.position, PIXELS_PER_METRE, ORIGIN);
     this.dust.setPosition(point.x, point.y + 18).emitParticle(1);
   }
+}
+
+function fillPolygon(graphics: Phaser.GameObjects.Graphics, points: readonly Point[]): void {
+  graphics.beginPath().moveTo(points[0].x, points[0].y);
+  for (let index = 1; index < points.length; index += 1) graphics.lineTo(points[index].x, points[index].y);
+  graphics.closePath().fillPath();
+}
+
+function shade(color: number, factor: number): number {
+  const red = Math.min(255, Math.round(((color >> 16) & 0xff) * factor));
+  const green = Math.min(255, Math.round(((color >> 8) & 0xff) * factor));
+  const blue = Math.min(255, Math.round((color & 0xff) * factor));
+  return (red << 16) | (green << 8) | blue;
 }
 
 function normalizeAngle(angle: number): number {

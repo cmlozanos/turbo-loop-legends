@@ -10,6 +10,9 @@ Videojuego 2D de coches para navegador, pensado primero para tablet y niños de 
 - El botón `⌂` vuelve al menú del propio juego sin salir. El catálogo de juegos está dentro de Adultos. Para cambiar de coche o circuito durante una carrera, pulsa pausa y después Garaje; también sigue disponible al terminar.
 - Al cruzar la meta puedes iniciar inmediatamente el siguiente circuito. Las rocas y pilas de neumáticos se saltan; las cajas y barreras se rompen con suficiente velocidad.
 - Cada circuito incluye un megasalto amarillo marcado `⚡ TURBO`: su precipicio está calculado para que la velocidad normal no alcance el otro lado.
+- El megasalto es el único punto que exige turbo. Las demás rampas llevan flechas amarillas de impulso que garantizan la velocidad de despegue, de modo que mantener solo el acelerador basta para terminar el resto del circuito.
+- Los saltadores lanzan el coche por un arco diseñado: todos los coches aterrizan en el mismo punto seguro, sea un salto corto o un vuelo completo sobre el siguiente barranco.
+- Cada circuito tiene su propio relieve de colinas, badenes y hondonadas, y estrellas ⭐ en crestas, vuelos y loopings. El contador aparece bajo la velocidad y la mejor marca de cada pista se guarda en el dispositivo.
 - Los loopings conservan el impulso real del coche: acelerador, gravedad y rozamiento modifican su velocidad, puede desprenderse si pierde contacto y puede volver a recorrerlos marcha atrás.
 - Cada apertura exige un reto de los tipos seleccionados en el perfil de la tablet desde Games: suma, resta sin resultados negativos, trazo guiado o lectura. Se puede elegir cualquier combinación, con al menos un tipo activo; sin perfil válido se mantienen los retos predeterminados. Los operandos y resultados son menores de 10. Se repite cada diez minutos desde la resolución, también de noche y contando el tiempo en otras aplicaciones. El coche, los temporizadores y el sonido se pausan; una pausa manual no se cancela al resolver el reto.
 
@@ -76,7 +79,7 @@ Para ejecutar también las pruebas de interfaz en un Chromium 95 instalado, conf
 ## Arquitectura
 
 - Phaser 4.2.1: renderizado, cámara, escenas, partículas y escalado.
-- Planck 1.4.2: chasis, ruedas, suspensión, motor, colisiones y reaparición.
+- Planck 1.4.2: chasis, ruedas, suspensión, motor, colisiones y reaparición. Tracción a las cuatro ruedas, ruedas físicas del mismo tamaño que las dibujadas y un estabilizador que sigue la pendiente en el suelo y la trayectoria en el aire.
 - Vite + TypeScript: aplicación web estática.
 - PWA: caché offline e instalación en pantalla de inicio.
 - Compatibilidad: bundle dirigido a Chrome 95 para tablets Android antiguas, compartido con navegadores modernos.
@@ -85,6 +88,7 @@ Para ejecutar también las pruebas de interfaz en un Chromium 95 instalado, conf
 - Arte original: ilustraciones SVG autónomas para el garaje, carrocerías vectoriales y versiones PNG transparentes optimizadas para Phaser. Las ruedas, suspensiones y el fuego del turbo se sincronizan con la física durante la carrera.
 
 Las ocho pistas viven en `src/game/track.ts` como definiciones declarativas de rectas, arcos, checkpoints, aspecto y comportamiento físico. Cada una combina radios de looping, aberturas, perfiles de rampa y distancias de salto diferentes; el selector muestra un minimapa de su geometría real. Los loopings usan una guía circular arcade derivada de cada diseño para evitar colisiones fantasma y conservar una experiencia predecible en pantallas táctiles.
+El relieve (`relief`), las flechas de impulso (`boostPads`) y las estrellas (`stars`) se derivan de la misma definición: las colinas solo se admiten en tramos llanos y nunca en los últimos metros antes de una rampa.
 Las rampas, zonas sin suelo y plataformas impulsoras también se parametrizan en esa definición. La altura de cada saltador se deriva de la superficie real de su pista y aplica impulso vertical y horizontal al vehículo articulado completo, mientras los checkpoints admiten cruces a gran velocidad sin guardar caídas dentro de un precipicio.
 
 La comparativa y decisión técnica están en [`docs/TECHNICAL_DECISION.md`](docs/TECHNICAL_DECISION.md). La investigación de referencias y sus límites de originalidad están en [`docs/VISUAL_DIRECTION.md`](docs/VISUAL_DIRECTION.md).

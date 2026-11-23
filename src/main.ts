@@ -4,7 +4,7 @@ import { nativeAppearance } from "./game/appearance";
 import { assetUrl } from "./assets";
 import { GameAudio } from "./game/audio";
 import { CARS, getCar, type CarId } from "./game/cars";
-import { GameScene, type GameSceneData } from "./game/GameScene";
+import { GameScene, type GameSceneData, type Stunt } from "./game/GameScene";
 import { renderScale } from "./game/frameClock";
 import { InputController } from "./game/input";
 import { loadSave, saveGame } from "./game/state";
@@ -49,6 +49,14 @@ let toastTimer: number | undefined;
 let sceneAdded = false;
 let installPrompt: BeforeInstallPromptEvent | undefined;
 let recommendedCar: CarId | undefined;
+let raceStars = 0;
+let raceStarTotal = 0;
+
+const STUNT_TOASTS: Record<Stunt, string> = {
+  jump: "🚀 ¡Supersalto!",
+  loop: "🌀 ¡Looping completo!",
+  "broken-loop": "🤸 ¡Voltereta en el aire!",
+};
 
 const CAR_ROLES: Record<CarId, { icon: string; label: string }> = {
   comet: { icon: "⚖️", label: "Equilibrado" },
@@ -109,7 +117,7 @@ app.innerHTML = `
       </div>
     </section>
     <section id="hud" class="hud" aria-label="Controles de carrera" hidden>
-      <div class="speedometer" aria-live="off"><strong id="speed" class="speed-value">0</strong><span class="speed-unit">km/h</span></div>
+      <div class="speedometer" aria-live="off"><strong id="speed" class="speed-value">0</strong><span class="speed-unit">km/h</span><span class="star-count" aria-label="Estrellas recogidas"><span aria-hidden="true">⭐</span> <b id="stars">0</b></span></div>
       <button class="icon-button reset-button" data-control="reset" aria-label="Volver al último punto de control">↻</button>
       <button id="pause-button" class="icon-button pause-button" aria-label="Pausa">Ⅱ</button>
       <button class="drive-control brake-control" data-control="brake" aria-label="Frenar y marcha atrás">◀</button>
@@ -161,6 +169,7 @@ const finishScreen = getElement("finish-screen");
 const challengeScreen = getElement("challenge-screen");
 const speedLabel = getElement("speed");
 const toast = getElement("toast");
+const starsLabel = getElement("stars");
 const carGrid = getElement("car-grid");
 const trackGrid = getElement("track-grid");
 const installButton = getElement("install-button");
@@ -337,6 +346,8 @@ async function startRace(): Promise<void> {
   if (learningLocked || familyPaused) return;
   window.FamilyV2?.touch();
   raceId = `${Date.now()}-${++raceSequence}`;
+  raceStars = 0;
+  raceStarTotal = 0;
   void audio.start();
   garageScreen.hidden = true;
   pauseScreen.hidden = true;
@@ -364,6 +375,20 @@ async function startRace(): Promise<void> {
       window.FamilyV2?.award(`${raceId}:checkpoint:${id}`, 1);
     },
     onFinish: finishRace,
+    onStars: (collected, total) => {
+      raceStars = collected;
+      raceStarTotal = total;
+      starsLabel.textContent = `${collected}/${total}`;
+      if (collected > 0) {
+        starsLabel.parentElement?.classList.remove("pop");
+        void starsLabel.parentElement?.offsetWidth;
+        starsLabel.parentElement?.classList.add("pop");
+      }
+    },
+    onStunt: (stunt) => {
+      audio.playStunt();
+      showToast(STUNT_TOASTS[stunt]);
+    },
     onObstacleBreak: () => showToast("💥 ¡Barricada destrozada!"),
     onRespawn: () => showToast("¡Otra oportunidad!"),
     onChallengeFailure: handleChallengeFailure
@@ -385,7 +410,12 @@ function finishRace(): void {
   audio.playSuccess();
   const nextTrack = getTrack(getNextTrackId(selectedTrack));
   const nextTrackName = nextTrack.name ?? "Bosque Turbo";
-  getElement("finish-message").textContent = `¡Circuito superado! Siguiente reto: ${nextTrackName}.`;
+  const best = Math.max(save.bestStars[selectedTrack] ?? 0, raceStars);
+  const record = raceStars > (save.bestStars[selectedTrack] ?? 0);
+  save.bestStars[selectedTrack] = best;
+  saveGame(save);
+  const starLine = raceStarTotal > 0 ? `⭐ ${raceStars} de ${raceStarTotal} estrellas${record && raceStars > 0 ? " · ¡Nuevo récord!" : ""}. ` : "";
+  getElement("finish-message").textContent = `${starLine}Siguiente reto: ${nextTrackName}.`;
   getElement("next-track-button").textContent = `SIGUIENTE: ${nextTrackName.toUpperCase()}`;
   learningTimers.set(() => { finishScreen.hidden = false; }, save.settings.reducedMotion ? 0 : 700);
 }
@@ -458,7 +488,7 @@ function renderTracks(): void {
     button.style.setProperty("--track-accent", `#${(track.theme?.accent ?? 0xffffff).toString(16).padStart(6, "0")}`);
     button.setAttribute("aria-pressed", String(selectedTrack === track.id));
     button.setAttribute("aria-label", `${track.name}: ${track.tagline}`);
-    button.innerHTML = `<span class="track-icon" aria-hidden="true">${TRACK_ICONS[track.id ?? "forest"]}</span>${renderTrackMap(track)}<strong>${track.name}</strong>`;
+    button.innerHTML = `<span class="track-icon" aria-hidden="true">${TRACK_ICONS[track.id ?? "forest"]}</span>${renderTrackMap(track)}<strong>${track.name}</strong>${save.bestStars[track.id ?? "forest"] ? `<span class="track-stars" aria-label="Mejor marca: ${save.bestStars[track.id ?? "forest"]} estrellas">⭐${save.bestStars[track.id ?? "forest"]}</span>` : ""}`;
     button.addEventListener("click", () => {
       selectedTrack = track.id ?? "canyon";
       save.selectedTrack = selectedTrack;

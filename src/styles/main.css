@@ -502,3 +502,14 @@ html.family-v2 .speedometer{min-width:clamp(66px,19vmin,120px);padding:3px 8px 5
 html.family-v2 .speed-value{font-size:clamp(22px,6vmin,36px);line-height:1.05}
 html.family-v2 .speed-unit{font-size:11px;letter-spacing:0}
 @media(max-width:600px) and (orientation:portrait){html.family-v2 .speedometer{top:76px}html.family-v2 .pause-button{top:76px;right:12px}html.family-v2 .reset-button{top:76px}.family-toolbar{width:auto;max-width:calc(100vw - 16px)}}
+
+/* Bonus stars: a quiet counter under the speed, and the best mark on each circuit. */
+.star-count { display: block; margin-top: 2px; color: #ffe58a; font-size: clamp(11px, 3vmin, 16px); line-height: 1.2; white-space: nowrap; }
+.star-count b { font-weight: 400; }
+.star-count.pop { animation: star-pop .28s ease-out; }
+@keyframes star-pop { 0% { transform: scale(1); } 45% { transform: scale(1.28); } 100% { transform: scale(1); } }
+.track-card { position: relative; }
+.track-stars { position: absolute; top: 3px; right: 6px; font-size: .68rem; line-height: 1; white-space: nowrap; }
+@media (max-height: 520px) {
+  .star-count { display: inline; margin: 0 0 0 6px; }
+}

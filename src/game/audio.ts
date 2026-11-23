@@ -53,6 +53,20 @@ export class GameAudio {
     this.playTone(660, 0.08);
   }
 
+  playStar(): void {
+    this.playTone(988, 0.07, 0.05);
+    window.setTimeout(() => this.playTone(1319, 0.1, 0.05), 60);
+  }
+
+  playLanding(strength: number): void {
+    this.playTone(70 + strength * 30, 0.12, 0.04 + strength * 0.05, "sine");
+  }
+
+  playStunt(): void {
+    this.playTone(523, 0.08);
+    window.setTimeout(() => this.playTone(784, 0.14), 90);
+  }
+
   stop(): void {
     if (this.musicTimer) window.clearInterval(this.musicTimer);
     this.musicTimer = undefined;
@@ -77,11 +91,11 @@ export class GameAudio {
     }, 420);
   }
 
-  private playTone(frequency: number, duration: number, volume = 0.07): void {
+  private playTone(frequency: number, duration: number, volume = 0.07, type: OscillatorType = "triangle"): void {
     if (this.paused || !this.context || (!this.soundEnabled && volume > 0.02)) return;
     const oscillator = this.context.createOscillator();
     const gain = this.context.createGain();
-    oscillator.type = "triangle";
+    oscillator.type = type;
     oscillator.frequency.value = frequency;
     gain.gain.setValueAtTime(volume, this.context.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.001, this.context.currentTime + duration);
