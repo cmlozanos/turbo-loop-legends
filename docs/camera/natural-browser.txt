@@ -1,0 +1,30 @@
+[WebServer] (node:7175) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+[WebServer] <script src="/turbo-loop-legends/learning-profile.js?v=local"> in "/index.html" can't be bundled without type="module" attribute
+[WebServer] <script src="/turbo-loop-legends/reading-words.js?v=local"> in "/index.html" can't be bundled without type="module" attribute
+[WebServer] <script src="/turbo-loop-legends/learning-gate.js?v=local"> in "/index.html" can't be bundled without type="module" attribute
+[WebServer] <script src="./family-v2/family.js?v=2.0.0"> in "/index.html" can't be bundled without type="module" attribute
+[WebServer]
+[WebServer] ./family-v2/family.css?v=2.0.0 doesn't exist at build time, it will remain unchanged to be resolved at runtime
+[WebServer]
+[WebServer] (!) Some chunks are larger than 500 kB after minification. Consider:
+[WebServer] - Using dynamic import() to code-split the application
+[WebServer] - Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+[WebServer] - Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+[WebServer] (node:7319) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 5 tests using 1 worker
+
+Native font QA ["\"Family School\", cursive","\"Family School\", cursive","\"Family School\", cursive","\"Family School\", cursive","\"Family School\", cursive","\"Family School\", cursive","\"Family School\", cursive","\"Family School\", cursive","\"Family School\", cursive","\"Family School\", cursive","\"Family School\", cursive","\"Family School\", cursive","\"Family School\", cursive","\"Family School\", cursive","\"Family School\", cursive","\"Family School\", cursive","\"Family School\", cursive","\"Family School\", cursive"]
+(node:7336) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  1 [desktop] › tests/e2e/refinement.spec.ts:7:1 › native day/night, common handwriting and live motion keep the same race (3.1s)
+Native driving QA {"car":"mammoth","loops":["full-loop","incomplete-loop"],"flight":true,"landing":true,"samples":342,"maxX":586.1465221751786,"maxY":13.374456498685081,"respawns":0}
+  ✓  2 [desktop] › tests/e2e/refinement.spec.ts:59:3 › mammoth natural inputs traverse ramps, full/broken loops and finish with readable camera (40.3s)
+Native driving QA {"car":"titan","loops":["full-loop","incomplete-loop"],"flight":true,"landing":true,"samples":294,"maxX":586.0827040645065,"maxY":9.138823006368003,"respawns":0}
+  ✓  3 [desktop] › tests/e2e/refinement.spec.ts:59:3 › titan natural inputs traverse ramps, full/broken loops and finish with readable camera (40.2s)
+  ✓  4 [desktop] › tests/e2e/refinement.spec.ts:115:1 › keyboard and touch throttle survive independent releases without sticky driving (2.1s)
+  ✓  5 [desktop] › tests/e2e/refinement.spec.ts:131:1 › one Home and proportionate reachable controls in portrait and landscape (1.6s)
+
+  5 passed (1.7m)

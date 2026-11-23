@@ -68,6 +68,12 @@ for (const car of ["mammoth", "titan"]) {
       await closeAdultSettings(page);
     }
     await page.locator("#play-button").click();
+    await page.evaluate(() => {
+      const samples: {time:number;zoom:number;shake:boolean}[]=[];
+      (window as any).cameraFrames=samples;
+      const collect=(time:number)=>{const data=(window as any).__turboRead();if(data.scene?.snapshot){samples.push({time,zoom:data.scene.zoom,shake:data.scene.cameraShake});}if(samples.length<15000)requestAnimationFrame(collect);};
+      requestAnimationFrame(collect);
+    });
     await page.keyboard.down("ArrowRight");
     await page.keyboard.down("ShiftLeft");
     const loops = new Set<string>();
@@ -99,6 +105,15 @@ for (const car of ["mammoth", "titan"]) {
     }, { timeout: 75000, intervals: [100] }).toBe(true);
     await page.keyboard.up("ShiftLeft"); await page.keyboard.up("ArrowRight");
     const completed = (await read(page)).scene.snapshot;
+    const cameraFrames=await page.evaluate(()=>(window as any).cameraFrames as {time:number;zoom:number;shake:boolean}[]);
+    expect(cameraFrames.length).toBeGreaterThan(100);
+    expect(cameraFrames.some(frame=>frame.shake)).toBe(false);
+    for(let i=1;i<cameraFrames.length;i++){
+      const dt=Math.min(100,cameraFrames[i].time-cameraFrames[i-1].time)/1000;
+      const change=cameraFrames[i].zoom-cameraFrames[i-1].zoom;
+      expect(change).toBeGreaterThanOrEqual(-.65*dt-0.00001);
+      expect(change).toBeLessThanOrEqual(.18*dt+0.00001);
+    }
     expect(completed.checkpointIndex).toBe(7);
     expect(completed.respawnCount).toBe(0);
     expect(loops.size).toBe(2);

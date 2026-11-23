@@ -1,6 +1,6 @@
 import Phaser from "phaser";
 import { nativeAppearance, type NativeTheme } from "./appearance";
-import { drivingFocus, drivingSpan } from "./sceneView";
+import { drivingFocus, drivingSpan, smoothZoom } from "./sceneView";
 import { paintScenery } from "./scenery";
 import { assetUrl } from "../assets";
 import { FrameClock, renderScale } from "./frameClock";
@@ -166,7 +166,7 @@ export class GameScene extends Phaser.Scene {
     });
     if (this.lastSnapshot.springboardActivations > this.springboardActivations) {
       this.springboardActivations = this.lastSnapshot.springboardActivations;
-      if (this.motionAllowed()) this.cameras.main.shake(130, 0.007);
+      // Essential jump tracking stays steady; no launch camera shake.
     }
 
     this.updateFeedback(deltaMs);
@@ -190,7 +190,7 @@ export class GameScene extends Phaser.Scene {
       decorations: this.decorations.length, visibleDecorations: this.decorations.filter(item => item.graphics.visible).length,
       stars: { collected: this.starsCollected, total: this.simulation?.track.stars?.length ?? 0, sprites: this.starSprites.size },
       zoom: this.cameras.main.zoom, scrollX: this.cameras.main.scrollX,
-      theme: this.appearance, decorativeMotion: this.motionAllowed(), dustAlive: (this.dust?.getAliveParticleCount() ?? 0),
+      cameraShake: this.cameras.main.shakeEffect.isRunning, theme: this.appearance, decorativeMotion: this.motionAllowed(), dustAlive: (this.dust?.getAliveParticleCount() ?? 0),
       nativeText: this.children.list.filter((item): item is Phaser.GameObjects.Text => item instanceof Phaser.GameObjects.Text).map(item => ({ text: item.text, font: item.style.fontFamily })),
       fragments: this.fragments.size, cameraFocus: this.cameraFocus ? { x: this.cameraFocus.x, y: this.cameraFocus.y } : null,
       view: { x: this.cameras.main.worldView.x, y: this.cameras.main.worldView.y, width: this.cameras.main.worldView.width, height: this.cameras.main.worldView.height } }));
@@ -222,16 +222,16 @@ export class GameScene extends Phaser.Scene {
     const factor = renderScale(window.innerWidth, window.innerHeight, this.sceneData.lightMode);
     const verticalSpan = drivingSpan(this.simulation.track, this.lastSnapshot, window.innerHeight);
     const targetZoom = factor * Math.min(1, window.innerHeight / verticalSpan);
-    // Widen immediately on takeoff; restore gradually on descent, so the landing
-    // cannot outrun a still-high following camera when zoom snaps back in.
+    // Bound both zoom directions; loop anticipation opens the view ahead of entry.
     const zoom = this.cameras.main.zoom;
-    this.cameras.main.setZoom(targetZoom < zoom || !this.motionAllowed() ? targetZoom : Math.min(targetZoom, zoom + deltaMs * 0.00008));
+    this.cameras.main.setZoom(smoothZoom(zoom, targetZoom, deltaMs));
   }
 
   private configureCamera(): void {
     const factor = renderScale(window.innerWidth, window.innerHeight, this.sceneData.lightMode);
     // A short screen needs a wider world view, not a cropped loop or hidden landing.
-    this.cameras.main.setZoom(factor * Math.min(1, window.innerHeight / 540));
+    const span = drivingSpan(this.simulation.track, this.lastSnapshot, window.innerHeight);
+    this.cameras.main.setZoom(factor * Math.min(1, window.innerHeight / span));
     this.cameras.main.startFollow(this.cameraFocus, true, this.motionAllowed() ? 0.085 : 1, this.motionAllowed() ? 0.085 : 1);
     if (this.backdrop.length) paintScenery(this.backdrop, this.simulation.track.theme, this.simulation.track.id, this.appearance, window.innerWidth);
   }
@@ -669,7 +669,7 @@ export class GameScene extends Phaser.Scene {
     this.sceneData.audio.playLanding?.(Math.min(1, fallSpeed / 14));
     if (!motion) return;
     this.squash = Math.min(0.2, fallSpeed * 0.014);
-    if (fallSpeed > 9) this.cameras.main.shake(90, Math.min(0.006, fallSpeed * 0.0004));
+    // Landing impact is conveyed by suspension/squash and dust, not screen shake.
     if (this.sceneData.lightMode) return;
     for (const wheel of [this.lastSnapshot.rearWheel, this.lastSnapshot.frontWheel]) {
       const point = physicsToScreen(wheel.position, PIXELS_PER_METRE, ORIGIN);
@@ -843,7 +843,7 @@ export class GameScene extends Phaser.Scene {
           onComplete: () => { this.fragments.delete(fragment); fragment.destroy(); },
         });
       }
-      if (this.motionAllowed()) this.cameras.main.shake(120, 0.005);
+      // Keep the view stable when breaking roadside obstacles.
     }
   }
 

@@ -1,0 +1,33 @@
+
+> turbo-loop-legends@2.0.0 test
+> vitest run tests/sceneView.test.ts
+
+
+ RUN  v3.2.7 /Users/carlos.lozanosoto/personal/repositories/turbo-loop-legends
+
+ ❯ tests/sceneView.test.ts (4 tests | 1 failed) 14ms
+   ✓ uses common getters, respects local/system reduction and tolerates the earlier kit 1ms
+   ✓ frames a loop from a stable center and shows the upcoming landing instead of chasing jump height 3ms
+   ✓ keeps the car readable on flat short screens but widens for actual loops and flights 2ms
+   × blends loop approach and departure without discontinuous focus or zoom targets 7ms
+     → expected 145.41981132075466 to be less than 8
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/sceneView.test.ts > blends loop approach and departure without discontinuous focus or zoom targets
+AssertionError: expected 145.41981132075466 to be less than 8
+ ❯ tests/sceneView.test.ts:54:129
+     52|     snapshot.chassis.position={x,y:2.8};
+     53|     const focus=drivingFocus(track,snapshot),span=drivingSpan(track,sn…
+     54|     if(previous){expect(Math.hypot(focus.x-previous.x,focus.y-previous…
+       |                                                                                                                                 ^
+     55|     previous=focus;previousSpan=span;
+     56|   }
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 3 passed (4)
+   Start at  23:55:50
+   Duration  460ms (transform 105ms, setup 0ms, collect 186ms, tests 14ms, environment 0ms, prepare 124ms)
