@@ -418,7 +418,10 @@ function buildTrack(profile: TrackProfile): TrackDefinition {
     const airtime = (2 * verticalBoost) / Math.abs(profile.physics.gravity);
     const room = zone.limit - 10 - board.position.x;
     const range = room >= 14 ? Math.min(NORMAL_LAUNCH_SPEED * airtime, room) : zone.beyond - board.position.x;
-    return { ...board, verticalBoost, range, position: { ...board.position, y: trackSurfaceYAt(segments, board.position.x) } };
+    // This launch meets the rising lip of the next volcanic ramp; keep the
+    // heavy car beyond it instead of relying on an accidental second launch.
+    const landingClearance = profile.id === "volcano" && board.id === "volcano-1" ? 6 : 0;
+    return { ...board, verticalBoost, range: range + landingClearance, position: { ...board.position, y: trackSurfaceYAt(segments, board.position.x) } };
   });
   return {
     ...profile,

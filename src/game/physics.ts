@@ -341,6 +341,10 @@ export class PhysicsWorld {
 
   private activateSpringboard(): void {
     const chassisPosition = this.chassis.getPosition();
+    // A wheel can briefly leave the contact band before the other wheel enters.
+    // Keep the same traversal latched until the chassis actually leaves the pad.
+    const activated = this.track.springboards.find(candidate => candidate.id === this.activeSpringboardId);
+    if (activated && Math.abs(chassisPosition.x - activated.position.x) <= activated.width / 2) return;
     const board = this.track.springboards.find((candidate) => {
       const withinWidth = Math.abs(chassisPosition.x - candidate.position.x) <= candidate.width / 2;
       const wheelsNearSurface = [this.rearWheel, this.frontWheel].some((wheel) => {

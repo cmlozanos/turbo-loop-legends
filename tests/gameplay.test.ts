@@ -36,6 +36,33 @@ describe("accelerator-only driving", () => {
 });
 
 describe("springboards", () => {
+  it("carries Titan clear of the volcanic ramp lip without a duplicate launch", () => {
+    const track = TRACKS.find(candidate => candidate.id === "volcano")!;
+    const car = getCar("titan"), simulation = createPhysicsWorld({ track, car });
+    simulation.setCheckpoint(1); simulation.respawn();
+    simulation.setInput({ throttle: car.motor, lean: car.airControl, turbo: false });
+    let snapshot = simulation.getSnapshot();
+    for (let frame = 0; frame < 3900 && snapshot.chassis.position.x < 586; frame++) snapshot = simulation.step();
+    expect(snapshot.chassis.position.x).toBeGreaterThanOrEqual(586);
+    expect(snapshot.respawnCount).toBe(1);
+  });
+  it("does not re-arm the lunar board between front and rear wheel contact", () => {
+    const track = TRACKS.find(candidate => candidate.id === "moon")!;
+    const car = getCar("comet"), simulation = createPhysicsWorld({ track, car });
+    simulation.setCheckpoint(2); simulation.respawn();
+    simulation.setInput({ throttle: car.motor, lean: car.airControl, turbo: false });
+    let snapshot = simulation.getSnapshot(), lunarLaunches = 0;
+    const board = track.springboards.find(candidate => candidate.id === "moon-3")!;
+    for (let frame = 0; frame < 60 * 65 && snapshot.chassis.position.x < 586; frame++) {
+      const previous = snapshot.springboardActivations;
+      snapshot = simulation.step();
+      if (Math.abs(snapshot.chassis.position.x - board.position.x) < board.width && snapshot.springboardActivations > previous) lunarLaunches++;
+    }
+    expect(lunarLaunches).toBe(1);
+    expect(snapshot.respawnCount).toBe(1);
+    expect(snapshot.chassis.position.x).toBeGreaterThanOrEqual(586);
+  });
+
   it("land every car on the same designed spot whatever its speed", () => {
     const track = TRACKS.find(candidate => candidate.id === "forest")!;
     const board = track.springboards[0];

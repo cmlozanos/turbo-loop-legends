@@ -1,0 +1,100 @@
+
+> turbo-loop-legends@2.0.0 test
+> vitest run tests/gameplay.test.ts
+
+
+ RUN  v3.2.7 /Users/carlos.lozanosoto/personal/repositories/turbo-loop-legends
+
+ ❯ tests/gameplay.test.ts (44 tests | 2 failed) 3351ms
+   ✓ accelerator-only driving > 'comet' finishes 'forest' from every later checkpoint without turbo 271ms
+   ✓ accelerator-only driving > 'lynx' finishes 'forest' from every later checkpoint without turbo 86ms
+   ✓ accelerator-only driving > 'titan' finishes 'forest' from every later checkpoint without turbo 125ms
+   ✓ accelerator-only driving > 'spark' finishes 'forest' from every later checkpoint without turbo 86ms
+   ✓ accelerator-only driving > 'gecko' finishes 'forest' from every later checkpoint without turbo 97ms
+   ✓ accelerator-only driving > 'mammoth' finishes 'forest' from every later checkpoint without turbo 93ms
+   ✓ accelerator-only driving > 'comet' finishes 'canyon' from every later checkpoint without turbo 67ms
+   ✓ accelerator-only driving > 'lynx' finishes 'canyon' from every later checkpoint without turbo 67ms
+   ✓ accelerator-only driving > 'titan' finishes 'canyon' from every later checkpoint without turbo 73ms
+   ✓ accelerator-only driving > 'spark' finishes 'canyon' from every later checkpoint without turbo 65ms
+   ✓ accelerator-only driving > 'gecko' finishes 'canyon' from every later checkpoint without turbo 65ms
+   ✓ accelerator-only driving > 'mammoth' finishes 'canyon' from every later checkpoint without turbo 79ms
+   ✓ accelerator-only driving > 'comet' finishes 'neon' from every later checkpoint without turbo 71ms
+   ✓ accelerator-only driving > 'lynx' finishes 'neon' from every later checkpoint without turbo 66ms
+   ✓ accelerator-only driving > 'titan' finishes 'neon' from every later checkpoint without turbo 72ms
+   ✓ accelerator-only driving > 'spark' finishes 'neon' from every later checkpoint without turbo 61ms
+   ✓ accelerator-only driving > 'gecko' finishes 'neon' from every later checkpoint without turbo 66ms
+   ✓ accelerator-only driving > 'mammoth' finishes 'neon' from every later checkpoint without turbo 80ms
+   ✓ accelerator-only driving > 'comet' finishes 'volcano' from every later checkpoint without turbo 79ms
+   ✓ accelerator-only driving > 'lynx' finishes 'volcano' from every later checkpoint without turbo 61ms
+   ✓ accelerator-only driving > 'titan' finishes 'volcano' from every later checkpoint without turbo 66ms
+   ✓ accelerator-only driving > 'spark' finishes 'volcano' from every later checkpoint without turbo 54ms
+   ✓ accelerator-only driving > 'gecko' finishes 'volcano' from every later checkpoint without turbo 60ms
+   ✓ accelerator-only driving > 'mammoth' finishes 'volcano' from every later checkpoint without turbo 122ms
+   × accelerator-only driving > 'comet' finishes 'moon' from every later checkpoint without turbo 44ms
+     → checkpoint 2: expected 2 to be 1 // Object.is equality
+   ✓ accelerator-only driving > 'lynx' finishes 'moon' from every later checkpoint without turbo 73ms
+   ✓ accelerator-only driving > 'titan' finishes 'moon' from every later checkpoint without turbo 71ms
+   ✓ accelerator-only driving > 'spark' finishes 'moon' from every later checkpoint without turbo 68ms
+   ✓ accelerator-only driving > 'gecko' finishes 'moon' from every later checkpoint without turbo 74ms
+   ✓ accelerator-only driving > 'mammoth' finishes 'moon' from every later checkpoint without turbo 72ms
+   ✓ accelerator-only driving > 'spark' finishes 'jungle' from every later checkpoint without turbo 81ms
+   ✓ accelerator-only driving > 'gecko' finishes 'glacier' from every later checkpoint without turbo 77ms
+   ✓ accelerator-only driving > 'titan' finishes 'factory' from every later checkpoint without turbo 71ms
+   ✓ accelerator-only driving > 'mammoth' finishes 'factory' from every later checkpoint without turbo 65ms
+   ✓ accelerator-only driving > gives every ordinary ramp dash arrows and leaves the mega jump to the turbo 2ms
+   × springboards > does not re-arm the lunar board between front and rear wheel contact 21ms
+     → expected 2 to be 1 // Object.is equality
+   ✓ springboards > land every car on the same designed spot whatever its speed 8ms
+   ✓ springboards > keep the legacy additive boost when a board has no designed range 1ms
+   ✓ relief and stars > sculpts each circuit differently and keeps every run-up flat 2ms
+   ✓ relief and stars > places ordered stars in the air above the road and counts each one once 168ms
+   ✓ relief and stars > keeps only valid best-star marks from a save 0ms
+   ✓ vehicle feel > gives each car the wheels the player sees 5ms
+   ✓ vehicle feel > never teleports the car, even when a loop takes over the steering  407ms
+   ✓ vehicle feel > limits the turbo launch to a playful wheelie 2ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/gameplay.test.ts > accelerator-only driving > 'comet' finishes 'moon' from every later checkpoint without turbo
+AssertionError: checkpoint 2: expected 2 to be 1 // Object.is equality
+
+- Expected
++ Received
+
+- 1
++ 2
+
+ ❯ tests/gameplay.test.ts:21:65
+     19|       for (let frame = 0; frame < 60 * 65 && snapshot.chassis.position…
+     20|       expect(snapshot.chassis.position.x, `checkpoint ${checkpoint}`).…
+     21|       expect(snapshot.respawnCount, `checkpoint ${checkpoint}`).toBe(1…
+       |                                                                 ^
+     22|     }
+     23|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  tests/gameplay.test.ts > springboards > does not re-arm the lunar board between front and rear wheel contact
+AssertionError: expected 2 to be 1 // Object.is equality
+
+- Expected
++ Received
+
+- 1
++ 2
+
+ ❯ tests/gameplay.test.ts:51:27
+     49|       if (Math.abs(snapshot.chassis.position.x - board.position.x) < b…
+     50|     }
+     51|     expect(lunarLaunches).toBe(1);
+       |                           ^
+     52|     expect(snapshot.respawnCount).toBe(1);
+     53|     expect(snapshot.chassis.position.x).toBeGreaterThanOrEqual(586);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 42 passed (44)
+   Start at  21:25:55
+   Duration  4.03s (transform 139ms, setup 0ms, collect 236ms, tests 3.35s, environment 0ms, prepare 217ms)
