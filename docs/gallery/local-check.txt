@@ -1,0 +1,98 @@
+
+> turbo-loop-legends@2.0.0 check
+> npm run typecheck && npm test && npm run build && npm run verify:cache && npm run verify:pwa && npm run verify:chrome95 && npm run verify:learning-gate
+
+
+> turbo-loop-legends@2.0.0 typecheck
+> tsc --noEmit
+
+
+> turbo-loop-legends@2.0.0 test
+> vitest run
+
+
+ RUN  v3.2.7 /Users/carlos.lozanosoto/personal/repositories/turbo-loop-legends
+
+ ✓ tests/roadEffects.test.ts (15 tests) 627ms
+   ✓ road effects rate policy > bounds all circuit/control combinations to 12 light or 40 normal particles  620ms
+ ✓ tests/physics.test.ts (24 tests) 1253ms
+   ✓ vehicle physics > can complete every track with turbo  556ms
+ ✓ tests/frameClock.test.ts (9 tests) 232ms
+ ✓ tests/sceneTiming.test.ts (4 tests) 306ms
+   ✓ the actual scene update keeps trajectories and recovery identical at 10–120 FPS  302ms
+ ✓ tests/sceneView.test.ts (5 tests) 55ms
+ ✓ tests/input.test.ts (36 tests) 14ms
+ ✓ tests/mathGate.test.ts (4 tests) 12ms
+ ✓ tests/state.test.ts (9 tests) 6ms
+ ✓ tests/gallery.test.ts (1 test) 3ms
+ ✓ tests/audioGate.test.ts (4 tests) 4ms
+ ✓ tests/driving.test.ts (34 tests) 4582ms
+   ✓ 'comet' completes 'forest' with actual driving input and recovers from every checkpoint  553ms
+ ✓ tests/gameplay.test.ts (45 tests) 5355ms
+   ✓ accelerator-only driving > 'comet' finishes 'forest' from every later checkpoint without turbo  526ms
+   ✓ accelerator-only driving > 'mammoth' finishes 'forest' from every later checkpoint without turbo  333ms
+   ✓ vehicle feel > never teleports the car, even when a loop takes over the steering  596ms
+ ✓ tests/carHandling.test.ts (48 tests) 6518ms
+   ✓ pedal-only compatible routes > 'comet' completes 'forest' from all eight starts with no fall and native loop rotation  301ms
+   ✓ pedal-only compatible routes > 'lynx' completes 'forest' from all eight starts with no fall and native loop rotation  384ms
+
+ Test Files  13 passed (13)
+      Tests  238 passed (238)
+   Start at  00:45:24
+   Duration  8.83s (transform 766ms, setup 0ms, collect 4.85s, tests 18.97s, environment 2ms, prepare 4.44s)
+
+
+> turbo-loop-legends@2.0.0 build
+> tsc --noEmit && vite build
+
+vite v7.3.6 building client environment for production...
+<script src="/turbo-loop-legends/learning-profile.js?v=local"> in "/index.html" can't be bundled without type="module" attribute
+<script src="/turbo-loop-legends/reading-words.js?v=local"> in "/index.html" can't be bundled without type="module" attribute
+<script src="/turbo-loop-legends/learning-gate.js?v=local"> in "/index.html" can't be bundled without type="module" attribute
+<script src="./family-v2/family.js?v=2.0.0"> in "/index.html" can't be bundled without type="module" attribute
+
+./family-v2/family.css?v=2.0.0 doesn't exist at build time, it will remain unchanged to be resolved at runtime
+transforming...
+✓ 23 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/manifest-local.webmanifest                            0.70 kB
+dist/index.html                                            1.41 kB │ gzip:   0.54 kB
+dist/assets/index-local-DZt7oMvW.css                      35.11 kB │ gzip:   8.11 kB
+dist/assets/workbox-window.prod.es5-local-BBnX5xw4.js      5.82 kB │ gzip:   2.41 kB │ map:     13.53 kB
+dist/assets/index-local-B2VtftLN.js                    1,694.41 kB │ gzip: 446.80 kB │ map: 12,282.53 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 3.24s
+
+PWA v1.0.2
+mode      generateSW
+precache  146 entries (3797.82 KiB)
+files generated
+  dist/sw.js.map
+  dist/sw.js
+  dist/workbox-9c191d2f.js.map
+  dist/workbox-9c191d2f.js
+
+> turbo-loop-legends@2.0.0 verify:cache
+> node tools/verify-cache-busting.mjs
+
+Cache busting verificado para local
+
+> turbo-loop-legends@2.0.0 verify:pwa
+> node tools/verify-pwa.mjs
+
+PWA instalable verificada para Android e iPad
+
+> turbo-loop-legends@2.0.0 verify:chrome95
+> node tools/verify-chrome95.mjs
+
+Chrome 95 compatibility verified in 6 runtime assets
+
+> turbo-loop-legends@2.0.0 verify:learning-gate
+> node --check public/learning-gate.js && node tools/verify-learning-gate.mjs
+
+Learning bundle: arithmetic, 54 letters, ten minutes, profile, 100 local reading images and exact offline deployment verified.

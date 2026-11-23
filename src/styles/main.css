@@ -700,3 +700,26 @@ html.family-v2 .garage > .settings-row { display: none; }
   html.family-v2 .garage-header { min-height: 48px; }
   html.family-v2 .visual-choice { line-height: 1; }
 }
+
+/* Two horizontal selection stages; no document scrolling or offscreen focus stops. */
+html.family-v2 .selection-gallery{display:grid;grid-template-columns:44px minmax(0,1fr) 44px;align-items:center;gap:8px;min-width:0;touch-action:pan-y;outline-offset:2px}
+html.family-v2 .gallery-arrow{width:44px;min-height:48px;border:0;border-radius:14px;color:var(--family-ink);background:var(--family-button);font-size:30px;line-height:1;cursor:pointer}
+html.family-v2 .selection-gallery .car-grid,html.family-v2 .selection-gallery .track-grid{display:flex;align-items:stretch;gap:8px;min-width:0;padding:5px 3px;overflow:visible}
+html.family-v2 .selection-gallery .car-card,html.family-v2 .selection-gallery .track-card{flex:1 1 0;min-width:0;transition:background .16s ease,box-shadow .16s ease;opacity:.72}
+html.family-v2 .selection-gallery [data-gallery-position="0"]{flex-grow:1.7;opacity:1;transform:none}
+html.family-v2 .selection-gallery [hidden]{display:none!important}
+html.family-v2 .selection-gallery .car-preview{height:clamp(42px,11vh,100px)}
+html.family-v2 .selection-gallery .car-card strong{font-size:clamp(.7rem,1.8vw,1.1rem);line-height:1.6;white-space:nowrap}
+html.family-v2 .selection-gallery .track-card strong{font-size:clamp(.65rem,1.5vw,.95rem);line-height:1.5;white-space:normal}
+html.family-v2 .selection-gallery .track-map{width:100%;margin:0;height:24px}
+html.family-v2 .selection-gallery .track-icon{position:static;display:block;margin:0 auto;height:22px;line-height:22px}
+@media(max-width:480px){html.family-v2 .selection-gallery{grid-template-columns:44px minmax(0,1fr) 44px;gap:3px}html.family-v2 .selection-gallery .car-grid,html.family-v2 .selection-gallery .track-grid{gap:3px}html.family-v2 .selection-gallery [data-gallery-position]:not([data-gallery-position="0"]){display:none}html.family-v2 .selection-gallery .car-preview{height:70px}html.family-v2 .selection-gallery .car-card strong{font-size:1rem}html.family-v2 .selection-gallery .track-card strong{font-size:.85rem}}
+@media(max-height:520px){html.family-v2 .selection-gallery .car-preview{height:35px}html.family-v2 .selection-gallery .car-card{padding:3px 5px}html.family-v2 .selection-gallery .role-icon{display:none}html.family-v2 .selection-gallery .track-map{height:16px}html.family-v2 .selection-gallery .track-icon{display:none}html.family-v2 .selection-gallery .track-card{min-height:44px}}
+html.family-v2 .selection-gallery .car-card,html.family-v2 .selection-gallery .track-card{width:0;box-sizing:border-box}
+html.family-v2 .selection-gallery .car-preview img{max-width:100%}
+html.family-v2 .selection-gallery .track-stars{font-size:10px}
+html.family-v2 #track-gallery{padding-block:3px;min-height:62px}
+html.family-v2 .selection-gallery .track-card[aria-pressed="true"],html.family-v2 .selection-gallery .car-card[aria-pressed="true"]{transform:none}
+html.family-v2 .selection-gallery .track-card strong{display:block;min-height:1.7em;line-height:1.7;padding-block:2px}
+/* The selected gallery card is the showroom; avoid a duplicate miniature hero. */
+html.family-v2 .garage > .car-hero{display:none}

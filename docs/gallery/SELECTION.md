@@ -1,0 +1,7 @@
+# Horizontal selection gallery
+
+User approved horizontal car and track selection inspired by racing-game showroom presentation, adapting every screen, no page scroll. Two circular galleries: centred selected card, adjacent previews where space allows, previous/next44pxbuttons, keyboard arrows and deliberate40pxhorizontal swipe. On narrowportrait only selectedcard is visible; all6cars/8tracks remain reachable and unlocked. No NFS artwork/names copied. Sharedschoolfont,persistentselection,nativeHome/audio/physics unchanged. No auto-advancing or newdependencies.
+
+Changed tests use native gallery arrows to reveal and choose every item rather than forceclickhidden cards. Layoutchecks retain44pxtargets,fulltextbounds,nointrinsicoverflow and allchoicesreachability. Initial2pxtrackgalleryoverflow found by newtest corrected with intrinsicheight/padding,notoverflowmask. Shared earliernoscrroll/nativecontrols stilltested. Nativeengineunchanged.
+
+Evidence:localfullcheck238unit/build/PWA/static95green.28Chromium/WebKitgallery+sixsizegarage/HUD/modal/adult/rotationtests passed beforefinalswipepersistaddition;finalgallery2browserchecks repeated below. Extendedgame/layoutsuite32passed/1skipwithoneinitialentrygatetimeout;isolatedunchangedgatecase+swipe/persistence2/2greenaftercorrectingreloadtesttoactuallysolvevisiblechallenge. Nosafetyassertionremoved. Legacyselectiontestsadaptedtoreachhiddencardusingnativearrows,notsyntheticclick. Removedduplicatetinyshowroomhero,thecentralselectedgallerycardistheshowroom. PhysicalTab4notcertified,noNFSassetcopied.

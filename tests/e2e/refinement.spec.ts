@@ -1,3 +1,4 @@
+import {selectGalleryItem} from "./gallery-helper";
 import { expect, test } from "@playwright/test";
 import { openGame } from "./learning-gate";
 import { openAdultSettings, closeAdultSettings } from "./family-v2";
@@ -60,8 +61,8 @@ for (const car of ["mammoth", "titan"]) {
     test.setTimeout(100000);
     await page.setViewportSize(car === "mammoth" ? { width: 750, height: 342 } : { width: 1024, height: 768 });
     await openGame(page, "?test=1");
-    await page.locator(`.car-${car}`).click();
-    await page.getByRole("button", { name: car === "mammoth" ? "Fábrica Colosal: Muros altos y compuertas pesadas" : "Bosque Turbo: Rápida, amable y llena de saltos" }).click();
+    await selectGalleryItem(page,"car",page.locator(`.car-${car}`));
+    await selectGalleryItem(page,"track",page.getByRole("button", { name: car === "mammoth" ? "Fábrica Colosal: Muros altos y compuertas pesadas" : "Bosque Turbo: Rápida, amable y llena de saltos" }));
     if (car === "titan") {
       await openAdultSettings(page);
       await page.locator("#light-toggle").uncheck();

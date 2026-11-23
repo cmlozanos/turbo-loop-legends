@@ -1,3 +1,4 @@
+import {selectGalleryItem} from "./gallery-helper";
 import { expect, test } from "@playwright/test";
 import { openAdultSettings } from "./family-v2";
 import { openGame, solveGate } from "./learning-gate";
@@ -132,7 +133,7 @@ test("opens the garage and starts a race", async ({ page }) => {
 
   await expect(page.getByRole("heading", { name: /Turbo Loop Legends/i })).toBeVisible();
   await expect(page.getByRole("button", { name: /Cometa/i })).toBeEnabled();
-  await expect(page.getByRole("group", { name: "Elige una pista" }).getByRole("button")).toHaveCount(8);
+  await expect(page.locator("#track-grid button")).toHaveCount(8);
   await page.getByRole("button", { name: "JUGAR" }).click();
 
   await expect(page.locator("canvas")).toBeVisible();
@@ -145,7 +146,7 @@ test("opens the garage and starts a race", async ({ page }) => {
 test("selects a track and returns to the garage during a race", async ({ page }) => {
   await openGame(page);
   const moon = page.getByRole("button", { name: "Base Lunar: Gravedad baja y saltos gigantes" });
-  await moon.click();
+  await selectGalleryItem(page,"track",moon);
   await expect(moon).toHaveAttribute("aria-pressed", "true");
   await page.getByRole("button", { name: "JUGAR" }).click();
   await page.getByRole("button", { name: "Pausa", exact: true }).click();
@@ -198,19 +199,20 @@ test("shows eight distinct real track minimaps", async ({ page }) => {
 
 test("explains whether the selected car fits a capability circuit", async ({ page }) => {
   await openGame(page);
-  await page.getByRole("button", { name: "Jungla Secreta: Túneles bajos y vuelos entre lianas" }).click();
+  await selectGalleryItem(page,"track",page.getByRole("button", {name:"Jungla Secreta: Túneles bajos y vuelos entre lianas"}));
   await expect(page.locator("#track-advice .visual-choice")).toContainText("⚠️");
-  await page.getByRole("button", { name: "Chispa: Pequeño, rápido y saltarín" }).click();
+  await selectGalleryItem(page,"car",page.getByRole("button", {name:"Chispa: Pequeño, rápido y saltarín"}));
   await expect(page.locator("#track-advice .visual-choice")).toContainText("✅");
   await expect(page.locator("#track-advice")).toContainText("Cumple los requisitos");
 });
 
 test("shows car ability icons and complete track names without clipped text", async ({ page }) => {
   await openGame(page);
-  const clipped = await page.locator(".track-card strong").evaluateAll((elements) => elements
+  const clipped = await page.locator(".track-card:visible strong").evaluateAll((elements) => elements
     .filter((element) => element.scrollWidth > element.clientWidth || element.scrollHeight > element.clientHeight)
     .map((element) => element.textContent));
   expect(clipped).toEqual([]);
+  await selectGalleryItem(page,"track",page.getByRole("button",{name:"Fábrica Colosal: Muros altos y compuertas pesadas"}));
   await expect(page.getByRole("button", { name: "Fábrica Colosal: Muros altos y compuertas pesadas" })).toBeVisible();
   await expect(page.locator(".car-gecko .role-icon")).toHaveText("🛑");
   await expect(page.locator(".track-card .track-icon")).toHaveCount(8);
@@ -290,8 +292,8 @@ test("offers add-to-home-screen guidance on iPad and iPhone", async ({ page }) =
 test('drives the real circuit to finish, then replay starts fresh', async ({ page }) => {
   test.setTimeout(90000);
   await openGame(page, '?test=1');
-  await page.getByRole('button', { name: 'Fábrica Colosal: Muros altos y compuertas pesadas' }).click();
-  await page.getByRole('button', { name: 'Mamut: Enorme y capaz de aplastarlo todo' }).click();
+  await selectGalleryItem(page,"track",page.getByRole("button", {name:"Fábrica Colosal: Muros altos y compuertas pesadas"}));
+  await selectGalleryItem(page,"car",page.getByRole("button", {name:"Mamut: Enorme y capaz de aplastarlo todo"}));
   await page.locator('#play-button').click();
   await page.keyboard.down('ArrowRight'); await page.keyboard.down('ShiftLeft');
   await expect(page.locator('#finish-screen')).toBeVisible({ timeout: 65000 });

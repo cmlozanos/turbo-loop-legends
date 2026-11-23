@@ -1,3 +1,4 @@
+import { bindGallery, galleryOffset } from "./game/gallery";
 import Phaser from "phaser";
 import { registerSW } from "virtual:pwa-register";
 import { nativeAppearance } from "./game/appearance";
@@ -106,10 +107,10 @@ app.innerHTML = `
           <p class="garage-subtitle">Elige un coche y una pista</p>
         </div></header>
         <div id="car-hero" class="car-hero"></div>
-        <div id="car-grid" class="car-grid" role="group" aria-label="Elige un coche"></div>
+        <div class="selection-gallery" id="car-gallery" tabindex="0" role="region" aria-label="Galería de coches"><button class="gallery-arrow" id="car-prev" aria-label="Coche anterior">‹</button><div id="car-grid" class="car-grid" role="group" aria-label="Elige un coche"></div><button class="gallery-arrow" id="car-next" aria-label="Coche siguiente">›</button></div>
         <div class="track-picker">
           <p class="picker-label">Elige pista</p>
-          <div id="track-grid" class="track-grid" role="group" aria-label="Elige una pista"></div>
+          <div class="selection-gallery" id="track-gallery" tabindex="0" role="region" aria-label="Galería de pistas"><button class="gallery-arrow" id="track-prev" aria-label="Pista anterior">‹</button><div id="track-grid" class="track-grid" role="group" aria-label="Elige una pista"></div><button class="gallery-arrow" id="track-next" aria-label="Pista siguiente">›</button></div>
         </div>
         <div id="track-advice" class="track-advice" aria-live="polite"></div>
         <div class="garage-launch">
@@ -488,7 +489,7 @@ function renderHero(): void {
 
 function renderCars(): void {
   renderHero();
-  carGrid.replaceChildren(...CARS.map((car) => {
+  carGrid.replaceChildren(...CARS.map((car, index) => {
     const unlocked = save.unlockedCars.includes(car.id);
     const button = document.createElement("button");
     button.className = `car-card car-${car.id}${unlocked ? "" : " is-locked"}`;
@@ -496,6 +497,10 @@ function renderCars(): void {
     button.setAttribute("aria-pressed", String(selectedCar === car.id));
     button.setAttribute("aria-label", unlocked ? `${car.name}: ${car.tagline}` : `${car.name} bloqueado: ${car.unlock}`);
     button.disabled = !unlocked;
+    const offset = galleryOffset(index, CARS.findIndex(item => item.id === selectedCar), CARS.length);
+    button.hidden = Math.abs(offset) > 1;
+    button.dataset.galleryPosition = String(offset);
+    button.style.order = String(offset + 1);
     button.innerHTML = `<span class="car-preview"><img src="${assetUrl(car.asset)}" alt="" draggable="false"></span><strong>${car.name}</strong><span class="role-icon" aria-hidden="true">${unlocked ? CAR_ROLES[car.id].icon : "🔒"}</span>${unlocked ? "" : '<span class="lock-badge">🔒</span>'}`;
     button.addEventListener("click", () => {
       selectedCar = car.id;
@@ -510,9 +515,13 @@ function renderCars(): void {
 }
 
 function renderTracks(): void {
-  trackGrid.replaceChildren(...TRACKS.map((track) => {
+  trackGrid.replaceChildren(...TRACKS.map((track, index) => {
     const button = document.createElement("button");
     button.className = "track-card";
+    const offset = galleryOffset(index, TRACKS.findIndex(item => item.id === selectedTrack), TRACKS.length);
+    button.hidden = Math.abs(offset) > 1;
+    button.dataset.galleryPosition = String(offset);
+    button.style.order = String(offset + 1);
     button.style.setProperty("--track-accent", `#${(track.theme?.accent ?? 0xffffff).toString(16).padStart(6, "0")}`);
     button.setAttribute("aria-pressed", String(selectedTrack === track.id));
     button.setAttribute("aria-label", `${track.name}: ${track.tagline}`);
@@ -526,6 +535,22 @@ function renderTracks(): void {
     });
     return button;
   }));
+}
+
+function stepGallery(kind: "car" | "track", direction: number): void {
+  if (kind === "car") {
+    selectedCar = CARS[(CARS.findIndex(car => car.id === selectedCar) + direction + CARS.length) % CARS.length].id;
+    save.selectedCar = selectedCar; renderCars(); renderTracks();
+  } else {
+    selectedTrack = TRACKS[(TRACKS.findIndex(track => track.id === selectedTrack) + direction + TRACKS.length) % TRACKS.length].id!;
+    save.selectedTrack = selectedTrack; renderTracks();
+  }
+  saveGame(save); renderGarageAdvice();
+}
+for (const kind of ["car", "track"] as const) {
+  getElement(kind + "-prev").addEventListener("click", () => stepGallery(kind, -1));
+  getElement(kind + "-next").addEventListener("click", () => stepGallery(kind, 1));
+  bindGallery(getElement(kind + "-gallery"), direction => stepGallery(kind, direction));
 }
 
 function renderGarageAdvice(): void {

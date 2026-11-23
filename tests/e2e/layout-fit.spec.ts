@@ -1,3 +1,4 @@
+import {selectGalleryItem} from "./gallery-helper";
 import { expect, test, type Locator, type Page } from '@playwright/test';
 import { openGame } from './learning-gate';
 import { closeAdultSettings, openAdultSettings } from './family-v2';
@@ -50,9 +51,9 @@ for (const size of sizes) {
     await page.evaluate(() => window.FamilyV2!.fontReady);
     const toolbar = page.locator('family-v2-shell');
     const menuControls = toolbar.locator('.bar button, .bar select');
-    const choices = page.locator('.car-card, .track-card');
-    await expect(page.locator('.car-card:visible')).toHaveCount(6);
-    await expect(page.locator('.track-card:visible')).toHaveCount(8);
+    const choices = page.locator('.car-card:visible, .track-card:visible');
+    await expect(page.locator('.car-card')).toHaveCount(6);
+    await expect(page.locator('.track-card')).toHaveCount(8);
     await fits(page, choices);
     await fits(page, page.locator('#play-button'));
     await fits(page, menuControls);
@@ -67,13 +68,10 @@ for (const size of sizes) {
     expect(clippedLabels).toEqual([]);
     await noScroll(page);
     // Every option is actually reachable, not merely painted outside a clipped scroller.
-    for (let i = 0; i < 14; i++) {
-      await choices.nth(i).click();
-      await expect(choices.nth(i)).toHaveAttribute('aria-pressed', 'true');
-      await noScroll(page);
+    for(const [kind,selector] of [["car",".car-card"],["track",".track-card"]] as const){
+      const all=page.locator(selector);const count=await all.count();
+      for(let i=0;i<count;i++){await selectGalleryItem(page,kind,all.nth(i));await expect(all.nth(i)).toHaveAttribute('aria-pressed','true');await noScroll(page);}
     }
-    await expect(page.locator('.car-card strong:visible')).toHaveCount(6);
-    await expect(page.locator('.track-card strong:visible')).toHaveCount(8);
     const fonts = await page.locator('h1, .car-card strong, .track-card strong').evaluateAll(nodes =>
       nodes.map(node => getComputedStyle(node).fontFamily));
     expect(fonts.every(font => font.includes('Family School'))).toBe(true);
@@ -132,7 +130,7 @@ test('rotation reflows the existing garage and running HUD without scroll', asyn
   await openGame(page, '?test=1');
   for (const size of sizes) {
     await page.setViewportSize(size);
-    await fits(page, page.locator('.car-card, .track-card, #play-button'));
+    await fits(page, page.locator('.car-card:visible, .track-card:visible, #play-button'));
     await noScroll(page);
   }
   await page.locator('#play-button').click();
