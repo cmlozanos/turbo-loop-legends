@@ -17,7 +17,6 @@ html, body, #app {
   width: 100%;
   height: 100%;
   margin: 0;
-  overflow: hidden;
   overscroll-behavior: none;
   touch-action: none;
 }
@@ -71,7 +70,8 @@ button { font: inherit; }
     linear-gradient(115deg, transparent 0 47%, rgba(255,255,255,.025) 47% 48%, transparent 48% 54%, rgba(255,255,255,.025) 54% 55%, transparent 55%),
     radial-gradient(circle at 50% 110%, rgba(243,165,41,.38), transparent 44%),
     linear-gradient(135deg, rgba(6,20,38,.74), rgba(13,42,71,.92));
-  overflow: hidden;
+  min-width: 0;
+  min-height: 0;
 }
 
 .screen[hidden], .hud[hidden], .rotate-device[hidden] { display: none; }
@@ -125,9 +125,8 @@ h1 span { color: var(--orange); }
 
 .car-grid {
   display: grid;
-  grid-template-columns: repeat(6, minmax(142px, 1fr));
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   gap: clamp(7px, 1vw, 12px);
-  overflow-x: auto;
   padding: 3px 3px 8px;
   scrollbar-color: var(--orange) rgba(255,255,255,.08);
 }
@@ -325,9 +324,8 @@ h1 span { color: var(--orange); }
 
 .turbo-control {
   position: absolute;
-  left: 50%;
+  left: calc(max(18px, env(safe-area-inset-left)) + var(--drive-size, clamp(78px, 14vw, 126px)) + 12px);
   bottom: max(18px, env(safe-area-inset-bottom));
-  transform: translateX(-50%);
   pointer-events: auto;
   min-width: clamp(92px, 14vw, 142px);
   min-height: clamp(58px, 9vw, 78px);
@@ -345,7 +343,7 @@ h1 span { color: var(--orange); }
 
 .turbo-control span { display: block; font-size: clamp(1.25rem, 3vw, 2rem); line-height: 1; }
 .turbo-control:active, .turbo-control.is-active {
-  transform: translateX(-50%) scale(.94);
+  transform: scale(.94);
   color: white;
   background: linear-gradient(180deg, #ff5c35, #d719ff);
   box-shadow: 0 0 38px rgba(240,40,255,.8), 0 10px 25px rgba(0,0,0,.3);
@@ -426,11 +424,11 @@ h1 span { color: var(--orange); }
   .role-icon { width: 28px; height: 22px; margin-top: 0; font-size: .8rem; }
   .track-picker { gap: 3px; }
   .picker-label { font-size: .64rem; }
-  .track-grid { grid-template-columns: repeat(8, minmax(104px, 1fr)); overflow-x: auto; padding-bottom: 3px; }
+  .track-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); padding-bottom: 3px; }
   .track-card { min-height: 48px; padding: 3px 5px; border-radius: 12px; }
   .track-icon { width: 22px; height: 22px; margin-top: 1px; font-size: .72rem; }
   .track-map { width: calc(100% - 24px); height: 17px; margin-left: 24px; }
-  .track-card strong { display: none; }
+  .track-card strong { display: block; }
   .track-advice { min-height: 24px; padding: 2px 8px; font-size: .62rem; }
   .visual-choice { gap: 9px; font-size: .92rem; }
   .visual-choice b, .visual-choice em { min-width: 28px; min-height: 20px; }
@@ -475,7 +473,7 @@ html.family-v2 [data-family-setting] { background: var(--family-button); color: 
 html.family-v2 .toggle span { display: inline; }
 html.family-v2 .toggle::after { content: none; }
 html.family-v2 .pause-button { right: 210px; }
-html.family-v2 .screen { overflow-y: auto; }
+html.family-v2 .screen { overflow: visible; }
 @media (max-height: 520px) {
   html.family-v2 .garage { gap: 3px; }
   html.family-v2 .garage-header { min-height: 52px; }
@@ -626,3 +624,79 @@ html.family-v2 { --tl-toolbar: calc(clamp(44px, min(calc(var(--family-width, 100
 .family-toolbar { width: auto; max-width: calc(100% - 16px); display: flex; justify-content: flex-end; }
 html.family-v2 .garage-header { padding-right: calc(var(--tl-toolbar) + 12px); padding-left: calc(var(--tl-toolbar) + 12px); }
 html.family-v2 .pause-button { right: calc(var(--tl-toolbar) + 18px); }
+
+/* Fit the native surfaces by reflow, not by clipping a wider/taller document. */
+html.family-v2 .garage { width: min(1220px, 100%); min-width: 0; }
+html.family-v2 .splash-art { inset: 0 0 auto auto; width: min(520px, 100%); }
+html.family-v2 .garage-header { min-width: 0; }
+html.family-v2 .car-grid, html.family-v2 .track-grid { min-width: 0; overflow: visible; }
+html.family-v2 .track-card { overflow: visible; }
+html.family-v2 .car-card, html.family-v2 .track-card { min-height: 44px; }
+html.family-v2 .car-card strong, html.family-v2 .track-card strong { overflow-wrap: anywhere; }
+html.family-v2 .modal { width: min(620px, 100%); min-width: 0; }
+html.family-v2 .modal-actions > button { min-width: 44px; max-width: 100%; min-height: 44px; }
+html.family-v2 .toggle, html.family-v2 .install-button { min-height: 44px; }
+html.family-v2 .drive-control:focus-visible, html.family-v2 .turbo-control:focus-visible,
+html.family-v2 .car-card:focus-visible, html.family-v2 .track-card:focus-visible {
+  outline: 3px solid #a06a08;
+  outline-offset: 2px;
+}
+
+@media (max-width: 600px) and (orientation: portrait) {
+  html.family-v2 #garage-screen { padding: 76px 12px 12px; }
+  html.family-v2 .garage { gap: 4px; }
+  html.family-v2 .garage-header { min-height: 0; padding: 0; }
+  html.family-v2 .garage-header h1 { font-size: 1.25rem; line-height: 1.65; }
+  html.family-v2 .car-hero { height: clamp(28px, calc(100vh - 630px), 100px); }
+  html.family-v2 .car-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; padding: 3px; }
+  html.family-v2 .car-card { padding: 3px; border-radius: 12px; }
+  html.family-v2 .car-preview { height: 30px; margin: 0; }
+  html.family-v2 .car-card strong { font-size: .8rem; line-height: 1.5; }
+  html.family-v2 .role-icon { width: 24px; height: 18px; margin: 0 auto; font-size: .75rem; }
+  html.family-v2 .track-picker { gap: 3px; }
+  html.family-v2 .track-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px; }
+  html.family-v2 .track-card { padding: 3px 5px; border-radius: 10px; }
+  html.family-v2 .track-icon { width: 22px; height: 22px; margin-top: 0; font-size: .8rem; }
+  html.family-v2 .track-map { height: 14px; width: calc(100% - 26px); margin-left: 26px; }
+  html.family-v2 .track-card strong { font-size: .7rem; line-height: 1.6; }
+  html.family-v2 .track-advice { min-height: 28px; padding: 2px 6px; }
+  html.family-v2 .visual-choice { font-size: 1rem; }
+  html.family-v2 .visual-choice b, html.family-v2 .visual-choice em { min-height: 22px; }
+  html.family-v2 .primary-button { min-height: 44px; padding: 4px 16px; font-size: 1.1rem; }
+  html.family-v2 .modal { padding: 16px; }
+  html.family-v2 .modal h2 { font-size: 1.7rem; }
+  html.family-v2 .modal-actions { gap: 8px; margin-top: 12px; }
+  html.family-v2 .secondary-button { padding: 6px 12px; }
+}
+
+@media (max-height: 520px) {
+  html.family-v2 .screen { padding: 8px 12px; }
+  html.family-v2 .garage { gap: 4px; }
+  html.family-v2 .garage-header { min-height: 52px; padding-left: 0; }
+  html.family-v2 .brand-lockup { justify-items: start; }
+  html.family-v2 .garage-header h1 { font-size: 1.3rem; line-height: 1.65; }
+  html.family-v2 .car-grid { gap: 6px; padding: 3px; }
+  html.family-v2 .car-card { padding: 3px 5px; border-radius: 12px; }
+  html.family-v2 .car-preview { height: 28px; margin: 0; }
+  html.family-v2 .car-card strong { font-size: .8rem; line-height: 1.4; }
+  html.family-v2 .role-icon { height: 18px; margin-top: 0; }
+  html.family-v2 .track-picker { gap: 2px; }
+  html.family-v2 .track-grid { gap: 5px; }
+  html.family-v2 .track-card { min-height: 44px; padding: 2px 5px; }
+  html.family-v2 .track-card strong { font-size: .7rem; line-height: 1.5; }
+  html.family-v2 .track-map { height: 16px; }
+  html.family-v2 .track-advice { min-height: 24px; padding: 1px 6px; }
+  html.family-v2 .primary-button { min-height: 44px; padding: 4px 16px; font-size: 1rem; }
+  html.family-v2 .modal { padding: 12px 18px; }
+  html.family-v2 .modal h2 { font-size: 1.7rem; }
+  html.family-v2 .modal p { margin: 6px 0; font-size: .85rem; line-height: 1.6; }
+  html.family-v2 .modal-actions { gap: 8px; margin-top: 8px; }
+  html.family-v2 .secondary-button { padding: 6px 12px; }
+}
+/* Settings have moved to the canonical shell, so their empty native row reserves no gap. */
+html.family-v2 .garage > .settings-row { display: none; }
+@media (max-height: 520px) {
+  html.family-v2 .garage { gap: 3px; }
+  html.family-v2 .garage-header { min-height: 48px; }
+  html.family-v2 .visual-choice { line-height: 1; }
+}

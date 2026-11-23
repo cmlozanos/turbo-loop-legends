@@ -1,0 +1,156 @@
+
+Running 39 tests using 3 workers
+
+[1/39] [tablet] › tests/e2e/layout-fit.spec.ts:46:3 › native layouts fit 320x640 without scrolling or lost choices
+[2/39] [tablet] › tests/e2e/layout-fit.spec.ts:46:3 › native layouts fit 360x740 without scrolling or lost choices
+[3/39] [tablet] › tests/e2e/layout-fit.spec.ts:46:3 › native layouts fit 740x360 without scrolling or lost choices
+[4/39] [tablet] › tests/e2e/layout-fit.spec.ts:46:3 › native layouts fit 750x342 without scrolling or lost choices
+[5/39] [tablet] › tests/e2e/layout-fit.spec.ts:46:3 › native layouts fit 1024x768 without scrolling or lost choices
+[6/39] [tablet] › tests/e2e/layout-fit.spec.ts:46:3 › native layouts fit 800x1280 without scrolling or lost choices
+[7/39] [tablet] › tests/e2e/layout-fit.spec.ts:131:1 › rotation reflows the existing garage and running HUD without scroll
+[8/39] [tablet] › tests/e2e/layout-fit.spec.ts:148:3 › canonical adult dialog fits 320x640
+[9/39] [tablet] › tests/e2e/layout-fit.spec.ts:148:3 › canonical adult dialog fits 360x740
+[10/39] [tablet] › tests/e2e/layout-fit.spec.ts:148:3 › canonical adult dialog fits 740x360
+[11/39] [tablet] › tests/e2e/layout-fit.spec.ts:148:3 › canonical adult dialog fits 750x342
+  1) [tablet] › tests/e2e/layout-fit.spec.ts:148:3 › canonical adult dialog fits 740x360 ───────────
+
+    Error: ☆ Reiniciar puntos
+
+    expect(received).toBeLessThanOrEqual(expected)
+
+    Expected: <= 361
+    Received:    369.34375
+
+      23 |     expect(box.y, label).toBeGreaterThanOrEqual(0);
+      24 |     expect(box.x + box.width, label).toBeLessThanOrEqual(viewport.width + 1);
+    > 25 |     expect(box.y + box.height, label).toBeLessThanOrEqual(viewport.height + 1);
+         |                                       ^
+      26 |   }
+      27 | }
+      28 |
+        at fits (/Users/carlos.lozanosoto/personal/repositories/turbo-loop-legends/tests/e2e/layout-fit.spec.ts:25:39)
+        at /Users/carlos.lozanosoto/personal/repositories/turbo-loop-legends/tests/e2e/layout-fit.spec.ts:155:5
+
+    Error Context: ../../../../../tmp/turbo-layout-qa/results/layout-fit-canonical-adult-dialog-fits-740x360-tablet/error-context.md
+
+
+  2) [tablet] › tests/e2e/layout-fit.spec.ts:148:3 › canonical adult dialog fits 750x342 ───────────
+
+    Error: ☆ Reiniciar puntos
+
+    expect(received).toBeLessThanOrEqual(expected)
+
+    Expected: <= 343
+    Received:    369.34375
+
+      23 |     expect(box.y, label).toBeGreaterThanOrEqual(0);
+      24 |     expect(box.x + box.width, label).toBeLessThanOrEqual(viewport.width + 1);
+    > 25 |     expect(box.y + box.height, label).toBeLessThanOrEqual(viewport.height + 1);
+         |                                       ^
+      26 |   }
+      27 | }
+      28 |
+        at fits (/Users/carlos.lozanosoto/personal/repositories/turbo-loop-legends/tests/e2e/layout-fit.spec.ts:25:39)
+        at /Users/carlos.lozanosoto/personal/repositories/turbo-loop-legends/tests/e2e/layout-fit.spec.ts:155:5
+
+    Error Context: ../../../../../tmp/turbo-layout-qa/results/layout-fit-canonical-adult-dialog-fits-750x342-tablet/error-context.md
+
+
+[12/39] [tablet] › tests/e2e/layout-fit.spec.ts:148:3 › canonical adult dialog fits 1024x768
+[13/39] [tablet] › tests/e2e/layout-fit.spec.ts:148:3 › canonical adult dialog fits 800x1280
+[14/39] [phone] › tests/e2e/layout-fit.spec.ts:46:3 › native layouts fit 320x640 without scrolling or lost choices
+[15/39] [phone] › tests/e2e/layout-fit.spec.ts:46:3 › native layouts fit 360x740 without scrolling or lost choices
+[16/39] [phone] › tests/e2e/layout-fit.spec.ts:46:3 › native layouts fit 740x360 without scrolling or lost choices
+[17/39] [phone] › tests/e2e/layout-fit.spec.ts:46:3 › native layouts fit 750x342 without scrolling or lost choices
+[18/39] [phone] › tests/e2e/layout-fit.spec.ts:46:3 › native layouts fit 1024x768 without scrolling or lost choices
+[19/39] [phone] › tests/e2e/layout-fit.spec.ts:46:3 › native layouts fit 800x1280 without scrolling or lost choices
+[20/39] [phone] › tests/e2e/layout-fit.spec.ts:131:1 › rotation reflows the existing garage and running HUD without scroll
+[21/39] [phone] › tests/e2e/layout-fit.spec.ts:148:3 › canonical adult dialog fits 320x640
+[22/39] [phone] › tests/e2e/layout-fit.spec.ts:148:3 › canonical adult dialog fits 360x740
+[23/39] [phone] › tests/e2e/layout-fit.spec.ts:148:3 › canonical adult dialog fits 740x360
+  3) [phone] › tests/e2e/layout-fit.spec.ts:148:3 › canonical adult dialog fits 740x360 ────────────
+
+    Error: ☆ Reiniciar puntos
+
+    expect(received).toBeLessThanOrEqual(expected)
+
+    Expected: <= 361
+    Received:    369.34375
+
+      23 |     expect(box.y, label).toBeGreaterThanOrEqual(0);
+      24 |     expect(box.x + box.width, label).toBeLessThanOrEqual(viewport.width + 1);
+    > 25 |     expect(box.y + box.height, label).toBeLessThanOrEqual(viewport.height + 1);
+         |                                       ^
+      26 |   }
+      27 | }
+      28 |
+        at fits (/Users/carlos.lozanosoto/personal/repositories/turbo-loop-legends/tests/e2e/layout-fit.spec.ts:25:39)
+        at /Users/carlos.lozanosoto/personal/repositories/turbo-loop-legends/tests/e2e/layout-fit.spec.ts:155:5
+
+    Error Context: ../../../../../tmp/turbo-layout-qa/results/layout-fit-canonical-adult-dialog-fits-740x360-phone/error-context.md
+
+
+[24/39] [phone] › tests/e2e/layout-fit.spec.ts:148:3 › canonical adult dialog fits 1024x768
+[25/39] [phone] › tests/e2e/layout-fit.spec.ts:148:3 › canonical adult dialog fits 800x1280
+[26/39] [phone] › tests/e2e/layout-fit.spec.ts:148:3 › canonical adult dialog fits 750x342
+[27/39] [desktop] › tests/e2e/layout-fit.spec.ts:46:3 › native layouts fit 320x640 without scrolling or lost choices
+[28/39] [desktop] › tests/e2e/layout-fit.spec.ts:46:3 › native layouts fit 360x740 without scrolling or lost choices
+  4) [phone] › tests/e2e/layout-fit.spec.ts:148:3 › canonical adult dialog fits 750x342 ────────────
+
+    Error: ☆ Reiniciar puntos
+
+    expect(received).toBeLessThanOrEqual(expected)
+
+    Expected: <= 343
+    Received:    369.34375
+
+      23 |     expect(box.y, label).toBeGreaterThanOrEqual(0);
+      24 |     expect(box.x + box.width, label).toBeLessThanOrEqual(viewport.width + 1);
+    > 25 |     expect(box.y + box.height, label).toBeLessThanOrEqual(viewport.height + 1);
+         |                                       ^
+      26 |   }
+      27 | }
+      28 |
+        at fits (/Users/carlos.lozanosoto/personal/repositories/turbo-loop-legends/tests/e2e/layout-fit.spec.ts:25:39)
+        at /Users/carlos.lozanosoto/personal/repositories/turbo-loop-legends/tests/e2e/layout-fit.spec.ts:155:5
+
+    Error Context: ../../../../../tmp/turbo-layout-qa/results/layout-fit-canonical-adult-dialog-fits-750x342-phone/error-context.md
+
+
+[29/39] [desktop] › tests/e2e/layout-fit.spec.ts:46:3 › native layouts fit 740x360 without scrolling or lost choices
+[30/39] [desktop] › tests/e2e/layout-fit.spec.ts:46:3 › native layouts fit 750x342 without scrolling or lost choices
+[31/39] [desktop] › tests/e2e/layout-fit.spec.ts:46:3 › native layouts fit 1024x768 without scrolling or lost choices
+[32/39] [desktop] › tests/e2e/layout-fit.spec.ts:46:3 › native layouts fit 800x1280 without scrolling or lost choices
+[33/39] [desktop] › tests/e2e/layout-fit.spec.ts:131:1 › rotation reflows the existing garage and running HUD without scroll
+[34/39] [desktop] › tests/e2e/layout-fit.spec.ts:148:3 › canonical adult dialog fits 320x640
+[35/39] [desktop] › tests/e2e/layout-fit.spec.ts:148:3 › canonical adult dialog fits 360x740
+[36/39] [desktop] › tests/e2e/layout-fit.spec.ts:148:3 › canonical adult dialog fits 740x360
+[37/39] [desktop] › tests/e2e/layout-fit.spec.ts:148:3 › canonical adult dialog fits 750x342
+[38/39] [desktop] › tests/e2e/layout-fit.spec.ts:148:3 › canonical adult dialog fits 1024x768
+  5) [desktop] › tests/e2e/layout-fit.spec.ts:148:3 › canonical adult dialog fits 750x342 ──────────
+
+    Error: expect(received).toBeLessThanOrEqual(expected)
+
+    Expected: <= 1
+    Received:    3
+
+      159 |     }));
+      160 |     expect(overflow.x).toBeLessThanOrEqual(1);
+    > 161 |     expect(overflow.y).toBeLessThanOrEqual(1);
+          |                        ^
+      162 |     await closeAdultSettings(page);
+      163 |   });
+      164 | }
+        at /Users/carlos.lozanosoto/personal/repositories/turbo-loop-legends/tests/e2e/layout-fit.spec.ts:161:24
+
+    Error Context: ../../../../../tmp/turbo-layout-qa/results/layout-fit-canonical-adult-dialog-fits-750x342-desktop/error-context.md
+
+
+[39/39] [desktop] › tests/e2e/layout-fit.spec.ts:148:3 › canonical adult dialog fits 800x1280
+  5 failed
+    [tablet] › tests/e2e/layout-fit.spec.ts:148:3 › canonical adult dialog fits 740x360 ────────────
+    [tablet] › tests/e2e/layout-fit.spec.ts:148:3 › canonical adult dialog fits 750x342 ────────────
+    [phone] › tests/e2e/layout-fit.spec.ts:148:3 › canonical adult dialog fits 740x360 ─────────────
+    [phone] › tests/e2e/layout-fit.spec.ts:148:3 › canonical adult dialog fits 750x342 ─────────────
+    [desktop] › tests/e2e/layout-fit.spec.ts:148:3 › canonical adult dialog fits 750x342 ───────────
+  34 passed (52.1s)

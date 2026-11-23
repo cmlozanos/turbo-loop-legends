@@ -1,0 +1,95 @@
+
+> turbo-loop-legends@2.0.0 check
+> npm run typecheck && npm test && npm run build && npm run verify:cache && npm run verify:pwa && npm run verify:chrome95 && npm run verify:learning-gate
+
+
+> turbo-loop-legends@2.0.0 typecheck
+> tsc --noEmit
+
+
+> turbo-loop-legends@2.0.0 test
+> vitest run
+
+
+ RUN  v3.2.7 /Users/carlos.lozanosoto/personal/repositories/turbo-loop-legends
+
+ ✓ tests/frameClock.test.ts (9 tests) 336ms
+   ✓ render-independent simulation > keeps real Planck trajectory identical through low FPS and turbo  334ms
+ ✓ tests/roadEffects.test.ts (15 tests) 638ms
+   ✓ road effects rate policy > bounds all circuit/control combinations to 12 light or 40 normal particles  634ms
+ ✓ tests/physics.test.ts (24 tests) 1182ms
+   ✓ vehicle physics > can complete every track with turbo  612ms
+ ✓ tests/sceneTiming.test.ts (4 tests) 251ms
+ ✓ tests/sceneView.test.ts (5 tests) 44ms
+ ✓ tests/input.test.ts (36 tests) 14ms
+ ✓ tests/mathGate.test.ts (4 tests) 9ms
+ ✓ tests/state.test.ts (9 tests) 6ms
+ ✓ tests/audioGate.test.ts (4 tests) 2ms
+ ✓ tests/driving.test.ts (34 tests) 4592ms
+   ✓ 'comet' completes 'forest' with actual driving input and recovers from every checkpoint  560ms
+ ✓ tests/gameplay.test.ts (45 tests) 5692ms
+   ✓ accelerator-only driving > 'comet' finishes 'forest' from every later checkpoint without turbo  527ms
+   ✓ vehicle feel > never teleports the car, even when a loop takes over the steering  610ms
+ ✓ tests/carHandling.test.ts (48 tests) 6692ms
+   ✓ pedal-only compatible routes > 'comet' completes 'forest' from all eight starts with no fall and native loop rotation  340ms
+
+ Test Files  12 passed (12)
+      Tests  237 passed (237)
+   Start at  00:22:41
+   Duration  8.01s (transform 479ms, setup 0ms, collect 3.04s, tests 19.46s, environment 1ms, prepare 2.66s)
+
+
+> turbo-loop-legends@2.0.0 build
+> tsc --noEmit && vite build
+
+vite v7.3.6 building client environment for production...
+<script src="/turbo-loop-legends/learning-profile.js?v=local"> in "/index.html" can't be bundled without type="module" attribute
+<script src="/turbo-loop-legends/reading-words.js?v=local"> in "/index.html" can't be bundled without type="module" attribute
+<script src="/turbo-loop-legends/learning-gate.js?v=local"> in "/index.html" can't be bundled without type="module" attribute
+<script src="./family-v2/family.js?v=2.0.0"> in "/index.html" can't be bundled without type="module" attribute
+
+./family-v2/family.css?v=2.0.0 doesn't exist at build time, it will remain unchanged to be resolved at runtime
+transforming...
+✓ 22 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/manifest-local.webmanifest                            0.70 kB
+dist/index.html                                            1.41 kB │ gzip:   0.54 kB
+dist/assets/index-local-BF4qRF0s.css                      32.25 kB │ gzip:   7.69 kB
+dist/assets/workbox-window.prod.es5-local-BBnX5xw4.js      5.82 kB │ gzip:   2.41 kB │ map:     13.53 kB
+dist/assets/index-local-DKh28KpC.js                    1,692.45 kB │ gzip: 446.18 kB │ map: 12,276.80 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 3.96s
+
+PWA v1.0.2
+mode      generateSW
+precache  146 entries (3793.11 KiB)
+files generated
+  dist/sw.js.map
+  dist/sw.js
+  dist/workbox-9c191d2f.js.map
+  dist/workbox-9c191d2f.js
+
+> turbo-loop-legends@2.0.0 verify:cache
+> node tools/verify-cache-busting.mjs
+
+Cache busting verificado para local
+
+> turbo-loop-legends@2.0.0 verify:pwa
+> node tools/verify-pwa.mjs
+
+PWA instalable verificada para Android e iPad
+
+> turbo-loop-legends@2.0.0 verify:chrome95
+> node tools/verify-chrome95.mjs
+
+Chrome 95 compatibility verified in 6 runtime assets
+
+> turbo-loop-legends@2.0.0 verify:learning-gate
+> node --check public/learning-gate.js && node tools/verify-learning-gate.mjs
+
+Learning bundle: arithmetic, 54 letters, ten minutes, profile, 100 local reading images and exact offline deployment verified.

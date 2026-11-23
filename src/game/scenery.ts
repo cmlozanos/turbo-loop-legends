@@ -46,11 +46,18 @@ export function paintScenery(layers: Phaser.GameObjects.Graphics[], theme: Track
     ridge.fillStyle(0x142739, 0.24).fillTriangle(x + 110, peak, x + 420, 730, x + 225, 730);
     const y = 450 + ((i * i * 19) % 75);
     near.fillStyle(night ? 0x192c3c : theme?.ground ?? 0x4f8e52).fillEllipse(x + 130, 730, 560, 420);
-    if (id === "neon" || id === "factory") {
+    if (id === "canyon") {
+      // Static dune layers: lit crest and sheltered lee, no animated sand overlay.
+      ridge.fillStyle(night ? 0x75684f : 0xf2c77c, 1).fillEllipse(x + 100, 650, 650, 420);
+      ridge.fillStyle(night ? 0x554d43 : 0xc88e46, .8).fillTriangle(x + 100, 440, x + 410, 650, x + 190, 650);
+      near.fillStyle(night ? 0x80715a : 0xe1af60, 1).fillEllipse(x + 140, 675, 620, 360);
+      near.lineStyle(2, night ? 0xb8a280 : 0xffdc96, .4);
+      for (let ripple = 0; ripple < 5; ripple++) near.lineBetween(x + 45 + ripple * 17, 690 + ripple * 9, x + 190 + ripple * 24, 705 + ripple * 9);
+    } else if (id === "neon" || id === "factory") {
       near.fillStyle(night ? 0x101e34 : 0x435367).fillRect(x + 40, y - 80, 90, 280);
       near.fillStyle(night ? 0xf6cb73 : 0xb9d3da, 0.7);
       for (let row = 0; row < 5; row++) for (let col = 0; col < 3; col++) near.fillRect(x + 50 + col * 26, y - 65 + row * 30, 11, 13);
-    } else if (id === "moon" || id === "canyon" || id === "volcano" || id === "glacier") {
+    } else if (id === "moon" || id === "volcano" || id === "glacier") {
       near.fillStyle(night ? 0x26374a : theme?.scenery ?? 0x743e35).fillTriangle(x, 670, x + 85, y, x + 160, 670);
       near.fillStyle(0xf0e5ce, 0.22).fillTriangle(x + 85, y, x + 104, y + 65, x + 62, y + 56);
     } else {

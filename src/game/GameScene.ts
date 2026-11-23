@@ -1,4 +1,5 @@
 import Phaser from "phaser";
+import { roadEffectsPlan, type RoadEffectEmission } from "./roadEffects";
 import { nativeAppearance, type NativeTheme } from "./appearance";
 import { drivingFocus, drivingSpan, smoothZoom } from "./sceneView";
 import { paintScenery } from "./scenery";
@@ -49,6 +50,9 @@ export class GameScene extends Phaser.Scene {
   private turboFlame!: Phaser.GameObjects.Graphics;
   private readonly obstacleVisuals = new Map<string, Phaser.GameObjects.Graphics>();
   private readonly shatteredObstacles = new Set<string>();
+  private exhaust!: Phaser.GameObjects.Particles.ParticleEmitter;
+  private brakeSmoke!: Phaser.GameObjects.Particles.ParticleEmitter;
+  private effectCredit = { dust: 0, exhaust: 0, brakeSmoke: 0 };
   private dust!: Phaser.GameObjects.Particles.ParticleEmitter;
   private lastSnapshot!: VehicleSnapshot;
   private readonly clock = new FrameClock();
@@ -89,6 +93,7 @@ export class GameScene extends Phaser.Scene {
     this.challengeAttempts.clear();
     this.starSprites.clear();
     this.starsCollected = 0;
+    this.effectCredit = { dust: 0, exhaust: 0, brakeSmoke: 0 };
     this.feedbackReady = false;
     this.airborneSeconds = 0;
     this.fallSpeed = 0;
@@ -143,8 +148,9 @@ export class GameScene extends Phaser.Scene {
     const brake = this.sceneData.input.state.brake;
     if (this.sceneData.input.consumeReset()) this.respawn();
     this.clock.advance(deltaMs / 1000, (delta) => {
-      let lean = throttle ? this.sceneData.car.airControl : brake ? -this.sceneData.car.airControl : 0;
-      if (!throttle && !brake && this.sceneData.assists) {
+      // Pedals drive the wheels; only the optional airborne assist rotates the body.
+      let lean = 0;
+      if (this.sceneData.assists && !this.lastSnapshot.grounded && !this.lastSnapshot.activeLoopId) {
         lean = -normalizeAngle(this.lastSnapshot.chassis.angle) * 0.7;
       }
       this.simulation.setInput({
@@ -182,7 +188,7 @@ export class GameScene extends Phaser.Scene {
     const speed = (this.lastSnapshot.activeLoopId ? Math.hypot(this.lastSnapshot.velocity.x, this.lastSnapshot.velocity.y) : Math.abs(this.lastSnapshot.velocity.x)) * 9;
     this.sceneData.onSpeed(speed);
     this.sceneData.audio.updateEngine(speed, throttle);
-    this.emitDust(speed, throttle);
+    this.emitDust(deltaMs, throttle, brake);
   }
 
   diagnostics(): object {
@@ -190,7 +196,7 @@ export class GameScene extends Phaser.Scene {
       decorations: this.decorations.length, visibleDecorations: this.decorations.filter(item => item.graphics.visible).length,
       stars: { collected: this.starsCollected, total: this.simulation?.track.stars?.length ?? 0, sprites: this.starSprites.size },
       zoom: this.cameras.main.zoom, scrollX: this.cameras.main.scrollX,
-      cameraShake: this.cameras.main.shakeEffect.isRunning, theme: this.appearance, decorativeMotion: this.motionAllowed(), dustAlive: (this.dust?.getAliveParticleCount() ?? 0),
+      cameraShake: this.cameras.main.shakeEffect.isRunning, theme: this.appearance, decorativeMotion: this.motionAllowed(), dustAlive: (this.dust?.getAliveParticleCount() ?? 0), exhaustAlive: this.exhaust?.getAliveParticleCount() ?? 0, brakeSmokeAlive: this.brakeSmoke?.getAliveParticleCount() ?? 0,
       nativeText: this.children.list.filter((item): item is Phaser.GameObjects.Text => item instanceof Phaser.GameObjects.Text).map(item => ({ text: item.text, font: item.style.fontFamily })),
       fragments: this.fragments.size, cameraFocus: this.cameraFocus ? { x: this.cameraFocus.x, y: this.cameraFocus.y } : null,
       view: { x: this.cameras.main.worldView.x, y: this.cameras.main.worldView.y, width: this.cameras.main.worldView.width, height: this.cameras.main.worldView.height } }));
@@ -204,7 +210,8 @@ export class GameScene extends Phaser.Scene {
     this.appearance = nativeAppearance(this.sceneData.reducedMotion).theme;
     paintScenery(this.backdrop, this.simulation.track.theme, this.simulation.track.id, this.appearance, window.innerWidth);
     if (!this.motionAllowed()) {
-      this.dust.killAll();
+      this.dust.killAll(); this.exhaust.killAll(); this.brakeSmoke.killAll();
+      this.effectCredit = { dust: 0, exhaust: 0, brakeSmoke: 0 };
       for (const fragment of this.fragments) {
         this.tweens.killTweensOf(fragment);
         fragment.destroy();
@@ -757,8 +764,15 @@ export class GameScene extends Phaser.Scene {
       angle: { min: 160, max: 205 },
       scale: { start: 1, end: 0 },
       alpha: { start: 0.65, end: 0 },
-      emitting: false
+      emitting: false,
+      maxParticles: 24, maxAliveParticles: 24,
     }).setDepth(1);
+    const smoke = (cap: number) => this.add.particles(0, 0, "dust", {
+      lifespan: 350, speed: {min: 6, max: 22}, angle: {min: 205, max: 260},
+      scale: {start: .4, end: 1.3}, alpha: {start: .18, end: 0},
+      emitting: false, maxParticles: cap, maxAliveParticles: cap,
+    }).setDepth(1);
+    this.exhaust = smoke(10); this.brakeSmoke = smoke(6);
   }
 
   private syncVehicle(snapshot: VehicleSnapshot): void {
@@ -905,10 +919,32 @@ export class GameScene extends Phaser.Scene {
     if (this.motionAllowed()) this.cameras.main.flash(160, 255, 244, 190, false);
   }
 
-  private emitDust(speed: number, throttle: boolean): void {
-    if (!throttle || speed < 4 || !this.motionAllowed() || this.sceneData.lightMode) return;
-    const point = physicsToScreen(this.lastSnapshot.rearWheel.position, PIXELS_PER_METRE, ORIGIN);
-    this.dust.setPosition(point.x, point.y + 18).emitParticle(1);
+  private emitDust(deltaMs: number, throttle: boolean, brake: boolean): void {
+    const snapshot = this.lastSnapshot;
+    const plan = roadEffectsPlan({ speed: snapshot.velocity.x, grounded: snapshot.grounded && !snapshot.activeLoopId,
+      throttle: throttle ? 1 : brake && snapshot.velocity.x <= .7 ? -1 : 0, brake: brake && snapshot.velocity.x > .7, turbo: this.sceneData.input.state.turbo,
+      lightMode: this.sceneData.lightMode, motion: this.motionAllowed(), trackId: this.simulation.track.id ?? "forest" });
+    const wheels = [snapshot.rearWheel, snapshot.frontWheel].filter(wheel => {
+      const surface = trackSurfaceYAt(this.simulation.track.segments, wheel.position.x);
+      return Math.abs(wheel.position.y - surface - this.sceneData.car.wheelRadius / PIXELS_PER_METRE) < .3;
+    });
+    const contact = wheels[0]?.position;
+    const tailpipe = this.localToWorld(snapshot.chassis.position, snapshot.chassis.angle, this.sceneData.car.exhaustOffset);
+    const emit = (key: "dust" | "exhaust" | "brakeSmoke", emitter: Phaser.GameObjects.Particles.ParticleEmitter, effect: RoadEffectEmission, position?: Point) => {
+      if (!position || effect.rate === 0) { this.effectCredit[key] = 0; return; }
+      this.effectCredit[key] += effect.rate * Math.min(deltaMs, 100) / 1000;
+      const count = Math.min(Math.floor(this.effectCredit[key]), Math.max(0, effect.maxParticles - emitter.getAliveParticleCount()));
+      this.effectCredit[key] -= Math.floor(this.effectCredit[key]);
+      if (count) {
+        const screen = physicsToScreen(position, PIXELS_PER_METRE, ORIGIN);
+        emitter.setParticleTint(effect.tint).setParticleLifespan(effect.lifespanSeconds * 1000);
+        emitter.setParticleAlpha({start: effect.alpha, end: 0});
+        emitter.setPosition(screen.x, screen.y).emitParticle(count);
+      }
+    };
+    emit("dust", this.dust, plan.dust, contact);
+    emit("exhaust", this.exhaust, plan.exhaust, tailpipe);
+    emit("brakeSmoke", this.brakeSmoke, plan.brakeSmoke, contact);
   }
 }
 

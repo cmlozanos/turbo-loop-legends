@@ -14,6 +14,7 @@ import { carCanPassObstacle, createDefaultTrack, surfaceAt, type LoopGuide, type
 export interface VehicleInput {
   throttle?: number;
   brake?: boolean;
+  /** Independent airborne recovery rotation, never a pedal input. */
   lean?: number;
   turbo?: boolean;
 }
@@ -227,7 +228,8 @@ export class PhysicsWorld {
     this.frontJoint.enableMotor(this.input.brake || driving);
     this.frontJoint.setMotorSpeed(motorSpeed);
     this.frontJoint.setMaxMotorTorque(this.input.brake ? motorTorque : motorTorque * (1 - REAR_DRIVE_SHARE));
-    if (this.input.lean !== 0) {
+    const grounded = this.isGrounded();
+    if (!grounded && this.input.lean !== 0) {
       const airControl = Math.min(1, Math.abs(this.chassis.getLinearVelocity().y) / 3 + 0.35);
       this.chassis.applyTorque(this.input.lean * 24 * airControl, true);
     }
@@ -237,9 +239,10 @@ export class PhysicsWorld {
     if (!insideLoop) {
       const angle = Math.atan2(Math.sin(this.chassis.getAngle()), Math.cos(this.chassis.getAngle()));
       const error = Math.atan2(Math.sin(angle - this.targetAttitude(x)), Math.cos(angle - this.targetAttitude(x)));
-      // A playful wheelie is welcome; beyond it the stabiliser firmly holds the car down.
+      // Road attitude resists axle reaction torque without locking the suspension.
+      // In flight keep the gentler trajectory-following correction.
       const excess = Math.sign(error) * Math.max(0, Math.abs(error) - WHEELIE_LIMIT);
-      this.chassis.applyTorque(-error * 90 - excess * 420 - this.chassis.getAngularVelocity() * 14, true);
+      this.chassis.applyTorque(-error * (grounded ? 420 : 90) - excess * 420 - this.chassis.getAngularVelocity() * (grounded ? 28 : 14), true);
     }
 
     if (step > 0) {
@@ -551,7 +554,7 @@ export class PhysicsWorld {
     const velocity = this.chassis.getLinearVelocity();
     if (Math.abs(velocity.x) < 2) return 0;
     const pitch = Math.atan2(velocity.y, Math.abs(velocity.x)) * Math.sign(velocity.x);
-    return Math.max(-0.42, Math.min(0.42, pitch * 0.55 + this.input.lean * 0.12));
+    return Math.max(-0.42, Math.min(0.42, pitch * 0.55));
   }
 
   /** Dash arrows lift a slow car to the launch speed of the ramp it is climbing. */
