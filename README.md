@@ -7,18 +7,18 @@ Videojuego 2D de coches para navegador, pensado primero para tablet y niños de 
 - Tablet o móvil: usa los botones grandes. El izquierdo frena o da marcha atrás, el derecho acelera y el botón central activa el turbo. En el aire también inclinan el coche.
 - Ordenador: `→`/`D` acelera, `←`/`A` frena y da marcha atrás, `Shift`/`Espacio` activa el turbo, `R` vuelve al checkpoint y `Esc` pausa.
 - Las ayudas opcionales corrigen suavemente el coche y lo recuperan si queda volcado o cae.
-- El botón `⌂` abre [todos los juegos](https://cmlozanos.github.io/games/). Para cambiar de coche o circuito durante una carrera, pulsa pausa y después Garaje; también sigue disponible al terminar.
+- El botón `⌂` vuelve al menú del propio juego sin salir. El catálogo de juegos está dentro de Adultos. Para cambiar de coche o circuito durante una carrera, pulsa pausa y después Garaje; también sigue disponible al terminar.
 - Al cruzar la meta puedes iniciar inmediatamente el siguiente circuito. Las rocas y pilas de neumáticos se saltan; las cajas y barreras se rompen con suficiente velocidad.
 - Cada circuito incluye un megasalto amarillo marcado `⚡ TURBO`: su precipicio está calculado para que la velocidad normal no alcance el otro lado.
 - Los loopings conservan el impulso real del coche: acelerador, gravedad y rozamiento modifican su velocidad, puede desprenderse si pierde contacto y puede volver a recorrerlos marcha atrás.
 - Cada apertura exige un reto de los tipos seleccionados en el perfil de la tablet desde Games: suma, resta sin resultados negativos, trazo guiado o lectura. Se puede elegir cualquier combinación, con al menos un tipo activo; sin perfil válido se mantienen los retos predeterminados. Los operandos y resultados son menores de 10. Se repite cada diez minutos desde la resolución, también de noche y contando el tiempo en otras aplicaciones. El coche, los temporizadores y el sonido se pausan; una pausa manual no se cancela al resolver el reto.
 
-El juego guarda ajustes, coche, pista elegida y desbloqueos únicamente en el dispositivo. Después de la primera carga puede funcionar sin conexión.
-En una instalación nueva, música y efectos de sonido comienzan desactivados y pueden habilitarse desde el garaje.
+Los seis coches y las ocho pistas están disponibles desde el inicio. El juego conserva los ajustes, el coche, la pista elegida y el progreso anterior únicamente en el dispositivo. Después de la primera carga puede funcionar sin conexión.
+Música y efectos de sonido comienzan desactivados en **cada carga**, incluso con una preferencia anterior. Se pueden habilitar durante esa apertura desde Adultos.
 
 ## Rendimiento en tablets antiguas
 
-El ajuste ⚡ **Modo ligero** del garaje reduce la resolución interna y desactiva
+El ajuste ⚡ **Modo ligero** de Adultos reduce la resolución interna y desactiva
 polvo y algunos efectos decorativos. Conserva el tamaño de los controles, la
 cámara, las pistas, las colisiones y el progreso. Se guarda en cada dispositivo;
 el modo ligero es el valor inicial cuando no existe una elección guardada.
@@ -39,7 +39,7 @@ render son mediciones de escritorio, no una certificación de FPS en Android 5.
 
 ## Instalar en una tablet
 
-- Android/Chrome: pulsa `⬇ INSTALAR` cuando aparezca en el garaje.
+- Android/Chrome: pulsa `⬇ INSTALAR` cuando aparezca en Adultos.
 - iPad/Safari: pulsa `⬇ INSTALAR` para recordar la ruta `Compartir → Añadir a pantalla de inicio`.
 
 Una vez instalada, la app se abre en horizontal, sin la interfaz del navegador, y funciona offline después de su primera carga completa.
@@ -103,4 +103,14 @@ La UI del juego bloquea los menús táctiles, callouts y selección; los campos 
 
 `make test-e2e` incluye `tests/e2e/touch.spec.ts` y `tools/touch-check.cjs`: teclado, edición y pulsación táctil de 800 ms con liberación en Chromium. Admite `CHROME95_PATH`. La emulación no sustituye comprobar el menú nativo en una tablet física.
 
-Se conserva el comportamiento previo del teclado: las flechas están reservadas globalmente por los controles del juego. La regresión de edición comprueba selección de rango, escritura y borrado sin redefinir esa política.
+Los controles reservan las flechas durante la conducción, no al escribir o seleccionar en un campo editable (incluido el diálogo adulto). La regresión de edición comprueba selección de rango, escritura y borrado.
+
+## Versión 2.0.0
+
+- Shell familiar clásico autónomo en `public/family-v2/`, copiado del kit compartido: tipografía local Playwrite ES, tema sistema/día/noche y altura del viewport visible.
+- La barra superior conserva inicio, tema, puntos y Adultos también durante la carrera. Adultos exige una multiplicación y mueve los controles originales mediante slots, sin sustituir nodos ni eventos. Los controles infantiles de conducción no cambian.
+- Puntos: 1 por checkpoint y 1 por meta, con identificadores únicos por carrera y deduplicación del kit. La sesión expira tras una hora sin actividad; no hay servidor ni clasificación global.
+- La pausa familiar es independiente del reto educativo y de la pausa manual. Conserva pistas, identidades de vehículos y guardas educativas; corrige el turbo de coches pesados y la reaparición tras el looping roto.
+- La PWA precarga también CSS, script, TTF y licencia OFL del kit. Se espera `FamilyV2.fontReady` antes de crear los textos Phaser.
+
+Consulta [las notas y los límites de validación de V2](docs/RELEASE_2.0.0.md).

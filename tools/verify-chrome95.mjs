@@ -7,6 +7,10 @@ const runtimeFiles = readdirSync(assetsDirectory)
   .map((name) => ({ name, content: readFileSync(join(assetsDirectory.pathname, name), "utf8") }));
 runtimeFiles.push({ name: "learning-gate.js", content: readFileSync(new URL("../dist/learning-gate.js", import.meta.url), "utf8") });
 
+for (const name of ["family.js", "family.css"]) {
+  runtimeFiles.push({ name: `family-v2/${name}`, content: readFileSync(new URL(`../dist/family-v2/${name}`, import.meta.url), "utf8") });
+}
+
 const unsupportedRuntimePatterns = [
   ["structuredClone", /\bstructuredClone\s*\(/],
   ["Array.prototype.at", /\.at\s*\(/],

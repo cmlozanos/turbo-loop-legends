@@ -1,32 +1,30 @@
 import { expect, test } from "@playwright/test";
+import { openAdultSettings, closeAdultSettings } from "./family-v2";
 import { openGame, solveGate } from "./learning-gate";
 
 async function read(page: import("@playwright/test").Page) {
   return page.evaluate(() => (window as any).__turboRead());
 }
 
-test("all quality controls stay clear of cars and play on short mobile screens", async ({ page }, info) => {
+test("adult settings and play fit short mobile screens", async ({ page }, info) => {
   await openGame(page);
-  // Reserve the install button even on engines that do not offer installation.
-  await page.locator("#install-button").evaluate(element => element.removeAttribute("hidden"));
   for (const size of [{ width: 750, height: 342 }, { width: 640, height: 360 }]) {
     await page.setViewportSize(size);
-    const settings = (await page.locator(".settings-row").boundingBox())!;
-    const cars = (await page.locator(".car-grid").boundingBox())!;
-    const play = (await page.locator(".garage-launch").boundingBox())!;
-    expect(settings.y).toBeGreaterThanOrEqual(cars.y + cars.height);
-    expect(settings.y).toBeGreaterThanOrEqual(play.y + play.height);
-    expect(settings.y + settings.height).toBeLessThanOrEqual(size.height);
-    await expect(page.locator("#light-toggle")).toBeInViewport();
     await expect(page.locator("#play-button")).toBeInViewport();
+    await expect(page.getByRole('button', { name: 'Para adultos' })).toBeInViewport();
+    await openAdultSettings(page);
+    await expect(page.locator("#light-toggle")).toBeInViewport();
     await page.screenshot({ path: info.outputPath(`settings-${size.width}.png`) });
+    await closeAdultSettings(page);
   }
 });
 
 test("light profile reduces pixels, preserves camera and persists without resetting progress", async ({ page }, info) => {
   await openGame(page, "?test=1");
   const toggle = page.getByRole("checkbox", { name: "Modo ligero", exact: true });
+  await openAdultSettings(page);
   await expect(toggle).toBeChecked();
+  await closeAdultSettings(page);
   await page.locator("#play-button").click();
   await expect.poll(async () => (await read(page)).scene?.steps ?? 0).toBeGreaterThan(10);
   const data = await read(page);
@@ -35,18 +33,21 @@ test("light profile reduces pixels, preserves camera and persists without resett
   expect(data.scene.visibleDecorations).toBeLessThan(data.scene.decorations);
   await page.screenshot({ path: info.outputPath("light-race.png") });
   await page.locator("#pause-button").click(); await page.locator("#garage-button").click();
-  await toggle.uncheck(); await page.locator("#play-button").click();
+  await openAdultSettings(page); await toggle.uncheck(); await closeAdultSettings(page); await page.locator("#play-button").click();
   await expect.poll(async () => (await read(page)).scene?.steps ?? 0).toBeGreaterThan(10);
   expect((await read(page)).width).toBe(size.width);
   await page.screenshot({ path: info.outputPath("normal-race.png") });
   await page.reload(); await solveGate(page);
+  await openAdultSettings(page);
   await expect(toggle).not.toBeChecked();
 });
 
 test("canvas stays aligned to the viewport after rotation in both quality modes", async ({ page }) => {
   await openGame(page, "?test=1");
   for (const light of [false, true]) {
+    await openAdultSettings(page);
     await page.locator("#light-toggle").setChecked(light);
+    await closeAdultSettings(page);
     await page.locator("#play-button").click();
     for (const size of [{ width: 1024, height: 768 }, { width: 768, height: 1024 }, { width: 1920, height: 1080 }]) {
       await page.setViewportSize(size);

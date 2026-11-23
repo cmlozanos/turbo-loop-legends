@@ -2,6 +2,15 @@ export {};
 
 declare global {
   interface Window {
+    FamilyV2?: {
+      version: string;
+      fontFamily: string;
+      fontReady: Promise<unknown>;
+      register(callbacks: { pause(): void; resume(): void; home(): void }): void;
+      award(uniqueId: string, points?: number): number;
+      touch(): void;
+      read(): { id: string; points: number; lastActive: number; ids: string[] };
+    };
     LearningGate?: {
       mount(options: { gameId: string; onLock(): void; onUnlock(): void }): {
         isLocked(): boolean;

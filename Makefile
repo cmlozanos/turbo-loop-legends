@@ -59,3 +59,8 @@ verify-learning-gate:
 
 physics-poc:
 	npm run poc:physics
+
+.PHONY: driving-poc
+# Actual vehicle input against all compatible circuits, without render.
+driving-poc:
+	npm run poc:driving

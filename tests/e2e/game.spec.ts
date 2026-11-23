@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { openAdultSettings } from "./family-v2";
 import { openGame, solveGate } from "./learning-gate";
 
 test("requires a correct challenge on entry, ignoring the old session token", async ({ page }) => {
@@ -52,21 +53,22 @@ test("freezes the race at ten minutes and preserves a later manual pause", async
   await expect(page.locator("#hud")).toBeHidden();
 });
 
-test("links the garage and race home icons to the games catalogue", async ({ page }, testInfo) => {
+test("home returns to the native garage without leaving the game", async ({ page }, testInfo) => {
   await openGame(page);
-  await expect(page.getByRole("link", { name: "Volver a todos los juegos" })).toHaveAttribute("href", "https://cmlozanos.github.io/games/");
-  await expect(page.getByRole("link", { name: "Volver a todos los juegos" })).toBeInViewport();
-  const homeBox = await page.locator(".games-link").boundingBox();
-  const playBox = await page.locator("#play-button").boundingBox();
-  expect(homeBox!.x + homeBox!.width).toBeLessThanOrEqual(playBox!.x);
+  const url = page.url();
   await page.screenshot({ path: testInfo.outputPath("garage.png") });
-  await page.getByRole("button", { name: "JUGAR" }).click();
-  await expect(page.getByRole("link", { name: "Volver a todos los juegos" })).toHaveAttribute("href", "https://cmlozanos.github.io/games/");
-  await expect(page.getByRole("link", { name: "Volver a todos los juegos" })).toBeInViewport();
+  await page.locator("#play-button").click();
   await page.keyboard.down("ArrowRight");
   await expect.poll(async () => Number(await page.locator("#speed").textContent())).toBeGreaterThan(5);
   await page.keyboard.up("ArrowRight");
   await page.screenshot({ path: testInfo.outputPath("race.png") });
+  await page.getByRole("button", { name: "Inicio del juego", exact: true }).click();
+  await expect(page.locator("#garage-screen")).toBeVisible();
+  expect(page.url()).toBe(url);
+  await page.locator("#play-button").click();
+  await page.locator("#home-button").click();
+  await expect(page.locator("#garage-screen")).toBeVisible();
+  expect(page.url()).toBe(url);
 });
 
 test("completes a guided letter before playing", async ({ page }) => {
@@ -236,7 +238,7 @@ test("accelerates quickly with the keyboard and can reset", async ({ page }) => 
   await expect.poll(async () => Number(await page.locator("#speed").textContent()), { timeout: 10_000 }).toBeGreaterThan(50);
   await page.keyboard.up("ArrowRight");
   await page.keyboard.press("r");
-  await expect(page.getByRole("status")).toContainText("Otra oportunidad");
+  await expect(page.locator("#toast")).toContainText("Otra oportunidad");
 });
 
 test("activates turbo with the keyboard", async ({ page }) => {
@@ -256,7 +258,7 @@ test("smashes the mandatory early barrier with enough speed", async ({ page }) =
   await page.getByRole("button", { name: "JUGAR" }).click();
   await page.keyboard.down("ArrowRight");
   await page.keyboard.down("ShiftLeft");
-  await expect(page.getByRole("status")).toContainText("Barricada destrozada", { timeout: 20_000 });
+  await expect(page.locator("#toast")).toContainText("Barricada destrozada", { timeout: 20_000 });
   await page.keyboard.up("ShiftLeft");
   await page.keyboard.up("ArrowRight");
 });
@@ -277,8 +279,29 @@ test("offers add-to-home-screen guidance on iPad and iPhone", async ({ page }) =
   const isiOS = await page.evaluate(() => /iPad|iPhone|iPod/.test(navigator.userAgent));
   test.skip(!isiOS, "Esta ayuda solo corresponde a Safari en iPad y iPhone");
 
+  await openAdultSettings(page);
   const install = page.locator("#install-button");
   await expect(install).toBeVisible();
   await install.click();
   await expect(install).toHaveText("Safari: Compartir → Añadir a inicio");
+});
+
+test('drives the real circuit to finish, then replay starts fresh', async ({ page }) => {
+  test.setTimeout(90000);
+  await openGame(page, '?test=1');
+  await page.getByRole('button', { name: 'Fábrica Colosal: Muros altos y compuertas pesadas' }).click();
+  await page.getByRole('button', { name: 'Mamut: Enorme y capaz de aplastarlo todo' }).click();
+  await page.locator('#play-button').click();
+  await page.keyboard.down('ArrowRight'); await page.keyboard.down('ShiftLeft');
+  await expect(page.locator('#finish-screen')).toBeVisible({ timeout: 65000 });
+  await page.keyboard.up('ShiftLeft'); await page.keyboard.up('ArrowRight');
+  const completed = await page.evaluate(() => (window as any).__turboRead().scene.snapshot);
+  expect(completed.checkpointIndex).toBe(7);
+  expect(completed.chassis.position.x).toBeGreaterThanOrEqual(586);
+  expect(await page.evaluate(() => window.FamilyV2!.read().points)).toBeGreaterThanOrEqual(8);
+  await page.locator('#replay-button').click();
+  await expect(page.locator('#hud')).toBeVisible();
+  await expect.poll(async () => page.evaluate(() => (window as any).__turboRead().scene.snapshot.checkpointIndex)).toBe(0);
+  await page.locator('#pause-button').click(); await page.locator('#garage-button').click();
+  await expect(page.locator('#garage-screen')).toBeVisible();
 });

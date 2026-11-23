@@ -21,7 +21,9 @@ async function checkTouchUI(page, selector, existingContextBlock = false) {
         surface.dispatchEvent(new PointerEvent('pointerdown', { bubbles: true, pointerType: 'touch' }));
         const pointerFallbackMenu = sendMenu();
         surface.dispatchEvent(new PointerEvent('pointerup', { bubbles: true, pointerType: 'touch' }));
-        const start = new TouchEvent('touchstart', { bubbles: true, cancelable: true, touches: [], targetTouches: [], changedTouches: [] });
+        // WebKit exposes TouchEvent but rejects its constructor. We only need
+        // a cancellable event here; real held input is exercised separately.
+        const start = new Event('touchstart', { bubbles: true, cancelable: true });
         surface.dispatchEvent(start);
         const fallbackMenu = sendMenu();
         surface.remove();
@@ -57,8 +59,7 @@ async function checkTouchUI(page, selector, existingContextBlock = false) {
     }
     const input = page.locator('#touch-edit-fixture input');
     await input.fill('abc');
-    // The pre-existing game key handler reserves arrows globally. Do not
-    // redefine that policy in this touch-only regression.
+    // Check selection independently; adult-input navigation has its own regression.
     await input.evaluate(node => node.setSelectionRange(2, 3));
     assert.deepEqual(await input.evaluate(node => [node.selectionStart, node.selectionEnd]), [2, 3]);
     await input.press('z');

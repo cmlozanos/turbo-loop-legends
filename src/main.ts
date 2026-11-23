@@ -6,7 +6,7 @@ import { CARS, getCar, type CarId } from "./game/cars";
 import { GameScene, type GameSceneData } from "./game/GameScene";
 import { renderScale } from "./game/frameClock";
 import { InputController } from "./game/input";
-import { loadSave, saveGame, unlockCar } from "./game/state";
+import { loadSave, saveGame } from "./game/state";
 import { carCanCompleteTrack, getNextTrackId, getTrack, TRACKS, type TrackId, type TrackObstacle } from "./game/track";
 import "./styles/main.css";
 
@@ -31,6 +31,10 @@ if (!window.LearningGate) {
 const learningTimers = window.LearningGate.createTimers();
 let learningLocked = true;
 let resumeRaceAfterGate = false;
+let familyPaused = false;
+let resumeRaceAfterFamily = false;
+let raceId = "";
+let raceSequence = 0;
 const save = loadSave();
 let selectedCar: CarId = save.unlockedCars.includes(save.selectedCar) ? save.selectedCar : "comet";
 let selectedTrack: TrackId = save.selectedTrack;
@@ -69,14 +73,15 @@ const REQUIREMENT_ICONS = {
 
 app.innerHTML = `
   <div class="app-shell">
+    <div class="family-toolbar" data-family-slot></div>
     <div id="game-canvas" class="game-canvas" aria-hidden="true"></div>
     <section id="garage-screen" class="screen">
       <div class="garage">
         <div class="splash-art" aria-hidden="true"><span class="splash-loop"></span><span class="speed-streak streak-one"></span><span class="speed-streak streak-two"></span><img src="${assetUrl("cars/comet-preview.svg")}" alt=""></div>
-        <header class="brand-lockup">
+        <header class="garage-header"><div class="brand-lockup">
           <h1>Turbo <span>Loop</span> Legends</h1>
           <p class="garage-subtitle">Elige un coche y una pista</p>
-        </header>
+        </div></header>
         <div id="car-grid" class="car-grid" role="group" aria-label="Elige un coche"></div>
         <div class="track-picker">
           <p class="picker-label">ELIGE PISTA</p>
@@ -84,23 +89,23 @@ app.innerHTML = `
         </div>
         <div id="track-advice" class="track-advice" aria-live="polite"></div>
         <div class="garage-launch">
-          <a class="games-link" href="https://cmlozanos.github.io/games/" aria-label="Volver a todos los juegos">⌂</a>
+          <button class="games-link" data-family-home aria-label="Volver al menú">⌂</button>
           <button id="play-button" class="primary-button">JUGAR</button>
         </div>
         <div class="settings-row" aria-label="Ajustes">
-          <label class="toggle" data-short="✨"><input id="assists-toggle" type="checkbox"><span>Ayudas</span></label>
-          <label class="toggle" data-short="♫"><input id="music-toggle" type="checkbox"><span>Música</span></label>
-          <label class="toggle" data-short="🔊"><input id="sound-toggle" type="checkbox"><span>Sonido</span></label>
-          <label class="toggle" data-short="◉"><input id="motion-toggle" type="checkbox"><span>Movimiento suave</span></label>
-          <label class="toggle" data-short="⚡"><input id="light-toggle" type="checkbox" aria-label="Modo ligero"><span>Modo ligero</span></label>
-          <button id="install-button" class="install-button" type="button" hidden>⬇ INSTALAR</button>
+          <label data-family-setting class="toggle" data-short="✨"><input id="assists-toggle" type="checkbox"><span>Ayudas</span></label>
+          <label data-family-setting class="toggle" data-short="♫"><input id="music-toggle" type="checkbox"><span>Música</span></label>
+          <label data-family-setting class="toggle" data-short="🔊"><input id="sound-toggle" type="checkbox"><span>Sonido</span></label>
+          <label data-family-setting class="toggle" data-short="◉"><input id="motion-toggle" type="checkbox"><span>Movimiento suave</span></label>
+          <label data-family-setting class="toggle" data-short="⚡"><input id="light-toggle" type="checkbox" aria-label="Modo ligero"><span>Modo ligero</span></label>
+          <button id="install-button" data-family-setting class="install-button" type="button" hidden>⬇ INSTALAR</button>
         </div>
       </div>
     </section>
     <section id="hud" class="hud" aria-label="Controles de carrera" hidden>
       <div class="speedometer" aria-live="off"><strong id="speed" class="speed-value">0</strong><span class="speed-unit">KM/H</span></div>
       <button class="icon-button reset-button" data-control="reset" aria-label="Volver al último punto de control">↻</button>
-      <a id="home-button" class="icon-button home-button" href="https://cmlozanos.github.io/games/" aria-label="Volver a todos los juegos">⌂</a>
+      <button id="home-button" class="icon-button home-button" data-family-home aria-label="Volver al menú">⌂</button>
       <button id="pause-button" class="icon-button pause-button" aria-label="Pausa">Ⅱ</button>
       <button class="drive-control brake-control" data-control="brake" aria-label="Frenar y marcha atrás">◀</button>
       <button class="turbo-control" data-control="turbo" aria-label="Activar turbo" aria-pressed="false"><span>⚡</span>TURBO</button>
@@ -186,7 +191,7 @@ game.events.once(Phaser.Core.Events.READY, resizeGame);
 window.addEventListener("resize", resizeGame);
 window.addEventListener("blur", () => { input.releaseAll(); if (!hud.hidden) pauseRace(); });
 game.events.on(Phaser.Core.Events.POST_RENDER, () => {
-  if (learningLocked || hud.hidden || document.hidden) game.loop.sleep();
+  if (learningLocked || familyPaused || hud.hidden || document.hidden) game.loop.sleep();
 });
 if (new URLSearchParams(location.search).has("test")) {
   Object.defineProperty(window, "__turboRead", { value: () => ({
@@ -213,7 +218,7 @@ getElement("finish-garage-button").addEventListener("click", showGarage);
 getElement("change-car-button").addEventListener("click", chooseRecommendedCar);
 getElement("challenge-continue-button").addEventListener("click", continueChallenge);
 window.addEventListener("keydown", (event) => {
-  if (learningLocked) return;
+  if (learningLocked || familyPaused) return;
   if (event.code === "Escape" && !hud.hidden) pauseRace();
 }, true);
 document.addEventListener("visibilitychange", () => {
@@ -234,26 +239,57 @@ const learningGate = window.LearningGate.mount({
     input.releaseAll();
     learningTimers.pause();
     audio.setPaused(true);
+    // A modal top-layer dialog would otherwise cover the educational gate.
+    document.querySelector("family-v2-shell")?.shadowRoot?.querySelector("dialog")?.close();
   },
   onUnlock: () => {
     learningLocked = false;
     input.releaseAll();
-    audio.setPaused(false);
-    learningTimers.resume();
-    if (resumeRaceAfterGate && pauseScreen.hidden && challengeScreen.hidden) {
+    audio.setPaused(familyPaused);
+    if (!familyPaused) learningTimers.resume();
+    if (resumeRaceAfterGate && !familyPaused && pauseScreen.hidden && challengeScreen.hidden) {
       void audio.start();
       game.scene.resume("GameScene");
     }
+    if (resumeRaceAfterGate && familyPaused) resumeRaceAfterFamily = true;
     resumeRaceAfterGate = false;
-    if (!hud.hidden) game.loop.wake();
+    if (!hud.hidden && !familyPaused) game.loop.wake();
   }
 });
 game.events.on(Phaser.Core.Events.PRE_STEP, () => {
   learningGate.check();
   // A scene can finish loading after the lock callback has already run.
-  if (learningLocked && sceneAdded && game.scene.isActive("GameScene")) {
-    resumeRaceAfterGate = true;
+  if ((learningLocked || familyPaused) && sceneAdded && game.scene.isActive("GameScene")) {
+    if (learningLocked) resumeRaceAfterGate = true;
+    if (familyPaused) resumeRaceAfterFamily = true;
     game.scene.pause("GameScene");
+  }
+});
+
+// The family shell owns its modal; scene/timer ownership remains independent of
+// the educational gate and the user's manual pause.
+window.FamilyV2?.register({
+  home: showGarage,
+  pause: () => {
+    familyPaused = true;
+    resumeRaceAfterFamily = sceneAdded && game.scene.isActive("GameScene") && !game.scene.isPaused("GameScene");
+    if (resumeRaceAfterFamily) game.scene.pause("GameScene");
+    input.releaseAll();
+    learningTimers.pause();
+    audio.setPaused(true);
+  },
+  resume: () => {
+    familyPaused = false;
+    input.releaseAll();
+    audio.setPaused(learningLocked);
+    if (!learningLocked) learningTimers.resume();
+    if (resumeRaceAfterFamily && !learningLocked && pauseScreen.hidden && challengeScreen.hidden && !hud.hidden) {
+      void audio.start();
+      game.scene.resume("GameScene");
+    }
+    if (resumeRaceAfterFamily && learningLocked) resumeRaceAfterGate = true;
+    resumeRaceAfterFamily = false;
+    if (!learningLocked && !hud.hidden) game.loop.wake();
   }
 });
 
@@ -291,8 +327,11 @@ function bindInstall(): void {
   });
 }
 
-function startRace(): void {
-  if (learningLocked) return;
+async function startRace(): Promise<void> {
+  await window.FamilyV2?.fontReady;
+  if (learningLocked || familyPaused) return;
+  window.FamilyV2?.touch();
+  raceId = `${Date.now()}-${++raceSequence}`;
   void audio.start();
   garageScreen.hidden = true;
   pauseScreen.hidden = true;
@@ -317,7 +356,7 @@ function startRace(): void {
     onCheckpoint: (id) => {
       audio.playCheckpoint();
       showToast("✓ Punto de control");
-      if (id === "broken-loop-exit" && unlockCar(save, "lynx")) showToast("🔓 ¡Coche Lince desbloqueado!");
+      window.FamilyV2?.award(`${raceId}:checkpoint:${id}`, 1);
     },
     onFinish: finishRace,
     onObstacleBreak: () => showToast("💥 ¡Barricada destrozada!"),
@@ -336,20 +375,18 @@ function startRace(): void {
 function finishRace(): void {
   hud.hidden = true;
   save.finished = true;
-  const unlocked = unlockCar(save, "titan");
+  window.FamilyV2?.award(`${raceId}:finish`, 1);
   saveGame(save);
   audio.playSuccess();
   const nextTrack = getTrack(getNextTrackId(selectedTrack));
   const nextTrackName = nextTrack.name ?? "Bosque Turbo";
-  getElement("finish-message").textContent = unlocked
-    ? `¡Has desbloqueado el Titán! Siguiente reto: ${nextTrackName}.`
-    : `¡Circuito superado! Siguiente reto: ${nextTrackName}.`;
+  getElement("finish-message").textContent = `¡Circuito superado! Siguiente reto: ${nextTrackName}.`;
   getElement("next-track-button").textContent = `SIGUIENTE: ${nextTrackName.toUpperCase()}`;
   learningTimers.set(() => { finishScreen.hidden = false; }, save.settings.reducedMotion ? 0 : 700);
 }
 
 function startNextRace(): void {
-  if (learningLocked) return;
+  if (learningLocked || familyPaused) return;
   selectedTrack = getNextTrackId(selectedTrack);
   save.selectedTrack = selectedTrack;
   saveGame(save);
@@ -357,7 +394,7 @@ function startNextRace(): void {
 }
 
 function pauseRace(): void {
-  if (hud.hidden) return;
+  if (hud.hidden || familyPaused || learningLocked) return;
   input.releaseAll();
   game.scene.pause("GameScene");
   audio.stop();
@@ -366,7 +403,7 @@ function pauseRace(): void {
 }
 
 function resumeRace(): void {
-  if (learningLocked) return;
+  if (learningLocked || familyPaused) return;
   void audio.start();
   pauseScreen.hidden = true;
   hud.hidden = false;
@@ -472,7 +509,7 @@ function chooseRecommendedCar(): void {
 }
 
 function continueChallenge(): void {
-  if (learningLocked) return;
+  if (learningLocked || familyPaused) return;
   challengeScreen.hidden = true;
   hud.hidden = false;
   void audio.start();

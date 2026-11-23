@@ -453,3 +453,32 @@ h1 span { color: var(--orange); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }
+
+/* V2 shell stays visible in the garage and during races; canvas art is unchanged. */
+html.family-v2 body, html.family-v2 #app { height: var(--family-height, 100%); }
+html.family-v2 .app-shell { min-height: 0; background: var(--family-page); }
+.family-toolbar { position: absolute; top: 8px; right: 8px; width: 190px; z-index: 110; }
+html.family-v2 .screen { background: var(--family-page); color: var(--family-ink); }
+html.family-v2 .garage-header { min-height: 64px; padding-right: 200px; }
+html.family-v2 h1 { font-size: clamp(1.3rem, 3.3vw, 2.7rem); line-height: 1.65; text-transform: none; text-shadow: none; letter-spacing: normal; }
+html.family-v2 .garage-subtitle { display: none; }
+html.family-v2 .car-card, html.family-v2 .track-card, html.family-v2 .modal,
+html.family-v2 .track-advice { background: var(--family-panel); color: var(--family-ink); box-shadow: none; }
+html.family-v2 .car-card, html.family-v2 .track-card { border-color: transparent; }
+html.family-v2 .car-card[aria-pressed="true"], html.family-v2 .track-card[aria-pressed="true"] { border-color: #a06a08; }
+html.family-v2 .picker-label, html.family-v2 .modal p { color: var(--family-ink); }
+html.family-v2 .car-card strong, html.family-v2 .track-card strong { font-weight: 400; line-height: 1.65; }
+html.family-v2 .primary-button { font-weight: 400; line-height: 1.6; box-shadow: none; }
+html.family-v2 .role-icon { background: var(--family-button); }
+html.family-v2 .settings-row:empty { display: none; }
+html.family-v2 [data-family-setting] { background: var(--family-button); color: var(--family-ink); border: 0; }
+html.family-v2 .toggle span { display: inline; }
+html.family-v2 .toggle::after { content: none; }
+html.family-v2 .pause-button { right: 210px; }
+html.family-v2 .screen { overflow-y: auto; }
+@media (max-height: 520px) {
+  html.family-v2 .garage { gap: 3px; }
+  html.family-v2 .garage-header { min-height: 52px; }
+  html.family-v2 .garage-header h1 { font-size: clamp(1rem, 3vw, 1.7rem); }
+}
+html.family-v2 .track-card strong { line-height: 1.9; }

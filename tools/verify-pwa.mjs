@@ -28,4 +28,12 @@ if (!index.includes('rel="apple-touch-icon"')) throw new Error("Falta apple-touc
 if (!index.includes('name="apple-mobile-web-app-capable" content="yes"')) throw new Error("Falta el modo web app de iPad");
 if (!await readFile("dist/sw.js")) throw new Error("Falta el service worker");
 
+const worker = await readFile("dist/sw.js", "utf8");
+for (const name of ["family.css", "family.js", "playwrite-es.ttf", "OFL.txt"]) {
+  const path = `family-v2/${name}`;
+  const local = await readFile(`public/${path}`);
+  if (!local.equals(await readFile(`dist/${path}`))) throw new Error(`Copia alterada: ${path}`);
+  if (!worker.includes(`url:"${path}"`)) throw new Error(`Falta precache: ${path}`);
+}
+
 console.log("PWA instalable verificada para Android e iPad");

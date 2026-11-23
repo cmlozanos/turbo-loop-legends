@@ -1,8 +1,8 @@
-import { isCarId, type CarId } from "./cars";
+import { CARS, isCarId, type CarId } from "./cars";
 import { isTrackId, type TrackId } from "./track";
 
 const STORAGE_KEY = "turbo-loop-legends:v1";
-const ALWAYS_AVAILABLE_CARS: readonly CarId[] = ["comet", "spark", "gecko", "mammoth"];
+const ALWAYS_AVAILABLE_CARS: readonly CarId[] = CARS.map(car => car.id);
 
 export interface GameSettings {
   assists: boolean;
@@ -25,7 +25,7 @@ export const DEFAULT_SAVE: SaveData = {
   schemaVersion: 1,
   selectedCar: "comet",
   selectedTrack: "canyon",
-  unlockedCars: ["comet", "spark", "gecko", "mammoth"],
+  unlockedCars: CARS.map(car => car.id),
   finished: false,
   settings: {
     assists: true,
@@ -53,7 +53,7 @@ export function loadSave(storage: Pick<Storage, "getItem"> = localStorage): Save
     return {
       ...createDefaultSave(),
       ...parsed,
-      settings: { ...DEFAULT_SAVE.settings, ...parsed.settings,
+      settings: { ...DEFAULT_SAVE.settings, ...parsed.settings, music: false, sound: false,
         lightMode: typeof parsed.settings?.lightMode === "boolean" ? parsed.settings.lightMode : DEFAULT_SAVE.settings.lightMode },
       selectedTrack: parsed.selectedTrack && isTrackId(parsed.selectedTrack) ? parsed.selectedTrack : DEFAULT_SAVE.selectedTrack,
       unlockedCars: [...new Set<CarId>([...(parsed.unlockedCars?.filter(isCarId) ?? []), ...ALWAYS_AVAILABLE_CARS])]

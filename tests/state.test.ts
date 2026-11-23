@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { CARS } from "../src/game/cars";
 import { DEFAULT_SAVE, loadSave, unlockCar } from "../src/game/state";
 
 describe("save data", () => {
@@ -13,17 +14,17 @@ describe("save data", () => {
     expect(result.unlockedCars).not.toBe(DEFAULT_SAVE.unlockedCars);
   });
 
-  it("preserves an existing audio preference", () => {
+  it("starts silent even with an existing audio preference", () => {
     const result = loadSave({
       getItem: () => JSON.stringify({ ...DEFAULT_SAVE, settings: { ...DEFAULT_SAVE.settings, music: true, sound: true } }),
     });
-    expect(result.settings.music).toBe(true);
-    expect(result.settings.sound).toBe(true);
+    expect(result.settings.music).toBe(false);
+    expect(result.settings.sound).toBe(false);
   });
 
   it.each([true, false])("preserves an explicit light-mode preference (%s) and progress", (lightMode) => {
     const saved = { ...DEFAULT_SAVE, selectedCar: "lynx", selectedTrack: "moon", finished: true,
-      unlockedCars: [...DEFAULT_SAVE.unlockedCars, "lynx"], settings: { ...DEFAULT_SAVE.settings, lightMode } };
+      unlockedCars: [...DEFAULT_SAVE.unlockedCars], settings: { ...DEFAULT_SAVE.settings, lightMode } };
     expect(loadSave({ getItem: () => JSON.stringify(saved) })).toEqual(saved);
   });
 
@@ -31,13 +32,13 @@ describe("save data", () => {
     const saved = { ...DEFAULT_SAVE, selectedTrack: "moon", finished: true,
       settings: { assists: false, music: true, sound: false, reducedMotion: true } };
     expect(loadSave({ getItem: () => JSON.stringify(saved) })).toEqual({
-      ...saved, settings: { ...saved.settings, lightMode: true }
+      ...saved, settings: { ...saved.settings, music: false, lightMode: true }
     });
   });
 
-  it("adds the three tactical cars to an existing save", () => {
+  it("adds all six cars to an existing save", () => {
     const result = loadSave({ getItem: () => JSON.stringify({ ...DEFAULT_SAVE, unlockedCars: ["comet"] }) });
-    expect(result.unlockedCars).toEqual(expect.arrayContaining(["comet", "spark", "gecko", "mammoth"]));
+    expect(result.unlockedCars).toEqual(expect.arrayContaining(CARS.map(car => car.id)));
   });
 
   it("recovers from invalid data", () => {
@@ -52,7 +53,7 @@ describe("save data", () => {
   });
 
   it("unlocks a car only once", () => {
-    const data = structuredClone(DEFAULT_SAVE);
+    const data = { ...structuredClone(DEFAULT_SAVE), unlockedCars: ["comet"] as (typeof CARS)[number]["id"][] };
     const storage = globalThis.localStorage;
     Object.defineProperty(globalThis, "localStorage", {
       value: { setItem: () => undefined },

@@ -176,8 +176,13 @@ export class PhysicsWorld {
     }
     const accelerationFactor = this.car ? 0.82 + this.car.capabilities.acceleration * 0.06 : 1;
     const brakingFactor = this.car ? 0.75 + this.car.capabilities.braking * 0.08 : 1;
-    const wheelSpeed = (this.input.turbo ? TURBO_WHEEL_SPEED : MAX_WHEEL_SPEED) * accelerationFactor;
-    const motorSpeed = this.input.brake ? 0 : -this.input.throttle * wheelSpeed;
+    const wheelSpeed = this.input.turbo
+      ? TURBO_WHEEL_SPEED * Math.max(1, accelerationFactor)
+      : MAX_WHEEL_SPEED * accelerationFactor;
+    // Turbo must reach its designed launch speed even on high-torque cars.
+    // Their normal motor speed, acceleration, grip and braking remain distinct.
+    const throttle = this.input.turbo ? Math.sign(this.input.throttle) : this.input.throttle;
+    const motorSpeed = this.input.brake ? 0 : -throttle * wheelSpeed;
     const motorTorque = (this.input.turbo ? TURBO_TORQUE : DRIVE_TORQUE) * (this.input.brake ? brakingFactor : accelerationFactor);
 
     this.rearJoint.enableMotor(this.input.brake || Math.abs(this.input.throttle) > 0.001);

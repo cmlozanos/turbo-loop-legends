@@ -339,7 +339,7 @@ function buildTrack(profile: TrackProfile): TrackDefinition {
       { id: "full-loop", position: { x: fullCenterX - fullRadius - 4, y: 4.1 }, angle: 0, radius: 3 },
       { id: "cliff-landing", position: { x: landing2 + 6, y: 2 }, angle: -0.08, radius: 6 },
       { id: "incomplete-loop", position: { x: brokenCenterX - brokenRadius - 4, y: 4.1 }, angle: 0, radius: 3 },
-      { id: "broken-loop-exit", position: { x: brokenLandingX, y: 2 }, angle: -0.15, radius: 4 },
+      { id: "broken-loop-exit", position: { x: brokenLandingX + 5, y: trackSurfaceYAt(segments, brokenLandingX + 5) + 1.1 }, angle: 0, radius: 4 },
       { id: "canyon-landing", position: { x: landing3 + 6, y: 2 }, angle: -0.08, radius: 6 },
       { id: "final-landing", position: { x: landing4 + 6, y: 1.8 }, angle: -0.05, radius: 6 },
     ],

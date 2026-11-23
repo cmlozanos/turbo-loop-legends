@@ -9,6 +9,8 @@ export class InputController {
   readonly state: DriveInput = { throttle: false, brake: false, turbo: false, resetRequested: false };
 
   private readonly onKeyDown = (event: KeyboardEvent): void => {
+    const target = event.composedPath()[0];
+    if (target instanceof Element && target.closest('input,textarea,select,[contenteditable]:not([contenteditable="false"])')) return;
     if (["ArrowRight", "KeyD"].includes(event.code)) this.state.throttle = true;
     if (["ArrowLeft", "KeyA"].includes(event.code)) this.state.brake = true;
     if (["ShiftLeft", "ShiftRight", "Space"].includes(event.code)) this.setHeld("turbo", true);

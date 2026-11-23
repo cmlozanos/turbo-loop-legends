@@ -1,6 +1,6 @@
 {
   "name": "turbo-loop-legends",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -16,6 +16,7 @@
     "verify:chrome95": "node tools/verify-chrome95.mjs",
     "verify:learning-gate": "node --check public/learning-gate.js && node tools/verify-learning-gate.mjs",
     "check": "npm run typecheck && npm test && npm run build && npm run verify:cache && npm run verify:pwa && npm run verify:chrome95 && npm run verify:learning-gate",
+    "poc:driving": "tsx tools/driving-poc.ts",
     "poc:physics": "tsx tools/physics-poc.ts"
   },
   "dependencies": {

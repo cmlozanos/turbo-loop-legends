@@ -207,9 +207,9 @@ export class GameScene extends Phaser.Scene {
         this.add.text(signPosition.x, signPosition.y, "⚡ TURBO", {
           color: "#251300",
           backgroundColor: "#ffd33d",
-          fontFamily: "Arial Rounded MT Bold, sans-serif",
+          fontFamily: window.FamilyV2?.fontFamily ?? "Family School, cursive",
           fontSize: "18px",
-          fontStyle: "bold",
+          fontStyle: "normal",
           padding: { x: 10, y: 6 },
         }).setOrigin(0.5).setDepth(1);
       }
@@ -311,9 +311,9 @@ export class GameScene extends Phaser.Scene {
         this.add.text(point.x, point.y - obstacle.height * PIXELS_PER_METRE - 42, `${obstacle.requirement.hint}\n${obstacle.requirement.label}`, {
           color: "#10233f",
           backgroundColor: "#fff2a8",
-          fontFamily: "Arial Rounded MT Bold, sans-serif",
+          fontFamily: window.FamilyV2?.fontFamily ?? "Family School, cursive",
           fontSize: "15px",
-          fontStyle: "bold",
+          fontStyle: "normal",
           align: "center",
           padding: { x: 8, y: 5 },
         }).setOrigin(0.5).setDepth(4);
